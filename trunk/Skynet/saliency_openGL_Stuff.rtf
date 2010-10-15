@@ -1,0 +1,450 @@
+{\rtf1\ansi\ansicpg1252\deff0\deflang1033{\fonttbl{\f0\fnil Consolas;}{\f1\fnil\fcharset0 Calibri;}}
+{\colortbl ;\red0\green0\blue255;\red163\green21\blue21;\red165\green42\blue42;\red0\green128\blue0;}
+{\*\generator Msftedit 5.41.21.2509;}\viewkind4\uc1\pard\sa200\sl276\slmult1\cf1\lang9\f0\fs19 #pragma\cf0  \cf1 once\cf0\par
+\par
+\cf1 #include\cf0  \cf2 "stdafx.h"\cf0\par
+\cf1 #include\cf0  \cf2 "Auvsi_Saliency.h"\cf0\par
+\cf1 #include\cf0  \cf2 "SaveImage.h"\cf0\par
+\cf1 #include\cf0  \cf2 <string>\cf0\par
+\par
+\cf1 using\cf0  \cf1 namespace\cf0  System;\par
+\cf1 using\cf0  \cf1 namespace\cf0  System::Windows::Forms;\par
+\cf1 using\cf0  \cf1 namespace\cf0  System::Threading;\par
+\par
+\cf1 using\cf0  \cf1 namespace\cf0  System::Security::Permissions;\par
+\par
+\cf1 static\cf0  GLuint texture[\cf3 2\cf0 ];\par
+\par
+\cf1 namespace\cf0  OpenGLForm \par
+\{\par
+\tab\cf1 public\cf0  \cf1 ref\cf0  \cf1 class\cf0  COpenGL: \cf1 public\cf0  System::Windows::Forms::NativeWindow\par
+\tab\{\par
+\tab\cf1 public\cf0 :\par
+\tab\tab COpenGL(System::Windows::Forms::Panel ^ parentForm, GLsizei iWidth, GLsizei iHeight)\par
+\tab\tab\{\par
+\tab\tab\tab CreateParams^ cp = \cf1 gcnew\cf0  CreateParams;\par
+\tab\tab\tab isComputing = \cf1 false\cf0 ;\par
+\tab\tab\tab computeSaliency = \cf1 false\cf0 ;\par
+\tab\tab\tab cubeZoom = \cf3 1.63f\cf0 ;\par
+\tab\tab\tab xLocation = \cf3 1.0f\cf0 ;\par
+\tab\tab\tab frameCount = \cf3 0\cf0 ;\par
+\tab\tab\tab\cf4 // Set the position on the form\cf0\par
+\tab\tab\tab cp->X = \cf3 0\cf0 ;\par
+\tab\tab\tab cp->Y = \cf3 0\cf0 ;\par
+\tab\tab\tab cp->Height = iHeight;\par
+\tab\tab\tab cp->Width = iWidth;\par
+\par
+\tab\tab\tab\cf4 // Specify the form as the parent.\cf0\par
+\tab\tab\tab cp->Parent = parentForm->Handle;\par
+\par
+\tab\tab\tab\cf4 // Create as a child of the specified parent and make OpenGL compliant (no clipping)\cf0\par
+\tab\tab\tab cp->Style = WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;\par
+\par
+\tab\tab\tab\cf4 // Create the actual window\cf0\par
+\tab\tab\tab\cf1 this\cf0 ->CreateHandle(cp);\par
+\par
+\tab\tab\tab m_hDC = GetDC((HWND)\cf1 this\cf0 ->Handle.ToPointer());\par
+\par
+\tab\tab\tab callbackSetupDone = \cf1 false\cf0 ;\par
+\tab\tab\tab textureSetupDone = \cf1 false\cf0 ;\par
+\tab\tab\tab buffer = \cf1 nullptr\cf0 ;\par
+\tab\tab\tab frameW = frameH = -\cf3 1\cf0 ;\par
+\par
+\tab\tab\tab\cf4 //if(m_hDC)\cf0\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab MySetPixelFormat(m_hDC);\par
+\tab\tab\tab\tab ReSizeGLScene(iWidth, iHeight);\par
+\tab\tab\tab\tab InitGL();\tab\tab\tab\tab\par
+\tab\tab\tab\tab\cf4 //System::Diagnostics::Trace::WriteLine( "Would call setupteture here" );\cf0\par
+\tab\tab\tab\}\par
+\tab\tab\tab\par
+\tab\tab\tab\par
+\tab\tab\}\tab\tab\par
+\par
+\tab\tab System::Void UpdateBuffer( \cf1 float\cf0  * input )\par
+\tab\tab\{\par
+\tab\tab\tab memcpy(buffer, input, frameW * frameH * \cf3 4\cf0  * \cf1 sizeof\cf0 (\cf1 float\cf0 ));\par
+\tab\tab\tab\par
+\tab\tab\tab\cf1 if\cf0  (computeSaliency && !isComputing) \{\par
+\tab\tab\tab\tab isComputing = \cf1 true\cf0 ;\par
+\tab\tab\tab\tab\cf1 if\cf0  (saliencyThread == \cf1 nullptr\cf0  || !saliencyThread->IsAlive) \{\par
+\tab\tab\tab\tab\tab System::Diagnostics::Trace::WriteLine(\cf2 "Making saliency thread and starting it"\cf0 );\par
+\tab\tab\tab\tab\tab startTime = GetTickCount();\par
+\tab\tab\tab\tab\tab saliencyThread = \cf1 gcnew\cf0  Thread(\cf1 gcnew\cf0  ThreadStart(\cf1 this\cf0 , &COpenGL::ThreadProcess));\par
+\tab\tab\tab\tab\tab saliencyThread->Start();\par
+\tab\tab\tab\tab\} \cf1 else\cf0  \{\par
+\par
+\tab\tab\tab\tab\tab glBindTexture(GL_TEXTURE_2D, texture[\cf3 1\cf0 ]);\par
+\tab\tab\tab\tab\tab glTexSubImage2D(GL_TEXTURE_2D, \cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 , (GLint)frameW, (GLint)frameH, GL_RGBA, GL_FLOAT, saliencyBuffer);\tab\par
+\tab\tab\tab\tab\tab saliencyThread->Interrupt();\par
+\par
+\tab\tab\tab\tab\}\par
+\par
+\par
+\tab\tab\tab\tab\cf4 //Thread ^ t = gcnew Thread(gcnew ThreadStart(this->ThreadProcess));\cf0\par
+\par
+\tab\tab\tab\tab\cf4 //t->Start();\cf0\par
+\tab\tab\tab\}\par
+\tab\tab\tab\par
+\tab\tab\}\par
+\par
+\tab\tab System::Void ThreadProcess()\par
+\tab\tab\{\par
+\tab\tab\tab\par
+\tab\tab\tab Auvsi_Saliency * theSaliency = \cf1 new\cf0  Auvsi_Saliency();\par
+\tab\tab\tab System::Diagnostics::Trace::WriteLine(\cf2 "Saliency created"\cf0 );\par
+\tab\tab\tab DWORD theTime, otherTime, difference;\par
+\tab\tab\tab\cf1 while\cf0  (computeSaliency) \{\par
+\tab\tab\tab\cf4 // load image\cf0\par
+\tab\tab\tab\tab\cf1 try\cf0  \par
+\tab\tab\tab\tab\{\par
+\tab\tab\tab\tab\tab frameCount++;\tab\par
+\tab\tab\tab\tab\tab theTime = GetTickCount();\par
+\tab\tab\tab\tab\tab theSaliency->loadImage( bufferW, bufferH/\cf3 2\cf0 , buffer  );\par
+\tab\tab\tab\tab\tab otherTime = GetTickCount();\par
+\tab\tab\tab\tab\tab difference = otherTime - theTime;\par
+\tab\tab\tab\tab\tab System::Diagnostics::Trace::WriteLine(\cf2 "Saliency loaded. Time to load image: "\cf0  + difference + \cf2 " (ms)"\cf0 );\par
+\par
+\tab\tab\tab\tab\tab\cf4 // compute image\cf0\par
+\tab\tab\tab\tab\tab theTime = GetTickCount();\par
+\tab\tab\tab\tab\tab theSaliency->computeSaliencyQuick();\par
+\tab\tab\tab\tab\tab\cf4 // memcpy(saliencyBuffer, resultOfSaliency, frameW * frameH * 4 * sizeof(float) / 2);\cf0\par
+\par
+\tab\tab\tab\tab\tab otherTime = GetTickCount();\par
+\tab\tab\tab\tab\tab difference = otherTime - theTime;\par
+\tab\tab\tab\tab\tab System::Diagnostics::Trace::WriteLine( \cf2 "Saliency computed. Time to compute image: "\cf0  + difference + \cf2 " (ms). Framerate = "\cf0  + ((\cf1 float\cf0 )frameCount )/ (\cf1 float\cf0 )(theTime - startTime) * \cf3 1000\cf0 );\par
+\tab\tab\tab\tab\tab memcpy(saliencyBuffer, theSaliency->finalImageBuffer, \cf3 100\cf0 ); \cf4 // frameW * frameH * sizeof(float) * 4 / 2);\cf0\par
+\tab\tab\tab\tab\tab\par
+\tab\tab\tab\tab\tab isComputing = \cf1 false\cf0 ;\par
+\tab\tab\tab\tab\tab Thread::Sleep(Timeout::Infinite);\par
+\tab\tab\tab\tab\} \par
+\tab\tab\tab\tab\cf1 catch\cf0 ( ThreadInterruptedException ^ e) \cf4 // ThreadInterruptedException\cf0\par
+\tab\tab\tab\tab\{\par
+\tab\tab\tab\tab\tab System::Diagnostics::Trace::WriteLine( \cf2 "Moving to next iteration"\cf0 );\par
+\tab\tab\tab\tab\tab\par
+\tab\tab\tab\tab\}\par
+\par
+\tab\tab\tab\}\par
+\par
+\par
+\tab\tab\tab\cf1 delete\cf0  theSaliency;\par
+\par
+\tab\tab\}\par
+\par
+\tab\tab System::Void saveImage( String ^ path )\par
+\tab\tab\{\par
+\tab\tab\tab imSaver->saveFrame( buffer, ManagedToSTL( path ) );\par
+\tab\tab\tab\cf4 //imSaver->saveImage( buffer, ManagedToSTL( path ) );\cf0\par
+\tab\tab\tab System::Diagnostics::Trace::WriteLine( path );\par
+\tab\tab\}\par
+\par
+\tab\tab System::Void CallbackSetup( GLsizei fWidth, GLsizei fHeight )\par
+\tab\tab\{\par
+\tab\tab\tab frameW = fWidth;\par
+\tab\tab\tab frameH = fHeight;\par
+\par
+\tab\tab\tab buffer = \cf1 new\cf0  \cf1 float\cf0 [fWidth * fHeight * \cf3 4\cf0 ];\par
+\tab\tab\tab saliencyBuffer = \cf1 new\cf0  \cf1 float\cf0 [fWidth * fHeight * \cf3 4\cf0 ];\par
+\tab\tab\tab callbackSetupDone = \cf1 true\cf0 ;\par
+\par
+\tab\tab\tab imSaver = \cf1 new\cf0  ImageUtil::SaveImage( frameH, frameW, \cf3 4\cf0  );\tab\tab\tab\par
+\tab\tab\}\par
+\par
+\tab\tab\cf1 int\cf0  roundUpToPowerOfTwo(\cf1 int\cf0  dataSize) \par
+\tab\tab\{\par
+\tab\tab     \cf1 int\cf0  hiBit;\par
+\tab\tab     \cf4 //Neares lower and higher powers of two numbers for dataSize\cf0\par
+\tab\tab     \cf1 unsigned\cf0  \cf1 int\cf0  lowPOT, hiPOT;\par
+\par
+\tab\tab     \cf4 //Align data size to a multiple of half-warp\cf0\par
+\tab\tab     \cf4 //in order to have each line starting at properly aligned addresses\cf0\par
+\tab\tab     \cf4 //for coalesced global memory writes in padKernel() and padData()\cf0\par
+\tab\tab   \cf4 //  dataSize = iAlignUp(dataSize, 16);\cf0\par
+\tab\tab\tab dataSize = (dataSize % \cf3 16\cf0  != \cf3 0\cf0 ) ?  (dataSize - dataSize % \cf3 16\cf0  + \cf3 16\cf0 ) : dataSize;\par
+\par
+\tab\tab     \cf4 //Find highest non-zero bit\cf0\par
+\tab\tab     \cf1 for\cf0 (hiBit = \cf3 31\cf0 ; hiBit >= \cf3 0\cf0 ; hiBit--)\par
+\tab\tab         \cf1 if\cf0 (dataSize & (\cf3 1U\cf0  << hiBit)) \cf1 break\cf0 ;\par
+\par
+\tab\tab     \cf4 //No need to align, if already power of two\cf0\par
+\tab\tab     lowPOT = \cf3 1U\cf0  << hiBit;\par
+\tab\tab     \cf1 if\cf0 (lowPOT == dataSize) \cf1 return\cf0  dataSize;\par
+\par
+\tab\tab     \cf4 //Align to a nearest higher power of two, if the size is small enough,\cf0\par
+\tab\tab     \cf4 //else align only to a nearest higher multiple of 512,\cf0\par
+\tab\tab     \cf4 //in order to save computation and memory bandwidth\cf0\par
+\tab\tab     hiPOT = \cf3 1U\cf0  << (hiBit + \cf3 1\cf0 );\par
+\tab\tab     \cf1 if\cf0 (hiPOT <= \cf3 1024\cf0 )\par
+\tab\tab         \cf1 return\cf0  hiPOT;\par
+\tab\tab     \cf1 else\cf0  \par
+\tab\tab\tab\tab\cf1 return\cf0  (dataSize % \cf3 512\cf0  != \cf3 0\cf0 ) ?  (dataSize - dataSize % \cf3 512\cf0  + \cf3 512\cf0 ) : dataSize;\par
+\tab\tab         \cf4 //return iAlignUp(dataSize, 512);\cf0\par
+\tab\tab\}\par
+\par
+\tab\tab GLint SetupTexture(System::Void)\par
+\tab\tab\{\tab\tab\par
+\tab\tab\tab\cf4 /*\cf0\par
+\cf4\tab\tab\tab frameW = fWidth;\cf0\par
+\cf4\tab\tab\tab frameH = fHeight;\cf0\par
+\par
+\cf4\tab\tab\tab buffer = new char[fWidth * fHeight * 3];\cf0\par
+\cf4\tab\tab\tab */\cf0\par
+\tab\tab\tab\par
+\tab\tab\tab glGenTextures( \cf3 2\cf0 , &texture[\cf3 0\cf0 ] );\par
+\tab\tab\tab\par
+\tab\tab\tab glBindTexture( GL_TEXTURE_2D, texture[\cf3 0\cf0 ] );\par
+\par
+\tab\tab\tab bufferH = roundUpToPowerOfTwo( frameH );\par
+\tab\tab\tab bufferW = roundUpToPowerOfTwo( frameW ); \par
+\tab\tab\tab\par
+\tab\tab\tab\cf1 float\cf0  * imageData = \cf1 new\cf0  \cf1 float\cf0 [bufferH * bufferW * \cf3 4\cf0 ];\par
+\par
+\tab\tab\tab\cf1 for\cf0 (\cf1 int\cf0  i = \cf3 0\cf0 ; i < (bufferH * bufferW ); i++) \{\par
+\tab\tab\tab\tab\cf1 int\cf0  j = i * \cf3 3\cf0 ;\par
+\tab\tab\tab\tab imageData[j] = \cf3 0\cf0 ;\par
+\tab\tab\tab\tab imageData[j+\cf3 1\cf0 ] = \cf3 0\cf0 ;\par
+\tab\tab\tab\tab imageData[j+\cf3 2\cf0 ] = \cf3 0\cf0 ;\par
+\tab\tab\tab\tab imageData[j+\cf3 3\cf0 ] = \cf3 1\cf0 ;\par
+\tab\tab\tab\}\par
+\par
+\tab\tab\tab glTexImage2D(GL_TEXTURE_2D, \cf3 0\cf0 , \cf3 3\cf0 , (GLint)bufferW, (GLint)bufferH, \cf3 0\cf0 , GL_RGBA, GL_FLOAT, imageData);\par
+\par
+\tab\tab\tab\cf4 //delete[] imageData;\cf0\par
+\par
+\tab\tab\tab glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER | GL_TEXTURE_MAG_FILTER, GL_LINEAR );\tab\cf4 // Linear Filtering\cf0\par
+\tab\tab\par
+\tab\tab\tab System::Diagnostics::Trace::WriteLine( \cf2 "SetupTexture for raw image buffer. texRef: "\cf0  + texture[\cf3 0\cf0 ] + \cf2 " bufferW: "\cf0  + bufferW + \cf2 " bufferH: "\cf0  + bufferH + \cf2 " frameW: "\cf0  + frameW + \cf2 " frameH: "\cf0  + frameH);\par
+\tab\tab\tab\par
+\tab\tab\tab glBindTexture( GL_TEXTURE_2D, texture[\cf3 1\cf0 ] );\par
+\par
+\par
+\tab\tab\tab glTexImage2D(GL_TEXTURE_2D, \cf3 0\cf0 , \cf3 3\cf0 , (GLint)bufferW, (GLint)bufferH, \cf3 0\cf0 , GL_RGBA, GL_FLOAT, imageData);\par
+\par
+\tab\tab\tab\cf1 delete\cf0 [] imageData;\par
+\par
+\tab\tab\tab glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER | GL_TEXTURE_MAG_FILTER, GL_LINEAR );\tab\cf4 // Linear Filtering\cf0\par
+\tab\tab\par
+\tab\tab\tab System::Diagnostics::Trace::WriteLine( \cf2 "SetupTexture for saliency buffer. texRef: "\cf0  + texture[\cf3 0\cf0 ] + \cf2 " bufferW: "\cf0  + bufferW + \cf2 " bufferH: "\cf0  + bufferH + \cf2 " frameW: "\cf0  + frameW + \cf2 " frameH: "\cf0  + frameH);\par
+\tab\tab\tab\par
+\tab\tab\tab textureSetupDone = \cf1 true\cf0 ;\par
+\par
+\tab\tab\tab\cf1 return\cf0  \cf3 1\cf0 ;\par
+\tab\tab\}\par
+\par
+\tab\tab System::Void Render(System::Void)\par
+\tab\tab\{\par
+\tab\tab\tab\cf1 if\cf0 ( callbackSetupDone && !textureSetupDone )\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab SetupTexture();\par
+\tab\tab\tab\tab textureH = ((\cf1 float\cf0 )frameH)/((\cf1 float\cf0 )bufferH); \par
+\tab\tab\tab\tab textureH = textureH / \cf3 2\cf0 ; \cf4 // deinterlaced means that valid data takes up first half of buffer only\cf0\par
+\tab\tab\tab\tab textureW = ((\cf1 float\cf0 )frameW)/((\cf1 float\cf0 )bufferW);\par
+\tab\tab\tab\tab cubeW = \cf3 1.0f\cf0 ;\par
+\tab\tab\tab\tab cubeH = ((\cf1 float\cf0 )frameH)/((\cf1 float\cf0 )frameW); \cf4 // aspect ratio\cf0\par
+\tab\tab\tab\tab\cf4 //cubeZoom = 1.63f; // this assumes the view is wider (in terms of aspect ratio) than the video. if the view is taller, zoom must change\cf0\par
+\tab\tab\tab\tab cubeZoom = \cf3 1.00f\cf0 ;\par
+\tab\tab\tab\}\par
+\tab\tab\tab\cf1 if\cf0 ( textureSetupDone )\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab glBindTexture(GL_TEXTURE_2D, texture[\cf3 0\cf0 ]);\par
+\tab\tab\tab\tab glTexSubImage2D(GL_TEXTURE_2D, \cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 , (GLint)frameW, (GLint)frameH, GL_RGBA, GL_FLOAT, buffer);\tab\par
+\tab\tab\tab\}\par
+\par
+\tab\tab\tab glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);\tab\tab\tab\par
+\tab\tab\tab glLoadIdentity(); \par
+\par
+\tab\tab\tab\cf4 // display raw image in big rectangle\cf0\par
+\tab\tab\tab glEnable(GL_TEXTURE_2D);\par
+\tab\tab\tab glBindTexture(GL_TEXTURE_2D, texture[\cf3 0\cf0 ]);\par
+\par
+\tab\tab\tab glTranslatef(xLocation, \cf3 0.0f\cf0 , -cubeZoom); \cf4 // UNCOMMENT\cf0\par
+\par
+\tab\tab\tab glBegin(GL_QUADS);\par
+\tab\tab\tab\tab\cf4 // Front Face\cf0\par
+\tab\tab\tab\tab\cf4 //glColor3f(1.0f, 0.0f, 0.0f);\cf0\par
+\tab\tab\tab\tab glTexCoord2f(\cf3 0.0f\cf0 , textureH); glVertex3f(-cubeW - \cf3 1.0f\cf0 , -cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Bottom Left Of The Texture and Quad\cf0\par
+\tab\tab\tab\tab glTexCoord2f(textureW, textureH); glVertex3f( cubeW - \cf3 1.0f\cf0 , -cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Bottom Right Of The Texture and Quad\cf0\par
+\tab\tab\tab\tab glTexCoord2f(textureW, \cf3 0.0f\cf0 ); glVertex3f( cubeW - \cf3 1.0f\cf0 ,  cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Top Right Of The Texture and Quad \cf0\par
+\tab\tab\tab\tab glTexCoord2f(\cf3 0.0f\cf0 , \cf3 0.0f\cf0 ); glVertex3f(-cubeW - \cf3 1.0f\cf0 ,  cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Top Left Of The Texture and Quad\cf0\par
+\tab\tab\tab glEnd();\par
+\tab\tab\tab\cf1 if\cf0  (computeSaliency) \{\par
+\tab\tab\tab\tab\cf4 // display saliency buffer in smaller rectangle\cf0\par
+\par
+\tab\tab\tab\tab glBindTexture(GL_TEXTURE_2D, texture[\cf3 1\cf0 ]);\par
+\par
+\tab\tab\tab\tab glBegin(GL_QUADS);\par
+\tab\tab\tab\tab\tab\cf4 // Front Face\cf0\par
+\tab\tab\tab\tab\tab\cf4 //glColor3f(1.0f, 0.0f, 0.0f);\cf0\par
+\tab\tab\tab\tab\tab glTexCoord2f(\cf3 0.0f\cf0 , textureH); glVertex3f(-cubeW + \cf3 1.0f\cf0 , -cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Bottom Left Of The Texture and Quad\cf0\par
+\tab\tab\tab\tab\tab glTexCoord2f(textureW, textureH); glVertex3f( cubeW + \cf3 1.0f\cf0 , -cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Bottom Right Of The Texture and Quad\cf0\par
+\tab\tab\tab\tab\tab glTexCoord2f(textureW, \cf3 0.0f\cf0 ); glVertex3f( cubeW + \cf3 1.0f\cf0 ,  cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Top Right Of The Texture and Quad\cf0\par
+\tab\tab\tab\tab\tab glTexCoord2f(\cf3 0.0f\cf0 , \cf3 0.0f\cf0 ); glVertex3f(-cubeW + \cf3 1.0f\cf0 ,  cubeH,  \cf3 0.0f\cf0 );\tab\cf4 // Top Left Of The Texture and Quad\cf0\par
+\tab\tab\tab\tab glEnd();\par
+\tab\tab\tab\}\par
+\tab\tab\tab\cf4 //SwapOpenGLBuffers();\cf0\par
+\tab\tab\}\par
+\par
+\tab\tab System::Void SwapOpenGLBuffers(System::Void)\par
+\tab\tab\{\par
+\tab\tab\tab SwapBuffers(m_hDC) ;\par
+\tab\tab\}\par
+\par
+\tab\cf1 public\cf0 :\par
+\tab\tab\cf4 //char * buffer;\cf0\par
+\tab\tab\cf1 float\cf0  * buffer;\par
+\tab\tab\cf1 float\cf0  * saliencyBuffer;\par
+\tab\tab\cf1 bool\cf0  isComputing;\par
+\tab\tab\cf1 bool\cf0  computeSaliency;\par
+\tab\tab\par
+\tab\tab\cf1 int\cf0  frameCount;\par
+\tab\tab DWORD startTime;\par
+\tab\tab Thread^ saliencyThread;\par
+\tab\tab\cf4 //Auvsi_Saliency * theSaliency;\cf0\par
+\tab\cf1 private\cf0 :\par
+\tab\tab HDC m_hDC;\par
+\tab\tab HGLRC m_hglrc;\par
+\par
+\tab\tab GLsizei frameW, frameH;\par
+\tab\tab\cf1 int\cf0  bufferW, bufferH;\par
+\tab\tab GLfloat textureW, textureH;\par
+\tab\tab GLfloat cubeW, cubeH;\par
+\tab\tab GLfloat cubeZoom;\par
+\tab\tab GLfloat xLocation;\par
+\tab\tab\cf1 bool\cf0  callbackSetupDone;\par
+\tab\tab\cf1 bool\cf0  textureSetupDone;\tab\par
+\tab\tab ImageUtil::SaveImage * imSaver;\par
+\par
+\tab\cf1 protected\cf0 :\par
+\tab\tab ~COpenGL(System::Void)\par
+\tab\tab\{\par
+\tab\tab\tab\cf1 if\cf0 ( buffer != \cf1 nullptr\cf0  )\par
+\tab\tab\tab\tab\cf1 delete\cf0  buffer;\par
+\tab\tab\tab\cf1 if\cf0  (saliencyBuffer != \cf1 nullptr\cf0 )\par
+\tab\tab\tab\tab\cf1 delete\cf0  saliencyBuffer;\par
+\tab\tab\tab\cf1 if\cf0 ( imSaver )\par
+\tab\tab\tab\tab\cf1 delete\cf0  imSaver;\par
+\tab\tab\tab\cf1 this\cf0 ->DestroyHandle();\par
+\tab\tab\}\par
+\par
+\tab\tab std::string ManagedToSTL(String ^ s) \par
+\tab\tab\{\par
+\tab\tab    \cf1 using\cf0  \cf1 namespace\cf0  Runtime::InteropServices;\par
+\tab\tab    \cf1 const\cf0  \cf1 char\cf0 * chars = \par
+\tab\tab       (\cf1 const\cf0  \cf1 char\cf0 *)(Marshal::StringToHGlobalAnsi(s)).ToPointer();\par
+\tab\tab    std::string retVal = chars;\par
+\tab\tab    Marshal::FreeHGlobal(IntPtr((\cf1 void\cf0 *)chars));\par
+\par
+\tab\tab    \cf1 return\cf0  retVal;\par
+\tab\tab\}\par
+\par
+\tab\tab GLint MySetPixelFormat(HDC hdc)\par
+\tab\tab\{\par
+\tab\tab\tab\cf1 static\cf0\tab PIXELFORMATDESCRIPTOR pfd=\tab\tab\tab\tab\cf4 // pfd Tells Windows How We Want Things To Be\cf0\par
+\tab\tab\tab\tab\{\par
+\tab\tab\tab\tab\tab\cf1 sizeof\cf0 (PIXELFORMATDESCRIPTOR),\tab\tab\tab\tab\cf4 // Size Of This Pixel Format Descriptor\cf0\par
+\tab\tab\tab\tab\tab\cf3 1\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Version Number\cf0\par
+\tab\tab\tab\tab\tab PFD_DRAW_TO_WINDOW |\tab\tab\tab\tab\tab\tab\cf4 // Format Must Support Window\cf0\par
+\tab\tab\tab\tab\tab PFD_SUPPORT_OPENGL |\tab\tab\tab\tab\tab\tab\cf4 // Format Must Support OpenGL\cf0\par
+\tab\tab\tab\tab\tab PFD_DOUBLEBUFFER,\tab\tab\tab\tab\tab\tab\tab\cf4 // Must Support Double Buffering\cf0\par
+\tab\tab\tab\tab\tab PFD_TYPE_RGBA,\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Request An RGBA Format\cf0\par
+\tab\tab\tab\tab\tab\cf3 32\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Select Our Color Depth\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\cf4 // Color Bits Ignored\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // No Alpha Buffer\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Shift Bit Ignored\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // No Accumulation Buffer\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Accumulation Bits Ignored\cf0\par
+\tab\tab\tab\tab\tab\cf3 16\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // 16Bit Z-Buffer (Depth Buffer)  \cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // No Stencil Buffer\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // No Auxiliary Buffer\cf0\par
+\tab\tab\tab\tab\tab PFD_MAIN_PLANE,\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Main Drawing Layer\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 ,\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Reserved\cf0\par
+\tab\tab\tab\tab\tab\cf3 0\cf0 , \cf3 0\cf0 , \cf3 0\cf0\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Layer Masks Ignored\cf0\par
+\tab\tab\tab\tab\};\par
+\tab\tab\tab\par
+\tab\tab\tab GLint  iPixelFormat; \par
+\tab\tab  \par
+\tab\tab\tab\cf4 // get the device context's best, available pixel format match \cf0\par
+\tab\tab\tab\cf1 if\cf0 ((iPixelFormat = ChoosePixelFormat(hdc, &pfd)) == \cf3 0\cf0 )\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab MessageBox::Show(\cf2 "ChoosePixelFormat Failed"\cf0 );\par
+\tab\tab\tab\tab\cf1 return\cf0  \cf3 0\cf0 ;\par
+\tab\tab\tab\}\par
+\tab\tab\tab  \par
+\tab\tab\tab\cf4 // make that match the device context's current pixel format \cf0\par
+\tab\tab\tab\cf1 if\cf0 (SetPixelFormat(hdc, iPixelFormat, &pfd) == FALSE)\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab MessageBox::Show(\cf2 "SetPixelFormat Failed"\cf0 );\par
+\tab\tab\tab\tab\cf1 return\cf0  \cf3 0\cf0 ;\par
+\tab\tab\tab\}\par
+\par
+\tab\tab\tab\cf1 if\cf0 ((m_hglrc = wglCreateContext(m_hDC)) == NULL)\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab MessageBox::Show(\cf2 "wglCreateContext Failed"\cf0 );\par
+\tab\tab\tab\tab DWORD dw = GetLastError();;\par
+\tab\tab\tab\tab\cf1 return\cf0  \cf3 0\cf0 ;\par
+\tab\tab\tab\}\par
+\par
+\tab\tab\tab\cf1 if\cf0 ((wglMakeCurrent(m_hDC, m_hglrc)) == NULL)\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab MessageBox::Show(\cf2 "wglMakeCurrent Failed"\cf0 );\par
+\tab\tab\tab\tab\cf1 return\cf0  \cf3 0\cf0 ;\par
+\tab\tab\tab\}\par
+\par
+\par
+\tab\tab\tab\cf1 return\cf0  \cf3 1\cf0 ;\par
+\tab\tab\}\par
+\par
+\tab\tab\cf1 bool\cf0  InitGL(GLvoid)\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // All setup for opengl goes here\cf0\par
+\tab\tab\{\par
+\tab\tab\tab glShadeModel(GL_SMOOTH);\tab\tab\tab\tab\tab\tab\tab\cf4 // Enable smooth shading\cf0\par
+\tab\tab\tab glClearColor(\cf3 0.0f\cf0 , \cf3 0.0f\cf0 , \cf3 0.0f\cf0 , \cf3 0.5f\cf0 );\tab\tab\tab\tab\cf4 // Black background\cf0\par
+\tab\tab\tab glClearDepth(\cf3 1.0f\cf0 );\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Depth buffer setup\cf0\par
+\tab\tab\tab glEnable(GL_DEPTH_TEST);\tab\tab\tab\tab\tab\tab\tab\cf4 // Enables depth testing\cf0\par
+\tab\tab\tab glDepthFunc(GL_LEQUAL);\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // The type of depth testing to do\cf0\par
+\tab\tab\tab glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);\tab\cf4 // Really nice perspective calculations\cf0\par
+\par
+\tab\tab\par
+\tab\tab\tab\cf1 return\cf0  TRUE;\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Initialisation went ok\cf0\par
+\tab\tab\}\par
+\par
+\tab\tab GLvoid ReSizeGLScene(GLsizei width, GLsizei height)\tab\tab\cf4 // Resize and initialise the gl window\cf0\par
+\tab\tab\{\par
+\tab\tab\tab\cf1 if\cf0  (height==\cf3 0\cf0 )\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Prevent A Divide By Zero By\cf0\par
+\tab\tab\tab\{\par
+\tab\tab\tab\tab height=\cf3 1\cf0 ;\tab\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Making Height Equal One\cf0\par
+\tab\tab\tab\}\par
+\par
+\tab\tab\tab glViewport(\cf3 0\cf0 ,\cf3 0\cf0 ,width,height);\tab\tab\tab\tab\tab\tab\cf4 // Reset The Current Viewport\cf0\par
+\par
+\tab\tab\tab glMatrixMode(GL_PROJECTION);\tab\tab\tab\tab\tab\tab\cf4 // Select The Projection Matrix\cf0\par
+\tab\tab\tab glLoadIdentity();\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Reset The Projection Matrix\cf0\par
+\par
+\tab\tab\tab\cf4 // Calculate The Aspect Ratio Of The Window\cf0\par
+\tab\tab\tab gluPerspective(\cf3 45.0f\cf0 ,(GLfloat)width/(GLfloat)height,\cf3 0.1f\cf0 ,\cf3 100.0f\cf0 );\par
+\par
+\tab\tab\tab glMatrixMode(GL_MODELVIEW);\tab\tab\tab\tab\tab\tab\tab\cf4 // Select The Modelview Matrix\cf0\par
+\tab\tab\tab glLoadIdentity();\tab\tab\tab\tab\tab\tab\tab\tab\tab\cf4 // Reset The Modelview Matrix\cf0\par
+\tab\tab\}\par
+\par
+\cf1 public\cf0 : \cf1 void\cf0  switchSaliencyState(\cf1 bool\cf0  state) \par
+\tab\tab\{\par
+\tab\tab\tab\cf4 /*\cf0\par
+\cf4\tab\tab\tab if (state) \{\cf0\par
+\cf4\tab\tab\tab\tab computeSaliency = true;\cf0\par
+\cf4\tab\tab\tab\tab isComputing = false;\cf0\par
+\cf4\tab\tab\tab\tab cubeZoom = 0.8f;\cf0\par
+\cf4\tab\tab\tab\tab xLocation = 0.0f;\cf0\par
+\cf4\tab\tab\tab\} else \{\cf0\par
+\cf4\tab\tab\tab */\cf0\par
+\tab\tab\tab\tab computeSaliency = \cf1 false\cf0 ;\par
+\tab\tab\tab\tab cubeZoom = \cf3 1.63f\cf0 ;\par
+\tab\tab\tab\tab xLocation = \cf3 1.0f\cf0 ;\par
+\tab\tab\tab\cf4 //\}\cf0\par
+\par
+\tab\tab\}\par
+\tab\};\par
+\}\par
+\par
+\f1\fs22\par
+}
+ 
