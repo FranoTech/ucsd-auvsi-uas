@@ -8,7 +8,11 @@
 #include "Database.h"
 #include "Delegates.h"
 #include "MapControl.h"
+
+#ifndef OPENCV_DISABLED
 #include "GeoReference.h"
+#endif
+
 #include "TargetDialog.h"
 #include "Saliency.h"
 #include "OCR.h"
@@ -209,9 +213,10 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			InitializeComponent();
 
 			// Debug 
-
+			
+#ifndef OPENCV_DISABLED
 			GeoReference::computeHomography( 0, 0, 400, 0, Math::PI/4, 0, 0, -1.5708, 1 );
-
+#endif
 
 
 
@@ -374,9 +379,9 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 		void InitializeComponent(void)
 		{
 			this->components = (gcnew System::ComponentModel::Container());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle4 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle5 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle6 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle1 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle2 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle3 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 			this->menuStrip1 = (gcnew System::Windows::Forms::MenuStrip());
 			this->toolStripMenuItem1 = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->exportDataToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
@@ -495,7 +500,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 				this->serialCommunicationsToolStripMenuItem, this->mapToolStripMenuItem, this->databaseToolStripMenuItem});
 			this->menuStrip1->Location = System::Drawing::Point(0, 0);
 			this->menuStrip1->Name = L"menuStrip1";
-			this->menuStrip1->Size = System::Drawing::Size(2984, 24);
+			this->menuStrip1->Size = System::Drawing::Size(1924, 24);
 			this->menuStrip1->TabIndex = 0;
 			this->menuStrip1->Text = L"menuStrip1";
 			// 
@@ -673,36 +678,36 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->metadataTable->AllowUserToDeleteRows = false;
 			this->metadataTable->AllowUserToResizeColumns = false;
 			this->metadataTable->AllowUserToResizeRows = false;
-			dataGridViewCellStyle4->BackColor = System::Drawing::Color::DimGray;
-			dataGridViewCellStyle4->ForeColor = System::Drawing::Color::White;
-			dataGridViewCellStyle4->SelectionBackColor = System::Drawing::Color::White;
-			dataGridViewCellStyle4->SelectionForeColor = System::Drawing::Color::Black;
-			this->metadataTable->AlternatingRowsDefaultCellStyle = dataGridViewCellStyle4;
+			dataGridViewCellStyle1->BackColor = System::Drawing::Color::DimGray;
+			dataGridViewCellStyle1->ForeColor = System::Drawing::Color::White;
+			dataGridViewCellStyle1->SelectionBackColor = System::Drawing::Color::White;
+			dataGridViewCellStyle1->SelectionForeColor = System::Drawing::Color::Black;
+			this->metadataTable->AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
 			this->metadataTable->BackgroundColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle5->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
-			dataGridViewCellStyle5->BackColor = System::Drawing::Color::DimGray;
-			dataGridViewCellStyle5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
+			dataGridViewCellStyle2->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
+			dataGridViewCellStyle2->BackColor = System::Drawing::Color::DimGray;
+			dataGridViewCellStyle2->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(0)));
-			dataGridViewCellStyle5->ForeColor = System::Drawing::Color::White;
-			dataGridViewCellStyle5->SelectionBackColor = System::Drawing::Color::White;
-			dataGridViewCellStyle5->SelectionForeColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle5->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
-			this->metadataTable->ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
+			dataGridViewCellStyle2->ForeColor = System::Drawing::Color::White;
+			dataGridViewCellStyle2->SelectionBackColor = System::Drawing::Color::White;
+			dataGridViewCellStyle2->SelectionForeColor = System::Drawing::Color::Black;
+			dataGridViewCellStyle2->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
+			this->metadataTable->ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
 			this->metadataTable->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
 			this->metadataTable->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(2) {this->Property, 
 				this->Value});
 			this->metadataTable->GridColor = System::Drawing::Color::Black;
 			this->metadataTable->Location = System::Drawing::Point(12, 55);
 			this->metadataTable->Name = L"metadataTable";
-			dataGridViewCellStyle6->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
-			dataGridViewCellStyle6->BackColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
+			dataGridViewCellStyle3->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
+			dataGridViewCellStyle3->BackColor = System::Drawing::Color::Black;
+			dataGridViewCellStyle3->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(0)));
-			dataGridViewCellStyle6->ForeColor = System::Drawing::SystemColors::WindowText;
-			dataGridViewCellStyle6->SelectionBackColor = System::Drawing::SystemColors::Highlight;
-			dataGridViewCellStyle6->SelectionForeColor = System::Drawing::SystemColors::HighlightText;
-			dataGridViewCellStyle6->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
-			this->metadataTable->RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
+			dataGridViewCellStyle3->ForeColor = System::Drawing::SystemColors::WindowText;
+			dataGridViewCellStyle3->SelectionBackColor = System::Drawing::SystemColors::Highlight;
+			dataGridViewCellStyle3->SelectionForeColor = System::Drawing::SystemColors::HighlightText;
+			dataGridViewCellStyle3->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
+			this->metadataTable->RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
 			this->metadataTable->RowHeadersWidthSizeMode = System::Windows::Forms::DataGridViewRowHeadersWidthSizeMode::DisableResizing;
 			this->metadataTable->RowTemplate->DefaultCellStyle->BackColor = System::Drawing::Color::Black;
 			this->metadataTable->RowTemplate->DefaultCellStyle->ForeColor = System::Drawing::Color::White;
@@ -1276,7 +1281,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 				50)));
 			this->tableLayoutPanel1->Controls->Add(this->mapMouseGPSLabel, 0, 0);
 			this->tableLayoutPanel1->GrowStyle = System::Windows::Forms::TableLayoutPanelGrowStyle::FixedSize;
-			this->tableLayoutPanel1->Location = System::Drawing::Point(2867, 586);
+			this->tableLayoutPanel1->Location = System::Drawing::Point(1807, 586);
 			this->tableLayoutPanel1->Name = L"tableLayoutPanel1";
 			this->tableLayoutPanel1->RowCount = 1;
 			this->tableLayoutPanel1->RowStyles->Add((gcnew System::Windows::Forms::RowStyle(System::Windows::Forms::SizeType::Percent, 50)));
@@ -1307,7 +1312,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->BackColor = System::Drawing::Color::DimGray;
-			this->ClientSize = System::Drawing::Size(2984, 946);
+			this->ClientSize = System::Drawing::Size(1924, 946);
 			this->Controls->Add(this->tableLayoutPanel1);
 			this->Controls->Add(this->mapCenterGPSLabel);
 			this->Controls->Add(this->mapPanel);
@@ -1560,7 +1565,8 @@ public: System::Void saveImage(){
 			data->center_longitude = 0;			// Longitude of center pixel
 			data->mapping_latitude = Convert::ToDouble( this->metadataTable[1, A_LAT]->Value );			// pixel to meter translation for latitude
 			data->mapping_longitude = Convert::ToDouble( this->metadataTable[1, A_LON]->Value );		// pixel to meter translation for longitude
-
+			
+#ifndef OPENCV_DISABLED
 			data->homography = GeoReference::computeHomography( Convert::ToDouble( this->metadataTable[1, A_LAT]->Value ),
 				Convert::ToDouble( this->metadataTable[1, A_LON]->Value ),
 				Convert::ToDouble( this->metadataTable[1, A_ALT]->Value ),
@@ -1569,7 +1575,8 @@ public: System::Void saveImage(){
 				Convert::ToDouble( this->metadataTable[1, A_HEAD]->Value ),
 				Convert::ToDouble( this->metadataTable[1, G_AZIM]->Value ),
 				Convert::ToDouble( this->metadataTable[1, G_ELEV]->Value ),
-				Convert::ToDouble( this->metadataTable[1, V_ZOOM]->Value ) );			
+				Convert::ToDouble( this->metadataTable[1, V_ZOOM]->Value ) );	
+#endif
 
 			//openGLView->saveImage( path );
 			openGLView->saveImage( path, pathBase, data->homography, Convert::ToDouble( this->metadataTable[1, A_HEAD]->Value ) );
@@ -2007,7 +2014,8 @@ private: System::Void mapUpdateTimer_Tick(System::Object^  sender, System::Event
 				 mapView->SetAirplaneLocation( Convert::ToDouble(this->metadataTable[1, A_LAT]->Value), 
 					 Convert::ToDouble(this->metadataTable[1, A_LON]->Value), 
 					 Convert::ToDouble(this->metadataTable[1, A_HEAD]->Value) );
-
+				 
+#ifndef OPENCV_DISABLED
 				 array<float> ^ homography = GeoReference::computeHomography( Convert::ToDouble(this->metadataTable[1, A_LAT]->Value),
 					 Convert::ToDouble(this->metadataTable[1, A_LON]->Value),
 					 Convert::ToDouble(this->metadataTable[1, A_LAT]->Value),
@@ -2017,6 +2025,7 @@ private: System::Void mapUpdateTimer_Tick(System::Object^  sender, System::Event
 					 Convert::ToDouble(this->metadataTable[1, G_AZIM]->Value),
 					 Convert::ToDouble(this->metadataTable[1, G_ELEV]->Value),
 					 Convert::ToDouble(this->metadataTable[1, V_ZOOM]->Value) );
+#endif
 
 				 /*mapView->SetCameraLookLocation( homography, 
 					 Convert::ToDouble(this->metadataTable[1, A_LAT]->Value), 
@@ -2055,7 +2064,10 @@ private: System::Void mapLookGPSToolStripMenuItem_Click(System::Object^  sender,
 				double north, east;
 				char zone[4];
 				mapView->GetPosition(mouseGPS.X, mouseGPS.Y, lon, lat);
+
+#ifndef OPENCV_DISABLED
 				GeoReference::LLtoUTM(23, lat, lon, north, east, zone);
+#endif
 
 				Communications::ComportUpstream * packet = new Communications::ComportUpstream();
 				packet->gps_lat_gimbal_x.f = north;

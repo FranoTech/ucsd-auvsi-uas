@@ -1,6 +1,9 @@
 #pragma once
 
+
+#ifndef OPENCV_DISABLED
 #include "GeoReference.h"
+#endif
 
 namespace Skynet {
 
@@ -368,7 +371,9 @@ private: System::Void imageBox_MouseDown(System::Object^  sender, System::Window
 			 else if( _markLat )
 			 {
 				 double latReturn, lonReturn;
+#ifndef OPENCV_DISABLED
 				 GeoReference::applyHomography( _homography, e->Location.X, e->Location.Y, _latMap, _lonMap, latReturn, lonReturn );
+#endif
 
 				 _latitude = latReturn;
 				 _longitude = lonReturn;

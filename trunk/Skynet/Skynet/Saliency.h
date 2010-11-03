@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include "Auvsi_Saliency.h"
-#include "Auvsi_FFT.h"
+//#include "Auvsi_FFT.h"
 #include "Database.h"
 
 using namespace System::Threading;

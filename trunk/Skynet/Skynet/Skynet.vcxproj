@@ -23,6 +23,10 @@
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <Keyword>ManagedCProj</Keyword>
     <RootNamespace>Skynet</RootNamespace>
+    <SccProjectName>Svn</SccProjectName>
+    <SccAuxPath>Svn</SccAuxPath>
+    <SccLocalPath>Svn</SccLocalPath>
+    <SccProvider>SubversionScc</SccProvider>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -164,7 +168,9 @@
     <None Include="app.ico" />
     <None Include="ClassDiagram1.cd" />
     <None Include="ReadMe.txt" />
-    <None Include="Resampler.i" />
+    <None Include="Resampler.i">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </None>
     <None Include="Saliency_New.exe" />
     <None Include="Saliency_New.exp" />
     <None Include="_Resampler.so" />
@@ -173,36 +179,47 @@
     <ClCompile Include="AssemblyInfo.cpp" />
     <ClCompile Include="Auvsi_cvFft.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Auvsi_cvUtil.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Auvsi_DualTree.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Auvsi_Ocr.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Auvsi_Radon.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Auvsi_Recognize.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="blob.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="BlobContour.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="BlobOperators.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="BlobResult.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="ComponentLabeling.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Comport.cpp" />
     <ClCompile Include="Database.cpp" />
@@ -214,7 +231,9 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">true</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</CompileAsManaged>
     </ClCompile>
-    <ClCompile Include="GeoReference.cpp" />
+    <ClCompile Include="GeoReference.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Joystick.cpp" />
     <ClCompile Include="MapControl.cpp" />
     <ClCompile Include="OCR.cpp" />
@@ -236,24 +255,48 @@
     <ClCompile Include="TargetDialog.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Auvsi_cvFft.h" />
-    <ClInclude Include="Auvsi_cvUtil.h" />
-    <ClInclude Include="Auvsi_DualTree.h" />
+    <ClInclude Include="Auvsi_cvFft.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Auvsi_cvUtil.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Auvsi_DualTree.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Auvsi_FFT.h" />
     <ClInclude Include="Auvsi_Filter.h" />
     <ClInclude Include="Auvsi_Image.h" />
     <ClInclude Include="Auvsi_Matrix.h" />
-    <ClInclude Include="Auvsi_Ocr.h" />
-    <ClInclude Include="Auvsi_Radon.h" />
-    <ClInclude Include="Auvsi_Recognize.h" />
+    <ClInclude Include="Auvsi_Ocr.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Auvsi_Radon.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Auvsi_Recognize.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Auvsi_Saliency.h" />
     <ClInclude Include="Auvsi_Util.h" />
-    <ClInclude Include="blob.h" />
-    <ClInclude Include="BlobContour.h" />
-    <ClInclude Include="BlobLibraryConfiguration.h" />
-    <ClInclude Include="BlobOperators.h" />
-    <ClInclude Include="BlobResult.h" />
-    <ClInclude Include="ComponentLabeling.h" />
+    <ClInclude Include="blob.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="BlobContour.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="BlobLibraryConfiguration.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="BlobOperators.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="BlobResult.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ComponentLabeling.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Comport.h" />
     <ClInclude Include="Database.h" />
     <ClInclude Include="DeckLinkAPI_h.h" />
@@ -267,7 +310,9 @@
     <ClInclude Include="MapControl.h" />
     <ClInclude Include="OCR.h" />
     <ClInclude Include="OpenGLForm.h" />
-    <ClInclude Include="Resampler.h" />
+    <ClInclude Include="Resampler.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="resource.h" />
     <ClInclude Include="Saliency.h" />
     <ClInclude Include="SaveImage.h" />

@@ -10,7 +10,11 @@ using namespace System::Threading;
 using namespace System::Net;
 
 #include "Delegates.h"
+
+#ifndef OPENCV_DISABLED
 #include "GeoReference.h"
+#endif
+
 #include <math.h>
 
 
@@ -793,7 +797,8 @@ namespace Skynet {
 			double targetLat, targetLon;		
 			bool bChange = false;
 			int x, y;
-
+			
+#ifndef OPENCV_DISABLED
 			// Apply homography to four image corners
 			GeoReference::applyHomography( homography, 0, 0, airplane_lat, airplane_lon, targetLat, targetLon );
 			GetXYPosition( targetLon, targetLat, x, y );
@@ -818,6 +823,7 @@ namespace Skynet {
 			if( _cameraPoints[0].X != x || _cameraPoints[0].Y != y )
 				bChange = true;
 			_cameraPoints[3].X = x; _cameraPoints[3].Y = y;
+#endif
 
 			//Force a redraw if required
 			if (bChange && FindForm())

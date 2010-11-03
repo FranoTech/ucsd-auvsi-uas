@@ -304,6 +304,7 @@ void Comport::readData(void)
 
 		// Callback to Form1 (stays in this offshoot thread)
 		comDelegate( packet );
+
 		//gcroot<ComportDownstream *> bla(packet);
 		//((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->comportUpdateDelegate, bla );
 		// In this case packet is deleted by the main thread
