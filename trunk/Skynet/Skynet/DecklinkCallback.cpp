@@ -74,11 +74,29 @@ Callback::~Callback(void)
 	CoUninitialize(); // un-init com	
 }
 
+
+void 
+Callback::dontShow()
+{
+	m_callback->dontShow = true;
+
+}
+
+void 
+Callback::doShow() 
+{
+
+	m_callback->dontShow = false;
+
+}
+
 DecklinkCallback::DecklinkCallback(gcroot<OpenGLForm::COpenGL ^> handle)
 {
 	firstFrame = true;
 	openGLPointer = handle;
 	m_RefCount = 1;
+	
+	dontShow = false;
 }
 
 
@@ -92,6 +110,9 @@ HRESULT STDMETHODCALLTYPE
 DecklinkCallback::VideoInputFrameArrived( IDeckLinkVideoInputFrame *videoFrame, IDeckLinkAudioInputPacket *audioPacket)
 {
 	if( videoFrame == NULL )
+		return E_FAIL;
+
+	if (dontShow)
 		return E_FAIL;
 
 	HRESULT result;
@@ -180,6 +201,7 @@ DecklinkCallback::VideoInputFrameArrived( IDeckLinkVideoInputFrame *videoFrame, 
 	// update texture
 	openGLPointer->UpdateBuffer( outputBuffer );
 	
+	//System::Diagnostics::Trace::WriteLine( "update buffer from callback");
 	firstFrame = false;
 
 	delete outputBuffer;

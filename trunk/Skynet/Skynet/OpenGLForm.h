@@ -53,10 +53,11 @@ namespace OpenGLForm
 			xLocation = 1.0f;
 
 			saveVideo = false;
-			//theSaliency = gcnew Vision::Saliency();
-			//theSaliency->setValues(0, 0, parent);
+			theSaliency = gcnew Vision::Saliency();
+			theSaliency->setValues(0, 0, parent);
 
 			_parent = parent;
+			newFrame = false;
 		}
 
 		System::Void UpdateBuffer( float * input )
@@ -74,11 +75,14 @@ namespace OpenGLForm
 			theData->homography;
 
 			
-			//theSaliency->analyzeFrame(input, theData);
+			theSaliency->analyzeFrame(input, theData);
 			if (showSaliency)
 				memcpy(saliencyBuffer, theSaliency->postSaliency, frameW * frameH * sizeof(float));
 			else
-				memcpy(buffer, input, frameW * frameH * sizeof(float) * 4 / 2);			
+				memcpy(buffer, input, frameW * frameH * sizeof(float) * 4 / 2);	
+
+			
+			newFrame = true;
 		}
 
 		System::Void CallbackSetup( GLsizei fWidth, GLsizei fHeight )
@@ -91,7 +95,7 @@ namespace OpenGLForm
 			callbackSetupDone = true;		
 
 			imSaver = new ImageUtil::SaveImage( frameH, frameW, 4 );	
-			//theSaliency->setValues(frameW, frameH, _parent);
+			theSaliency->setValues(frameW, frameH, _parent);
 		}
 
 		System::Void Render(System::Void)
@@ -110,10 +114,13 @@ namespace OpenGLForm
 			if( textureSetupDone )
 			{
 				glBindTexture(GL_TEXTURE_2D, texture[0]);
-				if (showSaliency)
-					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLint)frameW, (GLint)frameH, GL_LUMINANCE, GL_FLOAT, saliencyBuffer);
-				else
-					glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLint)frameW, (GLint)frameH, GL_RGBA, GL_FLOAT, buffer);	
+
+				// only hose it if there is a new frame
+				//if (newFrame)
+					if (showSaliency)
+						glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLint)frameW, (GLint)frameH, GL_LUMINANCE, GL_FLOAT, saliencyBuffer);
+					else
+						glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLint)frameW, (GLint)frameH, GL_RGBA, GL_FLOAT, buffer);	
 			}
 			if( saveVideo )
 			{
@@ -198,6 +205,7 @@ namespace OpenGLForm
 		bool textureSetupDone;	
 		bool saveVideo;
 		bool showSaliency;
+		bool newFrame;
 
 		ImageUtil::SaveImage * imSaver;
 		Vision::Saliency ^ theSaliency;

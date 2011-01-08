@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "Form1.h"
 #include "Comport.h"
+#include <time.h>
 
 /*
  * Serial use bytes
@@ -31,6 +32,10 @@ using namespace Communications;
 using namespace System::Threading;
 
 //static ComportUpstream * lastPacket;
+
+//Writing packet to file
+ofstream* file;
+
 
 ComportUpstream::ComportUpstream()
 {
@@ -187,6 +192,8 @@ unsigned char Comport::encodeByte( unsigned char data )
 
 void Comport::readThread(void)
 {
+	char buffer[20];
+	file = &ofstream(itoa(time(NULL), buffer, 10));
 	while( true )
 	{
 		readData();
@@ -282,7 +289,14 @@ void Comport::readData(void)
 
 		for (int j = 0; j < NUM_ELEMENTS; j++) {
 			for (int i = 3, k = 0; i > -1; i--, k++) {
-				dataPtr[j*4 + k] = buffer[j*4 + i + 1];
+				int letterPosition = j*4 + k;
+				dataPtr[letterPosition] = buffer[j*4 + i + 1];
+				/*
+				*
+				* WRITE TO FILE HERE!
+				*
+				*/
+				file->put(dataPtr[letterPosition]);
 			}			
 		}
 		packet->error_code = buffer[bufLen - 4];

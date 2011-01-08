@@ -67,7 +67,7 @@ DatabaseConnection::connect(void)
 	}
 	catch( Exception ^ )
 	{
-		System::Diagnostics::Trace::WriteLine("catch in database");
+		System::Diagnostics::Trace::WriteLine("ERROR in database.cpp: connect()");
 
 	}
 

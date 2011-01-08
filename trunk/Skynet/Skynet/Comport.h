@@ -1,5 +1,7 @@
 #pragma once
-
+#include <iostream>
+#include <fstream>
+using namespace std;
 using namespace System::IO::Ports;
 using namespace System;
 using namespace System::Runtime::InteropServices;

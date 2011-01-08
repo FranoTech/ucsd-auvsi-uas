@@ -17,6 +17,8 @@ namespace Decklink
 	public:
 		Callback( OpenGLForm::COpenGL ^ );
 		~Callback(void);
+		void dontShow();
+		void doShow();
 
 	protected:
 		IDeckLinkInput * m_input;
@@ -31,6 +33,7 @@ namespace Decklink
 	public:
 		DecklinkCallback( gcroot<OpenGLForm::COpenGL ^> handle);
 		virtual ~DecklinkCallback(void);
+		bool dontShow;
 
 		// following are abstract but we don't use:
 		virtual HRESULT STDMETHODCALLTYPE	QueryInterface(REFIID iid, LPVOID *ppv);

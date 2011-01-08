@@ -15,8 +15,9 @@ SaveImage::SaveImage( int height, int width, int channels )
 	_height = height;
 	_width = width;
 	_channels = channels;
-	_fourcc = 0;
+	//_fourcc = 0;
 	//_fourcc = -1;
+	_fourcc = CV_FOURCC('M','J','P','G');		// SET A GOOD DEFAULT: mpeg
 	//_fourcc = CV_FOURCC('f','f','d','s');
 	_fps = 30.0;
 }
@@ -135,9 +136,10 @@ SaveImage::stopVideo( void )
 void
 SaveImage::changeEncoding( std::string encoding )
 {
+	return;
 	if( encoding == "None" )
 	{
-		_fourcc = 0;
+		//_fourcc = 0;
 	}
 	else if( encoding == "XviD" )
 	{

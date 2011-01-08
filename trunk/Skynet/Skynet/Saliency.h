@@ -55,6 +55,8 @@ namespace Vision
 		float * savingBuffer;		// color image for saving to file
 		bool newFrameForSaving;		// new frame ready for saveThread to save
 		bool savingData;			// images are being saved
+
+		bool tempPause;
 		
 		
 		void saliencyThreadFunction(); // main run loop for saliency

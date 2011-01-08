@@ -31,7 +31,7 @@ Auvsi_Ocr::~Auvsi_Ocr()
 
 // process the given image, save results in given arrays
 void 
-	Auvsi_Ocr::processImage(cv::Mat image, float **letterFeatDesc, float **shapeFeatDesc)
+Auvsi_Ocr::processImage(cv::Mat image, float **letterFeatDesc, float **shapeFeatDesc)
 {
 //	IplImage *imageI = cvGetImage(image);
 	Auvsi_Recognize *recognize = new Auvsi_Recognize(image);

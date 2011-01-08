@@ -16,6 +16,7 @@
 #include "TargetDialog.h"
 #include "Saliency.h"
 #include "OCR.h"
+#include "VideoSimulator.h"
 
 	// row indexes for comport data
 	const int A_ALT = 1;
@@ -108,6 +109,8 @@ namespace Skynet {
 
 		// Image details
 		TargetDialog ^ imageDialog;
+
+		Simulator::VideoSimulator ^ theVideoSimulator;
 
 
 	private: System::Windows::Forms::TabControl^  tabControl1;
@@ -203,6 +206,12 @@ private: System::Windows::Forms::DataGridViewComboBoxColumn^  confirmed_Foregrou
 private: System::Windows::Forms::DataGridViewComboBoxColumn^  confirmed_BackgroundColumn;
 private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_ProcessedColumn;
 private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_VerifiedColumn;
+private: System::Windows::Forms::ToolStripMenuItem^  simulatorToolStripMenuItem;
+private: System::Windows::Forms::ToolStripMenuItem^  choosePathToolStripMenuItem;
+private: System::Windows::Forms::ToolStripMenuItem^  startToolStripMenuItem;
+private: System::Windows::Forms::ToolStripMenuItem^  pauseToolStripMenuItem;
+private: System::Windows::Forms::ToolStripMenuItem^  stopToolStripMenuItem;
+private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 
 	private: System::Windows::Forms::Label^  label7;
 			 
@@ -214,9 +223,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 
 			// Debug 
 			
-#ifndef OPENCV_DISABLED
 			GeoReference::computeHomography( 0, 0, 400, 0, Math::PI/4, 0, 0, -1.5708, 1 );
-#endif
 
 
 
@@ -258,6 +265,8 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			// Set up DeckLink
 			callback = new Decklink::Callback( openGLView );
 			
+			theVideoSimulator = gcnew Simulator::VideoSimulator( openGLView );
+
 			// Comport Stuff
 			theComport = gcnew Communications::Comport( this );
 			comPortStripComboBox->Items->AddRange( theComport->getPortNames() );
@@ -379,9 +388,9 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 		void InitializeComponent(void)
 		{
 			this->components = (gcnew System::ComponentModel::Container());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle1 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle2 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle3 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle4 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle5 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle6 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 			this->menuStrip1 = (gcnew System::Windows::Forms::MenuStrip());
 			this->toolStripMenuItem1 = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->exportDataToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
@@ -403,6 +412,11 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->downloadToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->databaseToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->resetToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+			this->simulatorToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+			this->choosePathToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+			this->startToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+			this->pauseToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+			this->stopToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->openGLTimer = (gcnew System::Windows::Forms::Timer(this->components));
 			this->openGLPanel = (gcnew System::Windows::Forms::Panel());
 			this->errorLogTextBox = (gcnew System::Windows::Forms::RichTextBox());
@@ -477,6 +491,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->mapUpdateTimer = (gcnew System::Windows::Forms::Timer(this->components));
 			this->mapMenuStrip = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
 			this->mapLookGPSToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
+			this->simReadVidDialog = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->menuStrip1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->BeginInit();
 			this->tabControl1->SuspendLayout();
@@ -496,8 +511,8 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			// menuStrip1
 			// 
 			this->menuStrip1->BackColor = System::Drawing::Color::Gray;
-			this->menuStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(4) {this->toolStripMenuItem1, 
-				this->serialCommunicationsToolStripMenuItem, this->mapToolStripMenuItem, this->databaseToolStripMenuItem});
+			this->menuStrip1->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(5) {this->toolStripMenuItem1, 
+				this->serialCommunicationsToolStripMenuItem, this->mapToolStripMenuItem, this->databaseToolStripMenuItem, this->simulatorToolStripMenuItem});
 			this->menuStrip1->Location = System::Drawing::Point(0, 0);
 			this->menuStrip1->Name = L"menuStrip1";
 			this->menuStrip1->Size = System::Drawing::Size(1924, 24);
@@ -646,6 +661,42 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->resetToolStripMenuItem->Text = L"Reset";
 			this->resetToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::resetToolStripMenuItem_Click);
 			// 
+			// simulatorToolStripMenuItem
+			// 
+			this->simulatorToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(4) {this->choosePathToolStripMenuItem, 
+				this->startToolStripMenuItem, this->pauseToolStripMenuItem, this->stopToolStripMenuItem});
+			this->simulatorToolStripMenuItem->Name = L"simulatorToolStripMenuItem";
+			this->simulatorToolStripMenuItem->Size = System::Drawing::Size(70, 20);
+			this->simulatorToolStripMenuItem->Text = L"Simulator";
+			// 
+			// choosePathToolStripMenuItem
+			// 
+			this->choosePathToolStripMenuItem->Name = L"choosePathToolStripMenuItem";
+			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->choosePathToolStripMenuItem->Text = L"Choose Path";
+			this->choosePathToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::choosePathToolStripMenuItem_Click);
+			// 
+			// startToolStripMenuItem
+			// 
+			this->startToolStripMenuItem->Name = L"startToolStripMenuItem";
+			this->startToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->startToolStripMenuItem->Text = L"Start";
+			this->startToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::startToolStripMenuItem_Click);
+			// 
+			// pauseToolStripMenuItem
+			// 
+			this->pauseToolStripMenuItem->Name = L"pauseToolStripMenuItem";
+			this->pauseToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->pauseToolStripMenuItem->Text = L"Pause";
+			this->pauseToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::pauseToolStripMenuItem_Click);
+			// 
+			// stopToolStripMenuItem
+			// 
+			this->stopToolStripMenuItem->Name = L"stopToolStripMenuItem";
+			this->stopToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->stopToolStripMenuItem->Text = L"Stop";
+			this->stopToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::stopToolStripMenuItem_Click);
+			// 
 			// openGLTimer
 			// 
 			this->openGLTimer->Enabled = true;
@@ -678,36 +729,36 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->metadataTable->AllowUserToDeleteRows = false;
 			this->metadataTable->AllowUserToResizeColumns = false;
 			this->metadataTable->AllowUserToResizeRows = false;
-			dataGridViewCellStyle1->BackColor = System::Drawing::Color::DimGray;
-			dataGridViewCellStyle1->ForeColor = System::Drawing::Color::White;
-			dataGridViewCellStyle1->SelectionBackColor = System::Drawing::Color::White;
-			dataGridViewCellStyle1->SelectionForeColor = System::Drawing::Color::Black;
-			this->metadataTable->AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
+			dataGridViewCellStyle4->BackColor = System::Drawing::Color::DimGray;
+			dataGridViewCellStyle4->ForeColor = System::Drawing::Color::White;
+			dataGridViewCellStyle4->SelectionBackColor = System::Drawing::Color::White;
+			dataGridViewCellStyle4->SelectionForeColor = System::Drawing::Color::Black;
+			this->metadataTable->AlternatingRowsDefaultCellStyle = dataGridViewCellStyle4;
 			this->metadataTable->BackgroundColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle2->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
-			dataGridViewCellStyle2->BackColor = System::Drawing::Color::DimGray;
-			dataGridViewCellStyle2->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
+			dataGridViewCellStyle5->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
+			dataGridViewCellStyle5->BackColor = System::Drawing::Color::DimGray;
+			dataGridViewCellStyle5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(0)));
-			dataGridViewCellStyle2->ForeColor = System::Drawing::Color::White;
-			dataGridViewCellStyle2->SelectionBackColor = System::Drawing::Color::White;
-			dataGridViewCellStyle2->SelectionForeColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle2->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
-			this->metadataTable->ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+			dataGridViewCellStyle5->ForeColor = System::Drawing::Color::White;
+			dataGridViewCellStyle5->SelectionBackColor = System::Drawing::Color::White;
+			dataGridViewCellStyle5->SelectionForeColor = System::Drawing::Color::Black;
+			dataGridViewCellStyle5->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
+			this->metadataTable->ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
 			this->metadataTable->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
 			this->metadataTable->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(2) {this->Property, 
 				this->Value});
 			this->metadataTable->GridColor = System::Drawing::Color::Black;
 			this->metadataTable->Location = System::Drawing::Point(12, 55);
 			this->metadataTable->Name = L"metadataTable";
-			dataGridViewCellStyle3->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
-			dataGridViewCellStyle3->BackColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle3->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
+			dataGridViewCellStyle6->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
+			dataGridViewCellStyle6->BackColor = System::Drawing::Color::Black;
+			dataGridViewCellStyle6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(0)));
-			dataGridViewCellStyle3->ForeColor = System::Drawing::SystemColors::WindowText;
-			dataGridViewCellStyle3->SelectionBackColor = System::Drawing::SystemColors::Highlight;
-			dataGridViewCellStyle3->SelectionForeColor = System::Drawing::SystemColors::HighlightText;
-			dataGridViewCellStyle3->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
-			this->metadataTable->RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
+			dataGridViewCellStyle6->ForeColor = System::Drawing::SystemColors::WindowText;
+			dataGridViewCellStyle6->SelectionBackColor = System::Drawing::SystemColors::Highlight;
+			dataGridViewCellStyle6->SelectionForeColor = System::Drawing::SystemColors::HighlightText;
+			dataGridViewCellStyle6->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
+			this->metadataTable->RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
 			this->metadataTable->RowHeadersWidthSizeMode = System::Windows::Forms::DataGridViewRowHeadersWidthSizeMode::DisableResizing;
 			this->metadataTable->RowTemplate->DefaultCellStyle->BackColor = System::Drawing::Color::Black;
 			this->metadataTable->RowTemplate->DefaultCellStyle->ForeColor = System::Drawing::Color::White;
@@ -768,8 +819,6 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			// 
 			this->tabPage2->Controls->Add(this->label4);
 			this->tabPage2->Controls->Add(this->checkedListBox1);
-			this->tabPage2->Controls->Add(this->stopRecordButton);
-			this->tabPage2->Controls->Add(this->startRecordButton);
 			this->tabPage2->Controls->Add(this->vidOptChangeDirButton);
 			this->tabPage2->Controls->Add(this->label3);
 			this->tabPage2->Controls->Add(this->label2);
@@ -782,7 +831,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->tabPage2->Padding = System::Windows::Forms::Padding(3);
 			this->tabPage2->Size = System::Drawing::Size(485, 127);
 			this->tabPage2->TabIndex = 1;
-			this->tabPage2->Text = L"Video Options";
+			this->tabPage2->Text = L"DONT USE THIS";
 			this->tabPage2->UseVisualStyleBackColor = true;
 			// 
 			// label4
@@ -808,7 +857,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			// 
 			// stopRecordButton
 			// 
-			this->stopRecordButton->Location = System::Drawing::Point(205, 88);
+			this->stopRecordButton->Location = System::Drawing::Point(1103, 31);
 			this->stopRecordButton->Name = L"stopRecordButton";
 			this->stopRecordButton->Size = System::Drawing::Size(99, 23);
 			this->stopRecordButton->TabIndex = 8;
@@ -818,7 +867,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			// 
 			// startRecordButton
 			// 
-			this->startRecordButton->Location = System::Drawing::Point(98, 88);
+			this->startRecordButton->Location = System::Drawing::Point(927, 30);
 			this->startRecordButton->Name = L"startRecordButton";
 			this->startRecordButton->Size = System::Drawing::Size(100, 23);
 			this->startRecordButton->TabIndex = 7;
@@ -1298,14 +1347,18 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			// 
 			this->mapMenuStrip->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(1) {this->mapLookGPSToolStripMenuItem});
 			this->mapMenuStrip->Name = L"mapMenuStrip";
-			this->mapMenuStrip->Size = System::Drawing::Size(153, 48);
+			this->mapMenuStrip->Size = System::Drawing::Size(129, 26);
 			// 
 			// mapLookGPSToolStripMenuItem
 			// 
 			this->mapLookGPSToolStripMenuItem->Name = L"mapLookGPSToolStripMenuItem";
-			this->mapLookGPSToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->mapLookGPSToolStripMenuItem->Size = System::Drawing::Size(128, 22);
 			this->mapLookGPSToolStripMenuItem->Text = L"Look Here";
 			this->mapLookGPSToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::mapLookGPSToolStripMenuItem_Click);
+			// 
+			// simReadVidDialog
+			// 
+			this->simReadVidDialog->FileName = L"simReadVidDialog";
 			// 
 			// Form1
 			// 
@@ -1320,7 +1373,9 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Verified
 			this->Controls->Add(this->label7);
 			this->Controls->Add(this->label6);
 			this->Controls->Add(this->label5);
+			this->Controls->Add(this->stopRecordButton);
 			this->Controls->Add(this->tabControl1);
+			this->Controls->Add(this->startRecordButton);
 			this->Controls->Add(this->metadataTable);
 			this->Controls->Add(this->errorLogTextBox);
 			this->Controls->Add(this->openGLPanel);
@@ -1728,8 +1783,10 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 				return;
 
 			DateTime time = DateTime::Now;
-			String ^ path = vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+			String ^ path;//vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 			
+			path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+
 			recordStart = DateTime::Now;
 			openGLView->enableVideoRecording( path );
 			consoleMessage( "Started recording video", Color::Green );	
@@ -2177,6 +2234,51 @@ private: System::Void dataGridView3_CellDoubleClick(System::Object^  sender, Sys
 
 			// Update target in map
 			mapView->AddTarget( lat, lon, tarID );
+		 }
+private: System::Void choosePathToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
+
+			 // ask user for filename
+			String ^ temp;
+		 
+			System::Windows::Forms::DialogResult result = simReadVidDialog->ShowDialog();
+
+			if ( result == ::DialogResult::OK )
+			{
+				temp = simReadVidDialog->FileName;
+
+				//vidOptOutputDirText->Text = temp;
+				System::Diagnostics::Trace::WriteLine( "Simulator input path changed to: " + temp);
+			}
+
+
+			// then setup the video simulator
+			theVideoSimulator->loadVideo( (const char*)(Marshal::StringToHGlobalAnsi(temp)).ToPointer());
+			theVideoSimulator->startVideo();
+			callback->dontShow();
+		 }
+private: System::Void startToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
+			 theVideoSimulator->startVideo();
+			 callback->dontShow();
+		 }
+private: System::Void pauseToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
+			 
+			 if (theVideoSimulator->isPaused()) {
+
+				theVideoSimulator->playVideo();
+				pauseToolStripMenuItem->Text = "Pause";
+
+				//System::Diagnostics::Trace::WriteLine( "PAUSing AHHHHHH" );
+
+			 } else {
+				pauseToolStripMenuItem->Text = "Play";
+				theVideoSimulator->pauseVideo();
+
+			 }
+
+		 }
+private: System::Void stopToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
+			 theVideoSimulator->stopVideo();
+			 callback->doShow();
 		 }
 };
 }

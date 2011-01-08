@@ -231,9 +231,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">true</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</CompileAsManaged>
     </ClCompile>
-    <ClCompile Include="GeoReference.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="GeoReference.cpp" />
     <ClCompile Include="Joystick.cpp" />
     <ClCompile Include="MapControl.cpp" />
     <ClCompile Include="OCR.cpp" />
@@ -253,6 +251,10 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</CompileAsManaged>
     </ClCompile>
     <ClCompile Include="TargetDialog.cpp" />
+    <ClCompile Include="VideoReader.cpp">
+      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
+    </ClCompile>
+    <ClCompile Include="VideoSimulator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Auvsi_cvFft.h">
@@ -320,6 +322,8 @@
     <ClInclude Include="TargetDialog.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="VideoReader.h" />
+    <ClInclude Include="VideoSimulator.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc" />
