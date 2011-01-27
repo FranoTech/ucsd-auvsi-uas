@@ -16,7 +16,8 @@
 #include "TargetDialog.h"
 #include "Saliency.h"
 #include "OCR.h"
-#include "VideoSimulator.h"
+//#include "VideoSimulator.h"
+#include "SimHandler.h"
 
 	// row indexes for comport data
 	const int A_ALT = 1;
@@ -111,7 +112,7 @@ namespace Skynet {
 		TargetDialog ^ imageDialog;
 
 		Simulator::VideoSimulator ^ theVideoSimulator;
-
+		Simulator::SimHandler ^ theSimHandler;
 
 	private: System::Windows::Forms::TabControl^  tabControl1;
 	private: System::Windows::Forms::TabPage^  tabPage1;
@@ -212,6 +213,9 @@ private: System::Windows::Forms::ToolStripMenuItem^  startToolStripMenuItem;
 private: System::Windows::Forms::ToolStripMenuItem^  pauseToolStripMenuItem;
 private: System::Windows::Forms::ToolStripMenuItem^  stopToolStripMenuItem;
 private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
+private: System::Windows::Forms::Button^  button1;
+private: System::Windows::Forms::Button^  button2;
+private: System::Windows::Forms::Button^  button3;
 
 	private: System::Windows::Forms::Label^  label7;
 			 
@@ -270,6 +274,8 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			// Comport Stuff
 			theComport = gcnew Communications::Comport( this );
 			comPortStripComboBox->Items->AddRange( theComport->getPortNames() );
+			theSimHandler = gcnew Simulator::SimHandler(theComport, theVideoSimulator, openGLView);
+			theComport->setSimHandler(theSimHandler);
 
 			//set up Joystick
 			m_joystick = gcnew Joystick( this );
@@ -315,8 +321,16 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			comportEstablishDelegate = gcnew Delegates::voidToVoid( this, &Form1::comportEstablish );
 			saveImageDelegate = gcnew Delegates::voidToVoid( this, &Form1::saveImage );
 			imageDialogDelegate = gcnew Delegates::twointThreedoubleToVoid( this, &Form1::imageDialogCallback );
+
+
+			// Delegates::rowDataToVoid ^ saliencyAddTarget = gcnew Delegates::rowDataToVoid( this, &Form1::addRawTarget );
 			saliencyAddTarget = gcnew Delegates::rowDataToVoid( this, &Form1::addRawTarget );	
+			// Delegates::rowDataToVoid == delegate void rowDataToVoid( Database::RowData ^ data );
+			// delegate void rowDataToVoid( Database::RowData ^ data );
+
+
 			ocrDelegate = gcnew Delegates::dataGridViewRowToVoid( this, &Form1::ocrUpdateData );
+
 		}
 
 	protected:
@@ -429,8 +443,6 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->tabPage2 = (gcnew System::Windows::Forms::TabPage());
 			this->label4 = (gcnew System::Windows::Forms::Label());
 			this->checkedListBox1 = (gcnew System::Windows::Forms::CheckedListBox());
-			this->stopRecordButton = (gcnew System::Windows::Forms::Button());
-			this->startRecordButton = (gcnew System::Windows::Forms::Button());
 			this->vidOptChangeDirButton = (gcnew System::Windows::Forms::Button());
 			this->label3 = (gcnew System::Windows::Forms::Label());
 			this->label2 = (gcnew System::Windows::Forms::Label());
@@ -438,6 +450,8 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->splitLengthTextBox = (gcnew System::Windows::Forms::TextBox());
 			this->vidOptOutputDirText = (gcnew System::Windows::Forms::TextBox());
 			this->label1 = (gcnew System::Windows::Forms::Label());
+			this->stopRecordButton = (gcnew System::Windows::Forms::Button());
+			this->startRecordButton = (gcnew System::Windows::Forms::Button());
 			this->label5 = (gcnew System::Windows::Forms::Label());
 			this->label6 = (gcnew System::Windows::Forms::Label());
 			this->label7 = (gcnew System::Windows::Forms::Label());
@@ -492,6 +506,9 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->mapMenuStrip = (gcnew System::Windows::Forms::ContextMenuStrip(this->components));
 			this->mapLookGPSToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->simReadVidDialog = (gcnew System::Windows::Forms::OpenFileDialog());
+			this->button1 = (gcnew System::Windows::Forms::Button());
+			this->button2 = (gcnew System::Windows::Forms::Button());
+			this->button3 = (gcnew System::Windows::Forms::Button());
 			this->menuStrip1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->BeginInit();
 			this->tabControl1->SuspendLayout();
@@ -713,6 +730,7 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			// 
 			// errorLogTextBox
 			// 
+			this->errorLogTextBox->AutoWordSelection = true;
 			this->errorLogTextBox->BackColor = System::Drawing::Color::Black;
 			this->errorLogTextBox->BorderStyle = System::Windows::Forms::BorderStyle::None;
 			this->errorLogTextBox->ForeColor = System::Drawing::SystemColors::Window;
@@ -722,6 +740,7 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->errorLogTextBox->Size = System::Drawing::Size(292, 283);
 			this->errorLogTextBox->TabIndex = 2;
 			this->errorLogTextBox->Text = L"";
+			this->errorLogTextBox->KeyPress += gcnew System::Windows::Forms::KeyPressEventHandler(this, &Form1::errorLogTextBox_KeyPress);
 			// 
 			// metadataTable
 			// 
@@ -747,9 +766,11 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->metadataTable->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
 			this->metadataTable->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(2) {this->Property, 
 				this->Value});
+			this->metadataTable->EditMode = System::Windows::Forms::DataGridViewEditMode::EditProgrammatically;
 			this->metadataTable->GridColor = System::Drawing::Color::Black;
 			this->metadataTable->Location = System::Drawing::Point(12, 55);
 			this->metadataTable->Name = L"metadataTable";
+			this->metadataTable->ReadOnly = true;
 			dataGridViewCellStyle6->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
 			dataGridViewCellStyle6->BackColor = System::Drawing::Color::Black;
 			dataGridViewCellStyle6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
@@ -781,6 +802,7 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			// 
 			this->Value->HeaderText = L"Value";
 			this->Value->Name = L"Value";
+			this->Value->ReadOnly = true;
 			this->Value->Width = 149;
 			// 
 			// tabControl1
@@ -855,26 +877,6 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->checkedListBox1->TabIndex = 9;
 			this->checkedListBox1->SelectedIndexChanged += gcnew System::EventHandler(this, &Form1::checkedListBox1_SelectedIndexChanged);
 			// 
-			// stopRecordButton
-			// 
-			this->stopRecordButton->Location = System::Drawing::Point(1103, 31);
-			this->stopRecordButton->Name = L"stopRecordButton";
-			this->stopRecordButton->Size = System::Drawing::Size(99, 23);
-			this->stopRecordButton->TabIndex = 8;
-			this->stopRecordButton->Text = L"Stop Recording";
-			this->stopRecordButton->UseVisualStyleBackColor = true;
-			this->stopRecordButton->Click += gcnew System::EventHandler(this, &Form1::stopRecordButton_Click);
-			// 
-			// startRecordButton
-			// 
-			this->startRecordButton->Location = System::Drawing::Point(927, 30);
-			this->startRecordButton->Name = L"startRecordButton";
-			this->startRecordButton->Size = System::Drawing::Size(100, 23);
-			this->startRecordButton->TabIndex = 7;
-			this->startRecordButton->Text = L"Start Recording";
-			this->startRecordButton->UseVisualStyleBackColor = true;
-			this->startRecordButton->Click += gcnew System::EventHandler(this, &Form1::startRecordButton_Click);
-			// 
 			// vidOptChangeDirButton
 			// 
 			this->vidOptChangeDirButton->Location = System::Drawing::Point(204, 3);
@@ -940,6 +942,26 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->label1->Size = System::Drawing::Size(84, 13);
 			this->label1->TabIndex = 0;
 			this->label1->Text = L"Output Directory";
+			// 
+			// stopRecordButton
+			// 
+			this->stopRecordButton->Location = System::Drawing::Point(1103, 31);
+			this->stopRecordButton->Name = L"stopRecordButton";
+			this->stopRecordButton->Size = System::Drawing::Size(99, 23);
+			this->stopRecordButton->TabIndex = 8;
+			this->stopRecordButton->Text = L"Stop Recording";
+			this->stopRecordButton->UseVisualStyleBackColor = true;
+			this->stopRecordButton->Click += gcnew System::EventHandler(this, &Form1::stopRecordButton_Click);
+			// 
+			// startRecordButton
+			// 
+			this->startRecordButton->Location = System::Drawing::Point(997, 31);
+			this->startRecordButton->Name = L"startRecordButton";
+			this->startRecordButton->Size = System::Drawing::Size(100, 23);
+			this->startRecordButton->TabIndex = 7;
+			this->startRecordButton->Text = L"Start Recording";
+			this->startRecordButton->UseVisualStyleBackColor = true;
+			this->startRecordButton->Click += gcnew System::EventHandler(this, &Form1::startRecordButton_Click);
 			// 
 			// label5
 			// 
@@ -1360,12 +1382,46 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			// 
 			this->simReadVidDialog->FileName = L"simReadVidDialog";
 			// 
+			// button1
+			// 
+			this->button1->Location = System::Drawing::Point(550, 31);
+			this->button1->Name = L"button1";
+			this->button1->Size = System::Drawing::Size(75, 23);
+			this->button1->TabIndex = 15;
+			this->button1->Text = L"Zoom in";
+			this->button1->UseVisualStyleBackColor = true;
+			this->button1->Click += gcnew System::EventHandler(this, &Form1::button1_Click);
+			// 
+			// button2
+			// 
+			this->button2->Location = System::Drawing::Point(649, 31);
+			this->button2->Name = L"button2";
+			this->button2->Size = System::Drawing::Size(75, 23);
+			this->button2->TabIndex = 16;
+			this->button2->Text = L"Stop Zoom";
+			this->button2->UseVisualStyleBackColor = true;
+			this->button2->Click += gcnew System::EventHandler(this, &Form1::button2_Click);
+			// 
+			// button3
+			// 
+			this->button3->Location = System::Drawing::Point(749, 31);
+			this->button3->Name = L"button3";
+			this->button3->Size = System::Drawing::Size(75, 23);
+			this->button3->TabIndex = 17;
+			this->button3->Text = L"Zoom Out";
+			this->button3->UseVisualStyleBackColor = true;
+			this->button3->Click += gcnew System::EventHandler(this, &Form1::button3_Click);
+			// 
 			// Form1
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
+			this->AutoValidate = System::Windows::Forms::AutoValidate::EnableAllowFocusChange;
 			this->BackColor = System::Drawing::Color::DimGray;
 			this->ClientSize = System::Drawing::Size(1924, 946);
+			this->Controls->Add(this->button3);
+			this->Controls->Add(this->button2);
+			this->Controls->Add(this->button1);
 			this->Controls->Add(this->tableLayoutPanel1);
 			this->Controls->Add(this->mapCenterGPSLabel);
 			this->Controls->Add(this->mapPanel);
@@ -1375,8 +1431,8 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->Controls->Add(this->label5);
 			this->Controls->Add(this->stopRecordButton);
 			this->Controls->Add(this->tabControl1);
-			this->Controls->Add(this->startRecordButton);
 			this->Controls->Add(this->metadataTable);
+			this->Controls->Add(this->startRecordButton);
 			this->Controls->Add(this->errorLogTextBox);
 			this->Controls->Add(this->openGLPanel);
 			this->Controls->Add(this->menuStrip1);
@@ -1384,6 +1440,9 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 			this->Name = L"Form1";
 			this->Text = L"UCSD Skynet";
 			this->Load += gcnew System::EventHandler(this, &Form1::Form1_Load);
+			this->Click += gcnew System::EventHandler(this, &Form1::Form1_Click);
+			this->KeyDown += gcnew System::Windows::Forms::KeyEventHandler(this, &Form1::Form1_KeyDown);
+			this->KeyPress += gcnew System::Windows::Forms::KeyPressEventHandler(this, &Form1::Form1_KeyPress);
 			this->menuStrip1->ResumeLayout(false);
 			this->menuStrip1->PerformLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->EndInit();
@@ -1573,7 +1632,7 @@ public: System::Void insertTable( Database::TableName table, Database::RowData ^
 			grid->Rows[rowNum]->Cells[0]->Value = "" + data->id;
 
 			Image ^ thumbnail;
-			try
+			/*try //DEBUG: I removed this to test
 			{
 				String ^ path = data->path->Replace("\\\\", "\\");
 				thumbnail = Image::FromFile( path );
@@ -1582,7 +1641,7 @@ public: System::Void insertTable( Database::TableName table, Database::RowData ^
 			catch( Exception ^ )
 			{
 		System::Diagnostics::Trace::WriteLine("catch in form1");
-			}
+			}*/
 
 			grid->Rows[rowNum]->Cells[1]->Value = thumbnail;
 			grid->Rows[rowNum]->Cells[2]->Value = "" + data->target_latitude;
@@ -1641,10 +1700,13 @@ public: System::Void saveImage(){
 		}
 
 public: System::Void addRawTarget(Database::RowData ^ data) {
-
+			
+			//System::Diagnostics::Trace::WriteLine( "FORM1 RAN addRawTarget");
+			//System::Diagnostics::Trace::WriteLine( "data: ");
 			data->id = this->incrId++;
 			this->insertTable( Database::tableCandidateRegions, data);
-			db->insertData( Database::tableCandidateRegions, data);
+			//db->insertData( Database::tableCandidateRegions, data);
+			//System::Diagnostics::Trace::WriteLine( "FORM1 FINISHED addRawTarget");
 		}
 
 public: System::Void noComportData( ) {
@@ -1780,7 +1842,7 @@ private: System::Void encodingComboBox_SelectedIndexChanged(System::Object^  sen
 		 }
 private: System::Void startRecordButton_Click(System::Object^  sender, System::EventArgs^  e) {
 		 	if( recording )
-				return;
+				stopRecordButton_Click(sender, e);
 
 			DateTime time = DateTime::Now;
 			String ^ path;//vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
@@ -1788,25 +1850,32 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 			path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 
 			recordStart = DateTime::Now;
-			openGLView->enableVideoRecording( path );
-			consoleMessage( "Started recording video", Color::Green );	
+			//openGLView->enableVideoRecording( path );
+			theSimHandler->beginRecording(path);
+			consoleMessage( "Started recording video and telemetry", Color::Green );	
 			recording = true;
+
+			// START TELEMETRY HERE
+
 		 }
 private: System::Void stopRecordButton_Click(System::Object^  sender, System::EventArgs^  e) {
 		 	if( !recording )
 				return;
 
-			openGLView->disableVideoRecording();
-			consoleMessage( "Stopped recording video", Color::Green );	
+			//openGLView->disableVideoRecording();
+			theSimHandler->endRecording();
+			consoleMessage( "Stopped recording video and telemetry", Color::Green );	
 			recording = false;
 		 }
+
+#define SPLIT_LENGTH 30 // this->splitLengthTextBox->Text
 
 private: System::Void videoSaveTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
 			 if( !recording )
 				 return;
 
 			 DateTime time = DateTime::Now;
-			 time = time.AddSeconds( -Convert::ToInt32( this->splitLengthTextBox->Text ) );
+			 time = time.AddSeconds( -Convert::ToInt32( SPLIT_LENGTH ) );
 
 			 if( DateTime::Compare( recordStart, time ) < 0 )
 			 {
@@ -1814,7 +1883,8 @@ private: System::Void videoSaveTimer_Tick(System::Object^  sender, System::Event
 
 				 String ^ path = vidOptOutputDirText->Text + "\\video_" + recordStart.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 			
-				 openGLView->enableVideoRecording( path );
+				 //openGLView->enableVideoRecording( path );
+				 theSimHandler->beginRecording(path);
 				 consoleMessage( "Splitting video file", Color::Gray );	
 			 }
 		 }
@@ -2250,6 +2320,11 @@ private: System::Void choosePathToolStripMenuItem_Click(System::Object^  sender,
 				System::Diagnostics::Trace::WriteLine( "Simulator input path changed to: " + temp);
 			}
 
+			// if user presses cancel, then DONT START VIDEO!
+			else {
+				return;
+			}
+
 
 			// then setup the video simulator
 			theVideoSimulator->loadVideo( (const char*)(Marshal::StringToHGlobalAnsi(temp)).ToPointer());
@@ -2279,6 +2354,116 @@ private: System::Void pauseToolStripMenuItem_Click(System::Object^  sender, Syst
 private: System::Void stopToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 			 theVideoSimulator->stopVideo();
 			 callback->doShow();
+		 }
+private: System::Void Form1_KeyDown(System::Object^  sender, System::Windows::Forms::KeyEventArgs^  e) {
+			
+			 System::Diagnostics::Trace::WriteLine( "form1 - keydown" );
+
+			array<System::Byte> ^ buffer = nullptr;
+
+
+			if (e->KeyCode == Keys::Q) {
+				// send zoom in packet
+				buffer = gcnew array<System::Byte>(6);
+				buffer[0] = 0x81;
+				buffer[0] = 0x01;
+				buffer[0] = 0x04;
+				buffer[0] = 0x07;
+				buffer[0] = 0x24;
+				buffer[0] = 0xFF;
+				System::Diagnostics::Trace::WriteLine( "zoom in" );
+			}
+
+			else if (e->KeyCode == Keys::A) {
+				// send stop zoom packet
+				buffer = gcnew array<System::Byte>(6);
+				buffer[0] = 0x81;
+				buffer[0] = 0x01;
+				buffer[0] = 0x04;
+				buffer[0] = 0x07;
+				buffer[0] = 0x00;
+				buffer[0] = 0xFF;
+
+			}
+
+			else if (e->KeyCode == Keys::Z) {
+				// send zoom out packet
+				buffer = gcnew array<System::Byte>(6);
+				buffer[0] = 0x81;
+				buffer[0] = 0x01;
+				buffer[0] = 0x04;
+				buffer[0] = 0x07;
+				buffer[0] = 0x34;
+				buffer[0] = 0xFF;
+
+			}
+
+			if (buffer != nullptr)
+				theComport->writeRawData(buffer);
+
+		 }
+private: System::Void Form1_KeyPress(System::Object^  sender, System::Windows::Forms::KeyPressEventArgs^  e) {
+			 System::Diagnostics::Trace::WriteLine( "form1 - keypress" );
+
+		 }
+private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
+			array<System::Byte> ^ buffer = nullptr;
+
+
+			// send zoom in packet
+			buffer = gcnew array<System::Byte>(6);
+			buffer[0] = 0x81;
+			buffer[1] = 0x01;
+			buffer[2] = 0x04;
+			buffer[3] = 0x07;
+			buffer[4] = 0x24;
+			buffer[5] = 0xFF;
+			System::Diagnostics::Trace::WriteLine( "zoom in" );
+			
+
+			if (buffer != nullptr)
+				theComport->writeRawData(buffer);
+		 }
+private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
+				array<System::Byte> ^ buffer = nullptr;
+
+
+				// send stop zoom packet
+				buffer = gcnew array<System::Byte>(6);
+				buffer[0] = 0x81;
+				buffer[1] = 0x01;
+				buffer[2] = 0x04;
+				buffer[3] = 0x07;
+				buffer[4] = 0x00;
+				buffer[5] = 0xFF;
+
+
+			if (buffer != nullptr)
+				theComport->writeRawData(buffer);
+		 }
+private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
+			array<System::Byte> ^ buffer = nullptr;
+
+
+			// send zoom out packet
+			buffer = gcnew array<System::Byte>(6);
+			buffer[0] = 0x81;
+			buffer[1] = 0x01;
+			buffer[2] = 0x04;
+			buffer[3] = 0x07;
+			buffer[4] = 0x34;
+			buffer[5] = 0xFF;
+
+			
+
+			if (buffer != nullptr)
+				theComport->writeRawData(buffer);
+		 }
+private: System::Void Form1_Click(System::Object^  sender, System::EventArgs^  e) {
+			 //System::Diagnostics::Trace::WriteLine( "click\nKEYPRESS\nKEYPRESS\nKEYPRESS\nKEYPRESS\nKEYPRESS\NKEYPRESS\nKEYPRESS\n" );
+		 }
+private: System::Void errorLogTextBox_KeyPress(System::Object^  sender, System::Windows::Forms::KeyPressEventArgs^  e) {
+			 System::Diagnostics::Trace::WriteLine( "errorlog - keypress" );
 		 }
 };
 }

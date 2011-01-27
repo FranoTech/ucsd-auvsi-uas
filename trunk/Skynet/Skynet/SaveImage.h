@@ -1,9 +1,7 @@
 #pragma once
 
-#ifndef OPENCV_DISABLED
 #include <cv.h>
 #include <highgui.h>
-#endif
 
 #include <string>
 
@@ -25,9 +23,7 @@ namespace ImageUtil
 
 	protected:
 		
-#ifndef OPENCV_DISABLED
 		cv::Mat convertBuffer( float * frame, float scale );
-#endif
 
 	private:
 		int _height;
@@ -36,8 +32,6 @@ namespace ImageUtil
 		double _fps;
 		int _fourcc;
 		
-#ifndef OPENCV_DISABLED
 		cv::VideoWriter _writer;
-#endif
 	};
 }

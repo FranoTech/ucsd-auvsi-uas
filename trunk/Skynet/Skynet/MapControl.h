@@ -287,6 +287,10 @@ namespace Skynet {
             double theta = angle * Math::PI / 180.0;
             double locked_theta = theta;
 
+			// DEBUG: this fixes a problem with the while()
+			if (locked_theta < 1000)
+				locked_theta = 0;
+
             // Ensure theta is now [0, 2pi)
             while (locked_theta < 0.0)
                 locked_theta += 2.0 * Math::PI;

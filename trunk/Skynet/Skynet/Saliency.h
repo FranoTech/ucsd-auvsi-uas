@@ -23,6 +23,9 @@ namespace Vision
 		array<float> ^ homography;
 	};
 
+	
+	delegate void saliencyUpdateDelegate( Database::RowData ^ data );
+
 	ref class Saliency
 	{
 	public:
@@ -45,7 +48,8 @@ namespace Vision
 		Object ^ parent;			// delegate to send info to
 		FrameData ^ currentFrameData;	// current saliency frame
 		
-
+		
+		saliencyUpdateDelegate ^ saliencyDelegate;
 		int frameCount;
 
 		// for saving images thread
@@ -61,7 +65,7 @@ namespace Vision
 		
 		void saliencyThreadFunction(); // main run loop for saliency
 		void saveImagesThreadFunction();	// main run loop for saving images
-
+		bool isValidTarget(Database::RowData ^ data, box theBox); // determine whether a target is valid
 
 	};
 }

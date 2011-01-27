@@ -78,6 +78,7 @@ Saliency::saliencyThreadFunction(void)
 		// check for new frame
 		if (newFrameReady) 
 		{
+			//System::Diagnostics::Trace::WriteLine( "New frame Ready");
 			try {
 			
 				// set flags
@@ -91,7 +92,7 @@ Saliency::saliencyThreadFunction(void)
 				theSaliency->labelConnectedComponents();
 
 			
-				System::Diagnostics::Trace::WriteLine( "Computing Saliency frame. frameW: " + width + " frameH: " + height);
+				//System::Diagnostics::Trace::WriteLine( "Computing Saliency frame. frameW: " + width + " frameH: " + height);
 			
 
 				while (savingData) { Thread::Sleep( UPDATE_FREQUENCY ); }
@@ -158,16 +159,16 @@ Saliency::saveImagesThreadFunction()
 	{
 		Thread::Sleep( UPDATE_FREQUENCY ); // dont run too fast, or we eat up cpu ... ;)
 		if ( newFrameForSaving ) {
-			//continue;
+			
 			savingData = true;
 			newFrameForSaving = false;
 			frameCount++;
 
 			// DEBUG: save original image
 			
-			ImageUtil::SaveImage theImSaver( height, width, 4 );
-			theImSaver.saveFrame(savingBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_original.bmp"));
-			//theImSaver.saveFrame(saliencyOutput, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_saliency.bmp"));
+			//ImageUtil::SaveImage theImSaver( height, width, 4 );
+			//theImSaver.saveFrame(savingBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_original.bmp"));
+			
 
 
 
@@ -202,11 +203,11 @@ Saliency::saveImagesThreadFunction()
 				ImageUtil::SaveImage theImSaver( currentBox.height, currentBox.width, 4 );
 
 
-				float * tempBuffer = new float[height * width/2 * 4];
+				float * tempBuffer = new float[currentBox.height * currentBox.width * 4];
 				int counter = 0;
 
-				for (int y =  currentBox.y; y < currentBox.y + currentBox.height; y++) {
-					for (int x =  currentBox.x; x < currentBox.x + currentBox.width; x++) {
+				for (int y =  currentBox.y; y < currentBox.y + currentBox.height && y < height; y++) {
+					for (int x =  currentBox.x; x < currentBox.x + currentBox.width && x < width; x++) {
 
 						for (int c = 0; c < 4; c++) {
 							tempBuffer[counter] = savingBuffer[(y * width + x)*4 + c];
@@ -217,8 +218,7 @@ Saliency::saveImagesThreadFunction()
 					}
 				}
 
-				theImSaver.saveFrame(tempBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_" + i + ".bmp"));
-
+				
 
 
 				// make RowData, pass to callback in form1.h
@@ -242,13 +242,27 @@ Saliency::saveImagesThreadFunction()
 				data->mapping_longitude = 0;		// pixel to meter translation for longitude
 				data->homography = savingFrameData->homography;
 
-				
-				System::Diagnostics::Trace::WriteLine( "Saliency found target path " + data->path);
+				// only save if it is a valid target i.e. right physicalsize range
+				if (isValidTarget(data, currentBox)) 
+				{
+					theImSaver.saveFrame(tempBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_" + i + ".bmp"));
 
-				//((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->saliencyAddTarget, data );
+					array<Object ^>^myArr = {data};
+					try {
+					
+						((Skynet::Form1 ^ )parent)->Invoke( ((Skynet::Form1 ^ )parent)->saliencyAddTarget, myArr );
+					}
+
+					catch (Exception ^ theEx) {
+					
+						System::Diagnostics::Trace::WriteLine( "WARNING: Saliency exception: " + theEx);
+					}
+
+				}
+
+
 				delete tempBuffer;
 
-				
 			}
 
 
@@ -256,6 +270,13 @@ Saliency::saveImagesThreadFunction()
 		}
 	}
 
+
+}
+
+bool 
+Saliency::isValidTarget(Database::RowData ^ data, box theBox)
+{
+	return true; // TODO: change this later
 
 }
 
@@ -267,7 +288,6 @@ Saliency::setValues(int w, int h, Object ^ newDelegate)
 	tempPause = true;
 	Thread::Sleep( 40 );
 	
-
 
 	width = w;
 	height = h;
@@ -312,6 +332,7 @@ Saliency::analyzeFrame(float * buffer, FrameData ^ theData)
 		currentFrameData = theData;
 		newFrameReady = true;
 	}
+	//System::Diagnostics::Trace::WriteLine( "analyzeFrame()");
 }
 
 Saliency::~Saliency()

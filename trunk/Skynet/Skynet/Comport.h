@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <fstream>
+
 using namespace std;
 using namespace System::IO::Ports;
 using namespace System;
@@ -65,14 +66,19 @@ namespace Communications
 
 		void readData(void);
 		void writeData( ComportUpstream * data );
+		void writeRawData( array<System::Byte> ^ buffer );
 		bool isConnected(void) { return _serialPort->IsOpen; }
-
+		void setSimHandler(Object ^ simHandler)
+		{
+			theSimHandler = simHandler;
+		}
 	private:
 		int decodeByte(void);
 		unsigned char encodeByte( unsigned char data );
 		inline bool isSpecialByte( unsigned char data );
 		__int16 calculateChecksum( array<System::Byte> ^data, int packetSize );
-		
+		Object ^ theSimHandler;
+
 	protected:
 		SerialPort ^ _serialPort;
 		array<String ^> ^ data;

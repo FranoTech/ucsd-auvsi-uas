@@ -167,6 +167,7 @@
     <None Include="airplane_icon.ico" />
     <None Include="app.ico" />
     <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram2.cd" />
     <None Include="ReadMe.txt" />
     <None Include="Resampler.i">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
@@ -240,6 +241,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
     </ClCompile>
+    <ClCompile Include="SimHandler.cpp" />
     <ClCompile Include="Skynet.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">true</CompileAsManaged>
     </ClCompile>
@@ -318,6 +320,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Saliency.h" />
     <ClInclude Include="SaveImage.h" />
+    <ClInclude Include="SimHandler.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TargetDialog.h">
       <FileType>CppForm</FileType>

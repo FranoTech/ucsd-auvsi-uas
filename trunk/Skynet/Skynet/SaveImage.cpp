@@ -1,14 +1,14 @@
 #include "StdAfx.h"
 #include "SaveImage.h"
 
-#ifndef OPENCV_DISABLED
 #include <cv.h>
 #include <highgui.h>
-#endif
 
 #include <string>
 
+
 using namespace ImageUtil;
+
 
 SaveImage::SaveImage( int height, int width, int channels )
 {
@@ -29,7 +29,6 @@ SaveImage::~SaveImage(void)
 }
 
 
-#ifndef OPENCV_DISABLED
 cv::Mat
 SaveImage::convertBuffer( float * buffer, float scale )
 {
@@ -61,22 +60,18 @@ SaveImage::convertBuffer( float * buffer, float scale )
 
 	return retVal;
 }
-#endif
 
 void
 SaveImage::saveFrame( float * buffer, std::string path  )
 {
 	
-#ifndef OPENCV_DISABLED
 	cv::imwrite( path, convertBuffer( buffer, 255.0f ) );
-#endif
 }
 
 void
 SaveImage::saveFrame( float * buffer, std::string path, std::string pathbase, float * homography, double heading  )
 {
 	
-#ifndef OPENCV_DISABLED
 	typedef cv::Vec<float, 1> VT;
 	cv::Mat image = convertBuffer( buffer, 255.0f );
 	cv::Mat warped, rotated;
@@ -101,36 +96,37 @@ SaveImage::saveFrame( float * buffer, std::string path, std::string pathbase, fl
 	cv::imwrite( pathbase + "_rectified.jpg", rotated );
 
 	cv::imwrite( path, image );
-#endif
 }
 
 void
 SaveImage::writeFrame( float * buffer )
 {
 	
-#ifndef OPENCV_DISABLED
 	if( _writer.isOpened() )
 	{
 		_writer << convertBuffer( buffer, 1.0f );
+
+
 	}
-#endif
 }
 
 void 
 SaveImage::setupVideo( std::string path )
 {
-#ifndef OPENCV_DISABLED
+	// stop video if necessary every time, or it doesnt work.
+	
+	stopVideo();
+	
 	_writer = cv::VideoWriter( path, _fourcc, _fps, cv::Size( _width, _height ) );
-#endif
 }
 
 void 
 SaveImage::stopVideo( void )
 {
-#ifndef OPENCV_DISABLED
-	if( _writer.isOpened() )
+
+	if(_writer.isOpened() ) {
 		_writer.~VideoWriter();
-#endif
+	}
 }
 
 void

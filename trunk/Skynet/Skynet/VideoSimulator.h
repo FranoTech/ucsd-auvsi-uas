@@ -1,9 +1,9 @@
 #pragma once
 
-#ifndef OPENCV_DISABLED
+
 #include <cv.h>
 #include <highgui.h>
-#endif
+
 #include "OpenGLForm.h"
 
 #include <string>

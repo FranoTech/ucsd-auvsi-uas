@@ -2,6 +2,7 @@
 #include "Form1.h"
 #include "Comport.h"
 #include <time.h>
+#include "SimHandler.h"
 
 /*
  * Serial use bytes
@@ -32,9 +33,6 @@ using namespace Communications;
 using namespace System::Threading;
 
 //static ComportUpstream * lastPacket;
-
-//Writing packet to file
-ofstream* file;
 
 
 ComportUpstream::ComportUpstream()
@@ -192,11 +190,13 @@ unsigned char Comport::encodeByte( unsigned char data )
 
 void Comport::readThread(void)
 {
-	char buffer[20];
-	file = &ofstream(itoa(time(NULL), buffer, 10));
 	while( true )
 	{
-		readData();
+
+		// only read data if we are connected
+		if (isConnected())
+			readData();
+
 		Thread::Sleep( UPDATE_FREQ );
 	}
 
@@ -269,6 +269,8 @@ void Comport::readData(void)
 
 			buffer[bufLen] = tempByte;
 			bufLen++;
+
+
 		}
 
 
@@ -281,7 +283,7 @@ void Comport::readData(void)
 			//System::Diagnostics::Trace::WriteLine("Checksum: FAILED");
 			_serialPort->DiscardInBuffer();
 			return;
-		}
+ 		}
 
 		ComportDownstream * packet = new ComportDownstream();
 
@@ -291,33 +293,41 @@ void Comport::readData(void)
 			for (int i = 3, k = 0; i > -1; i--, k++) {
 				int letterPosition = j*4 + k;
 				dataPtr[letterPosition] = buffer[j*4 + i + 1];
-				/*
-				*
-				* WRITE TO FILE HERE!
-				*
-				*/
-				file->put(dataPtr[letterPosition]);
+
 			}			
 		}
+
+		//save time that packet came in
+
+		//write to files
+		//packet->gps_lat;
+
+		//read file
+
 		packet->error_code = buffer[bufLen - 4];
 
-		System::Diagnostics::Trace::WriteLine("autopilot timeout \t     " + (bool)(packet->error_code & 0x01));
-		System::Diagnostics::Trace::WriteLine("autopilot invalid packet " + (bool)(packet->error_code & 0x02));
-		System::Diagnostics::Trace::WriteLine("ground station timeout   " + (bool)(packet->error_code & 0x04));
-		System::Diagnostics::Trace::WriteLine("uplink timeout           " + (bool)(packet->error_code & 0x08));
-		System::Diagnostics::Trace::WriteLine("uplink invalid packet    " + (bool)(packet->error_code & 0x10));
-		System::Diagnostics::Trace::WriteLine("gimbal timeout           " + (bool)(packet->error_code & 0x20));
-		System::Diagnostics::Trace::WriteLine("gimbal invalid mode      " + (bool)(packet->error_code & 0x40));
-		System::Diagnostics::Trace::WriteLine("reserved                 " + (bool)(packet->error_code & 0x80));
-		System::Diagnostics::Trace::WriteLine("\n");
+		if (false && packet->error_code) {
+			System::Diagnostics::Trace::WriteLine("autopilot timeout \t     " + (bool)(packet->error_code & 0x01));
+			System::Diagnostics::Trace::WriteLine("autopilot invalid packet " + (bool)(packet->error_code & 0x02));
+			System::Diagnostics::Trace::WriteLine("ground station timeout   " + (bool)(packet->error_code & 0x04));
+			System::Diagnostics::Trace::WriteLine("uplink timeout           " + (bool)(packet->error_code & 0x08));
+			System::Diagnostics::Trace::WriteLine("uplink invalid packet    " + (bool)(packet->error_code & 0x10));
+			System::Diagnostics::Trace::WriteLine("gimbal timeout           " + (bool)(packet->error_code & 0x20));
+			System::Diagnostics::Trace::WriteLine("gimbal invalid mode      " + (bool)(packet->error_code & 0x40));
+			System::Diagnostics::Trace::WriteLine("reserved                 " + (bool)(packet->error_code & 0x80));
+			System::Diagnostics::Trace::WriteLine("\n");
+		}
 
 		// Verify checksum
 		
 
 		
+		((Simulator::SimHandler ^)theSimHandler)->writeTelemetry(packet);
 
 		// Callback to Form1 (stays in this offshoot thread)
 		comDelegate( packet );
+
+		//JK..WRITE HERE!!
 
 		//gcroot<ComportDownstream *> bla(packet);
 		//((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->comportUpdateDelegate, bla );
@@ -331,7 +341,7 @@ void Comport::readData(void)
 		delete packet;
 		// TODO object disposed exception
 		((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->comportErrorDelegate );
-		System::Diagnostics::Trace::WriteLine("catch in comport");
+		//System::Diagnostics::Trace::WriteLine("catch in comport");
 		//comNoDataDelegate();
 	}
 }
@@ -352,6 +362,19 @@ __int16 Comport::calculateChecksum( array<System::Byte> ^data, int packetSize )
 	return CheckValue;
 
 }
+
+
+void Comport::writeRawData( array<System::Byte> ^ buffer )
+{
+	if (!isConnected())
+		return;
+
+	
+	System::Diagnostics::Trace::WriteLine( "Comport: writeRawData" );
+	_serialPort->Write( buffer, 0, buffer.Length );	
+}
+
+
 // SEND IN BIG-ENDIAN (x86 stores in little-Endian)
 void Comport::writeData( ComportUpstream * data )
 {
@@ -362,6 +385,9 @@ void Comport::writeData( ComportUpstream * data )
 	//System::Diagnostics::Trace::WriteLine("\n");
 	
 	//lastPacket
+
+	if (!isConnected())
+		return;
 
 	array<System::Byte> ^ buffer = gcnew array<System::Byte>(BUFFER_SIZE);
 	array<System::Byte> ^ bufferNoSpecial = gcnew array<System::Byte>(BUFFER_SIZE);
@@ -472,7 +498,8 @@ void Comport::writeData( ComportUpstream * data )
 	}
 	catch( Exception ^ )
 	{
-		System::Diagnostics::Trace::WriteLine("catch in comport");
+		// no valid data, no big deal
+		//System::Diagnostics::Trace::WriteLine("catch in comport");
 
 	}
 

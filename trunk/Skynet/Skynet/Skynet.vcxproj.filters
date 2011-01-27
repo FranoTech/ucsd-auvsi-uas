@@ -40,6 +40,7 @@
     <None Include="_Resampler.so">
       <Filter>OCR</Filter>
     </None>
+    <None Include="ClassDiagram2.cd" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp">
@@ -121,6 +122,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VideoReader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SimHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -234,6 +238,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VideoReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SimHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
