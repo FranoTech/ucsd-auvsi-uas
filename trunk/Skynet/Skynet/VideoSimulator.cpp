@@ -6,6 +6,8 @@
 
 #include <string>
 
+#include "MasterChiefHeaderFile.h"
+
 using namespace Simulator;
 using namespace cv;
 using namespace std;
@@ -14,7 +16,7 @@ using namespace std;
 #define WAIT_INTERVAL		0
 #define SHORT_WAIT_INTERVAL	2
 
-#define FRAME_FREQUENCY		33
+#define FRAME_FREQUENCY		1000 / VIDEO_FRAMERATE
 
 VideoSimulator::VideoSimulator( OpenGLForm::COpenGL ^ parent )
 {

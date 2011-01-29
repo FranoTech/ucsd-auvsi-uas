@@ -22,6 +22,12 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Source Files\Communications">
+      <UniqueIdentifier>{e54562ab-356c-4069-9b77-a5f1fd778147}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Communications">
+      <UniqueIdentifier>{2e48ff17-8f83-41f9-b113-9936aed4597a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="airplane_icon.ico">
@@ -79,9 +85,6 @@
     <ClCompile Include="ComponentLabeling.cpp">
       <Filter>OCR</Filter>
     </ClCompile>
-    <ClCompile Include="Comport.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Database.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -126,6 +129,12 @@
     </ClCompile>
     <ClCompile Include="SimHandler.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Comport.cpp">
+      <Filter>Source Files\Communications</Filter>
+    </ClCompile>
+    <ClCompile Include="Comms.cpp">
+      <Filter>Source Files\Communications</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -183,9 +192,6 @@
     <ClInclude Include="ComponentLabeling.h">
       <Filter>OCR</Filter>
     </ClInclude>
-    <ClInclude Include="Comport.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Database.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -242,6 +248,15 @@
     </ClInclude>
     <ClInclude Include="SimHandler.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterChiefHeaderFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Comms.h">
+      <Filter>Header Files\Communications</Filter>
+    </ClInclude>
+    <ClInclude Include="Comport.h">
+      <Filter>Header Files\Communications</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

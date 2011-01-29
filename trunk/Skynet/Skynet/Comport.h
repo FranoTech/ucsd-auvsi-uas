@@ -65,8 +65,14 @@ namespace Communications
 		void readThread(void);
 
 		void readData(void);
+		array<System::Byte> ^ readRawData(int timeout);
+
+
 		void writeData( ComportUpstream * data );
 		void writeRawData( array<System::Byte> ^ buffer );
+		void writeEncodedData( array<System::Byte> ^ buffer );
+
+
 		bool isConnected(void) { return _serialPort->IsOpen; }
 		void setSimHandler(Object ^ simHandler)
 		{

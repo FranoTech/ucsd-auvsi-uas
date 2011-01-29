@@ -13,6 +13,9 @@ namespace Simulator
 	ref class SimHandler
 	{
 	public:
+		int numframes;
+		System::DateTime before;
+
 		SimHandler(Communications::Comport ^ comPort, Simulator::VideoSimulator ^ vidSim, OpenGLForm::COpenGL ^ opunGL)
 		{
 			recordTelemetry = true;
@@ -81,9 +84,13 @@ namespace Simulator
 		bool recordTelemetry;
 		bool recordVideo;
 		bool pleaseDontRecord;
+		bool breakNow;
+
 		Communications::Comport ^ theComport;
 		Simulator::VideoSimulator ^ theVideoSimulator;
 		OpenGLForm::COpenGL ^ openGLView;
+		
+		Thread ^ videoWriteThread;
 		/**
 		 * Should flush & close the stream writing to telemetry file.
 		 */
@@ -93,6 +100,8 @@ namespace Simulator
 		 * append .telemetry to filename resulting in filename.telemetry
 		 */
 		void beginTelemetry(String ^ filename);
+		void writeVideo(); // video writing run loop
+
 
 	protected:
 		

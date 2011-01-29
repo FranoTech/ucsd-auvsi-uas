@@ -18,6 +18,7 @@
 #include "OCR.h"
 //#include "VideoSimulator.h"
 #include "SimHandler.h"
+#include "Comms.h"
 
 	// row indexes for comport data
 	const int A_ALT = 1;
@@ -330,6 +331,10 @@ private: System::Windows::Forms::Button^  button3;
 
 
 			ocrDelegate = gcnew Delegates::dataGridViewRowToVoid( this, &Form1::ocrUpdateData );
+
+			Communications::Comms ^ theComm = gcnew Communications::Comms(this);
+
+			theComm->connectAll();
 
 		}
 
@@ -1836,8 +1841,8 @@ private: System::Void splitLengthTextBox_Validated(System::Object^  sender, Syst
 
 private: System::Void encodingComboBox_SelectedIndexChanged(System::Object^  sender, System::EventArgs^  e) {
 		 
-			 openGLView->changeEncoding( this->encodingComboBox->Text );
-			 consoleMessage( "Video encoding changed to " + this->encodingComboBox->Text, Color::Gray );			
+			// openGLView->changeEncoding( this->encodingComboBox->Text );
+			// consoleMessage( "Video encoding changed to " + this->encodingComboBox->Text, Color::Gray );			
 		 
 		 }
 private: System::Void startRecordButton_Click(System::Object^  sender, System::EventArgs^  e) {
@@ -1851,11 +1856,13 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 
 			recordStart = DateTime::Now;
 			//openGLView->enableVideoRecording( path );
+			// START TELEMETRY HERE
 			theSimHandler->beginRecording(path);
 			consoleMessage( "Started recording video and telemetry", Color::Green );	
 			recording = true;
-
-			// START TELEMETRY HERE
+			System::Diagnostics::Trace::WriteLine("started recording in Form1 " + path);
+			
+			this->errorLogTextBox->BackColor = System::Drawing::Color::FromArgb( 0, 40, 0);
 
 		 }
 private: System::Void stopRecordButton_Click(System::Object^  sender, System::EventArgs^  e) {
@@ -1866,28 +1873,34 @@ private: System::Void stopRecordButton_Click(System::Object^  sender, System::Ev
 			theSimHandler->endRecording();
 			consoleMessage( "Stopped recording video and telemetry", Color::Green );	
 			recording = false;
+			System::Diagnostics::Trace::WriteLine("stopped recording in Form1");
+			this->errorLogTextBox->BackColor = System::Drawing::Color::Black;
 		 }
 
-#define SPLIT_LENGTH 30 // this->splitLengthTextBox->Text
+#define SPLIT_LENGTH 300 // this->splitLengthTextBox->Text
 
 private: System::Void videoSaveTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
-			 if( !recording )
-				 return;
+		if( !recording )
+			return;
 
-			 DateTime time = DateTime::Now;
-			 time = time.AddSeconds( -Convert::ToInt32( SPLIT_LENGTH ) );
+		DateTime time = DateTime::Now;
+		time = time.AddSeconds( -Convert::ToInt32( SPLIT_LENGTH ) );
 
-			 if( DateTime::Compare( recordStart, time ) < 0 )
-			 {
-				 recordStart = DateTime::Now;
+		if( DateTime::Compare( recordStart, time ) < 0 )
+		{
+			recordStart = DateTime::Now;
+			String ^ path;//vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+			path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 
-				 String ^ path = vidOptOutputDirText->Text + "\\video_" + recordStart.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+
+			//String ^ path = vidOptOutputDirText->Text + "\\video_" + recordStart.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 			
-				 //openGLView->enableVideoRecording( path );
-				 theSimHandler->beginRecording(path);
-				 consoleMessage( "Splitting video file", Color::Gray );	
-			 }
-		 }
+			//openGLView->enableVideoRecording( path );
+			theSimHandler->beginRecording(path);
+			consoleMessage( "Splitting video file", Color::Gray );	
+			System::Diagnostics::Trace::WriteLine("split recording in Form1 " + path);
+		}
+	}
 private: System::Void openGLPanel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
 		 }
 

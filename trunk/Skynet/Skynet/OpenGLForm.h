@@ -14,6 +14,7 @@ namespace OpenGLForm
 	public ref class COpenGL: public System::Windows::Forms::NativeWindow
 	{
 	public:
+		int benchmark;
 		COpenGL(System::Windows::Forms::Panel ^ parentForm, GLsizei iWidth, GLsizei iHeight, Object ^ parent)
 		{
 			CreateParams^ cp = gcnew CreateParams;
@@ -98,6 +99,14 @@ namespace OpenGLForm
 			theSaliency->setValues(frameW, frameH, _parent);
 		}
 
+		System::Void saveVideoFrame()
+		{
+			benchmark++;
+			imSaver->writeFrame( buffer );
+
+			//System::Diagnostics::Trace::WriteLine("writeFrame in Render in OpenGLForm.h: " + benchmark);
+		}
+
 		System::Void Render(System::Void)
 		{
 			if( callbackSetupDone && !textureSetupDone )
@@ -122,9 +131,14 @@ namespace OpenGLForm
 					else
 						glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (GLint)frameW, (GLint)frameH, GL_RGBA, GL_FLOAT, buffer);	
 			}
-			if( saveVideo )
+
+			// never do this. instead, save video in SimHandler
+			if( false && saveVideo )
 			{
+				benchmark++;
 				imSaver->writeFrame( buffer );
+
+				System::Diagnostics::Trace::WriteLine("writeFrame in Render in OpenGLForm.h: " + benchmark);
 			}
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);			
@@ -170,12 +184,15 @@ namespace OpenGLForm
 
 		System::Void enableVideoRecording( String ^ path )
 		{
+				System::Diagnostics::Trace::WriteLine("enableVideoRecording in OpenGLForm.h");
 			imSaver->setupVideo( ManagedToSTL( path ) );
 			saveVideo = true;
+			benchmark = 0;
 		}
 
 		System::Void disableVideoRecording()
 		{
+				System::Diagnostics::Trace::WriteLine("disableVideoRecording in OpenGLForm.h");
 			imSaver->stopVideo();
 			saveVideo = false;
 		}
@@ -344,11 +361,6 @@ namespace OpenGLForm
 		        return hiPOT;
 		    else 
 				return (dataSize % 512 != 0) ?  (dataSize - dataSize % 512 + 512) : dataSize;
-		}
-
-		inline System::Void saveVideoFrame()
-		{
-			imSaver->writeFrame( buffer );
 		}
 
 		GLint SetupTexture(System::Void)

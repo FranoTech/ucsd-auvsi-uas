@@ -218,6 +218,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Comms.cpp" />
     <ClCompile Include="ComponentLabeling.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
@@ -298,6 +299,7 @@
     <ClInclude Include="BlobResult.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Comms.h" />
     <ClInclude Include="ComponentLabeling.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClInclude>
@@ -312,6 +314,7 @@
     <ClInclude Include="GeoReference.h" />
     <ClInclude Include="Joystick.h" />
     <ClInclude Include="MapControl.h" />
+    <ClInclude Include="MasterChiefHeaderFile.h" />
     <ClInclude Include="OCR.h" />
     <ClInclude Include="OpenGLForm.h" />
     <ClInclude Include="Resampler.h">

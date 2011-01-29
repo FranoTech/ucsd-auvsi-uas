@@ -10,11 +10,20 @@
 #include <iomanip>    // Needed for stream modifiers fixed and setprecision
 #include <string>
 
+#include "MasterChiefHeaderFile.h"
+
 using namespace std;
 using namespace Simulator;
 using namespace System;
 using namespace System::Text;
 using namespace System::Windows::Forms;
+
+
+// video write frame frequency (in milliseconds) (for 30 fps)
+#define WAIT_INTERVAL		0
+#define SHORT_WAIT_INTERVAL	2
+
+#define FRAME_FREQUENCY		1000 / VIDEO_FRAMERATE
 
 	//True = Comport's calls will result in telemetry data being recorded.
 	//False = calls will result in return.
@@ -40,7 +49,25 @@ void SimHandler::beginRecording(String ^ filename)
 {
 	if(recordVideo)
 	{
+		if (videoWriteThread != nullptr) {
+			// stop, then wait
+			System::Diagnostics::Trace::WriteLine("saveVideoFrame called from SimHandler: " + numframes + " in " + (System::DateTime::Now.Subtract(before)).Milliseconds);
+
+			breakNow = true;
+			Thread::Sleep( 30 ); // ms
+
+			videoWriteThread->Abort();
+		}
+
+		// make thread that reads frame 30 times per second
+		breakNow = false;
+		videoWriteThread = gcnew Thread(gcnew ThreadStart(this, &SimHandler::writeVideo));
+		videoWriteThread->Name = "SimHandler Video Write Thread";
+		videoWriteThread->Start();
+
+
 		openGLView->enableVideoRecording(filename);
+
 		System::Diagnostics::Trace::WriteLine("beginRecording in SimHandler");
 	}
 	if(recordTelemetry)
@@ -56,9 +83,22 @@ void SimHandler::endRecording()
 	{
 		if(recordVideo)
 		{
+			
+			if (videoWriteThread != nullptr) {
+				// stop, then wait
+
+				breakNow = true;
+				Thread::Sleep( 30 ); // ms
+
+				videoWriteThread->Abort();
+			}
+
+
 			openGLView->disableVideoRecording();
+
+			System::Diagnostics::Trace::WriteLine("endRecording in SimHandler");
 		}
-		//if recordvideo call end in OpenGL
+
 
 		if(recordTelemetry)
 		{
@@ -85,6 +125,57 @@ void SimHandler::endRecording()
 	 */
 			//UNIMPLEMENTED
 	//void feedVideo();
+
+void
+SimHandler::writeVideo() {
+	// saveVideoFrame()
+
+	numframes = 0;
+	before = System::DateTime::Now;
+
+	try {
+		System::DateTime last = System::DateTime::Now;
+		System::DateTime first = System::DateTime::Now;
+		int counter = 0;
+
+		
+		System::Diagnostics::Trace::WriteLine("writeVideo() in SimHandler");
+
+		// main video reading loop
+		while (true) {
+
+
+			try {
+		
+				// check to see if we should stop
+				if (breakNow)
+					break;
+
+				// wait until 33 ms comes up
+				while ((System::DateTime::Now.Subtract(last)).Milliseconds < FRAME_FREQUENCY) {
+					Thread::Sleep( SHORT_WAIT_INTERVAL );
+				}
+
+				// save time that we are reading this frame
+				last = last.AddMilliseconds( FRAME_FREQUENCY );
+		
+				// check to see if we should stop
+				if (breakNow)
+					break;
+
+				// save video frame
+				openGLView->saveVideoFrame();
+				numframes++;
+				//
+
+			} catch (ThreadInterruptedException ^) {}
+		}
+	} catch (Exception ^ ) {
+		//System::Diagnostics::Trace::WriteLine("Exception in writeVideo() in SimHandler");
+		
+
+	}
+}
 
 void SimHandler::writeTelemetry(Communications::ComportDownstream * packet)
 {

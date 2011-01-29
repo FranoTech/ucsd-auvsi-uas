@@ -5,9 +5,12 @@
 #include <highgui.h>
 
 #include <string>
+#include <stdio.h>
 
+#include "MasterChiefHeaderFile.h"
 
 using namespace ImageUtil;
+using namespace std;
 
 
 SaveImage::SaveImage( int height, int width, int channels )
@@ -19,7 +22,7 @@ SaveImage::SaveImage( int height, int width, int channels )
 	//_fourcc = -1;
 	_fourcc = CV_FOURCC('M','J','P','G');		// SET A GOOD DEFAULT: mpeg
 	//_fourcc = CV_FOURCC('f','f','d','s');
-	_fps = 30.0;
+	_fps = VIDEO_FRAMERATE;
 }
 
 
@@ -74,6 +77,10 @@ SaveImage::saveFrame( float * buffer, std::string path, std::string pathbase, fl
 	
 	typedef cv::Vec<float, 1> VT;
 	cv::Mat image = convertBuffer( buffer, 255.0f );
+
+	cv::imwrite( path, image ); // save regular image
+
+
 	cv::Mat warped, rotated;
 	cv::Mat rotation = cv::getRotationMatrix2D( cv::Point2f( image.cols/2, image.rows/2 ), heading, 1.0 );
 	
@@ -93,9 +100,9 @@ SaveImage::saveFrame( float * buffer, std::string path, std::string pathbase, fl
 
 	//cv::warpPerspective( image, warped, homo.t(), image.size() );
 	cv::warpAffine( image, rotated, rotation, image.size() );
-	cv::imwrite( pathbase + "_rectified.jpg", rotated );
+	cv::imwrite( pathbase + "_rectified.jpg", rotated ); // save rectified image
 
-	cv::imwrite( path, image );
+	//cv::imwrite( path, image );
 }
 
 void
@@ -105,8 +112,8 @@ SaveImage::writeFrame( float * buffer )
 	if( _writer.isOpened() )
 	{
 		_writer << convertBuffer( buffer, 1.0f );
-
-
+		printf("write frame");
+		//System::Debug::Print("writeFrame in SaveImage.cpp");
 	}
 }
 
@@ -115,9 +122,10 @@ SaveImage::setupVideo( std::string path )
 {
 	// stop video if necessary every time, or it doesnt work.
 	
-	stopVideo();
+	//stopVideo();
 	
 	_writer = cv::VideoWriter( path, _fourcc, _fps, cv::Size( _width, _height ) );
+	printf("setup video");
 }
 
 void 
@@ -126,13 +134,15 @@ SaveImage::stopVideo( void )
 
 	if(_writer.isOpened() ) {
 		_writer.~VideoWriter();
+		printf("stop video");
 	}
 }
 
 void
 SaveImage::changeEncoding( std::string encoding )
 {
-	return;
+	return; // dont run this function
+
 	if( encoding == "None" )
 	{
 		//_fourcc = 0;

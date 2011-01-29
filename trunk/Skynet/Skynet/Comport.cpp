@@ -20,6 +20,8 @@
 #define MAP_TO_SPECIAL	0x02
 #define MAP_TO_FUTURE	0x03
 
+#define BAUD_RATE		115200
+
 // Comport read timeout in miliseconds
 #define TIMEOUT_MS		1000
 
@@ -48,11 +50,14 @@ Comport::Comport(Object ^ theParent)
 {
 	_serialPort = gcnew SerialPort();
 	_serialPort->ReadTimeout = TIMEOUT_MS;
+	_serialPort->BaudRate = BAUD_RATE;
+
 	portNames = SerialPort::GetPortNames();
 
 	parent = theParent;
 
-	comDelegate = gcnew comportUpdateDelegate(((Skynet::Form1 ^)theParent), &Skynet::Form1::updateComData );
+	// DEBUG: removed the following
+	//comDelegate = gcnew comportUpdateDelegate(((Skynet::Form1 ^)theParent), &Skynet::Form1::updateComData );
 }
 
 Comport::~Comport(void)
@@ -360,6 +365,202 @@ __int16 Comport::calculateChecksum( array<System::Byte> ^data, int packetSize )
 		CheckValue ^= data[packetSize - 1]<<8;
 
 	return CheckValue;
+
+}
+
+array<System::Byte> ^ Comport::readRawData( int timeout ) {
+
+	// set new timeout
+	//int oldtimeout = _serialPort->ReadTimeout;
+	//_serialPort->ReadTimeout = timeout;
+
+
+
+	const int NUM_ELEMENTS = 11;
+	int dataIn = -1;
+	int bufLen = 0;
+	byte tempByte;
+
+	array<System::Byte> ^ buffer = gcnew array<System::Byte>(BUFFER_SIZE);
+
+	try
+	{
+		// Read until we get a start byte
+		while( true )
+		{
+			dataIn = _serialPort->ReadByte();
+			tempByte = Convert::ToByte( dataIn );
+
+			if( dataIn < 0 )
+			{
+				_serialPort->DiscardInBuffer();
+				return nullptr;
+			}
+			else if( tempByte == START_BYTE )
+			{
+				buffer[bufLen] = tempByte;
+				bufLen++;
+				break;
+			}
+		}
+
+		// Read in the message string, decoding as necessary
+		while( true )
+		{
+			dataIn = _serialPort->ReadByte();
+			tempByte = Convert::ToByte( dataIn );
+
+			// error / end of data check
+			if( dataIn < 0 )
+			{
+				_serialPort->DiscardInBuffer();
+				return nullptr;
+			}
+			else if( tempByte == END_BYTE )
+			{
+				buffer[bufLen] = tempByte;
+				bufLen++;
+				break;
+			}
+
+			// process actual byte
+			// if this is a special byte, decode it
+			if( tempByte == SPECIAL_BYTE )
+			{
+				dataIn = decodeByte();
+
+				if( dataIn < 0 )
+				{
+					_serialPort->DiscardInBuffer();
+					return nullptr;
+				}
+				else
+					tempByte = Convert::ToByte( dataIn );
+			}
+
+			buffer[bufLen] = tempByte;
+			bufLen++;
+
+
+		}
+
+		
+		// calculate checksum
+		__int16 checksum = calculateChecksum( buffer, bufLen - 3);
+
+		/*if (!( ((unsigned char *)&checksum)[1] == buffer[bufLen - 3] && ((unsigned char *)&checksum)[0] == buffer[bufLen - 2] ))
+		{
+			//System::Diagnostics::Trace::WriteLine("Checksum: FAILED");
+			_serialPort->DiscardInBuffer();
+			return;
+ 		}*/
+
+		// Verify checksum
+		
+
+
+		// clear the rest of the buffer
+		_serialPort->DiscardInBuffer();
+	}
+	catch( Exception ^ )
+	{
+	}
+
+
+
+
+	// restore old timeout
+	//_serialPort->ReadTimeout = oldtimeout;
+
+
+	
+	array<System::Byte> ^ retbuffer = gcnew array<System::Byte>(bufLen);
+
+	for (int i = 0; i < bufLen; i++)
+		retbuffer[i] = buffer[i];
+
+	return retbuffer;
+}
+
+void Comport::writeEncodedData( array<System::Byte> ^ inBuffer ) 
+{
+	if (!isConnected())
+		return;
+
+
+	array<System::Byte> ^ buffer = gcnew array<System::Byte>(BUFFER_SIZE);
+	array<System::Byte> ^ bufferNoSpecial = gcnew array<System::Byte>(BUFFER_SIZE);
+	int bufLen = 0;
+	int bufNoSpecialLen = 0;
+	char outByte;
+
+	try
+	{
+		// start byte
+		buffer[bufLen] = START_BYTE;
+		bufferNoSpecial[bufNoSpecialLen] = START_BYTE;
+		bufNoSpecialLen++;
+		bufLen++;
+
+		
+		// encode packet
+		for (int j = 0; j < inBuffer->Length; j ++) {
+			outByte = inBuffer[j];
+
+			bufferNoSpecial[bufNoSpecialLen] = outByte;
+			bufNoSpecialLen++;
+
+			if (isSpecialByte(outByte)) {
+				buffer[bufLen] = SPECIAL_BYTE;
+				bufLen++;
+				buffer[bufLen] = encodeByte(outByte);
+				bufLen++;
+			} else {
+				buffer[bufLen] = outByte;
+				bufLen++;
+			}
+		}		
+
+
+		// calculate checksum
+		__int16 checksum = calculateChecksum( bufferNoSpecial, bufNoSpecialLen );
+		
+		outByte = ((char *)&checksum)[1];
+		if (isSpecialByte(outByte)) {
+			buffer[bufLen] = SPECIAL_BYTE;
+			bufLen++;
+			buffer[bufLen] = encodeByte(outByte);
+			bufLen++;
+		} else {
+			buffer[bufLen] = outByte;
+			bufLen++;
+		}
+
+		outByte = ((char *)&checksum)[0];
+		if (isSpecialByte(outByte)) {
+			buffer[bufLen] = SPECIAL_BYTE;
+			bufLen++;
+			buffer[bufLen] = encodeByte(outByte);
+			bufLen++;
+		} else {
+			buffer[bufLen] = outByte;
+			bufLen++;
+		}
+
+		// end byte
+		buffer[bufLen] = END_BYTE;
+		bufLen++;
+		
+
+		// send it
+		_serialPort->Write( buffer, 0, bufLen );		
+	}
+	catch( Exception ^ )
+	{
+		// no valid data, no big deal
+		System::Diagnostics::Trace::WriteLine("catch in Comport::writeEncodedData( array<System::Byte> ^ buffer ) ");
+
+	}
 
 }
 
