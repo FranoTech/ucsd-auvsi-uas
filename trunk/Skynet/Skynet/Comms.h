@@ -1,8 +1,8 @@
 #pragma once
-#include <iostream>
-#include <fstream>
 
-using namespace std;
+#include "AutopilotComport.h"
+#include "RabbitComport.h"
+
 using namespace System::IO::Ports;
 using namespace System;
 using namespace System::Runtime::InteropServices;
@@ -24,13 +24,14 @@ namespace Communications
 		void disconnectAutopilot();
 		void disconnectRabbit();
 
+		void gotoLatLon(float lat, float lon);
+
 	private:
-		void connectAutopilotOnPort(String ^thePort);
-		void connectRabbitOnPort(String ^thePort);
+
 
 		Object ^ theDelegate;
-		Object ^ autopilot;
-		Object ^ rabbit;
+		AutopilotComport ^ autopilot;
+		RabbitComport ^ rabbit;
 
 		String ^ autopilotPortname;
 		String ^ rabbitPortname;

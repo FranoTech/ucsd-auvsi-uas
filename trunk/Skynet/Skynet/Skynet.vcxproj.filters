@@ -136,6 +136,15 @@
     <ClCompile Include="Comms.cpp">
       <Filter>Source Files\Communications</Filter>
     </ClCompile>
+    <ClCompile Include="AutopilotComport.cpp">
+      <Filter>Source Files\Communications</Filter>
+    </ClCompile>
+    <ClCompile Include="RabbitComport.cpp">
+      <Filter>Source Files\Communications</Filter>
+    </ClCompile>
+    <ClCompile Include="ComportHandler.cpp">
+      <Filter>Source Files\Communications</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Auvsi_cvFft.h">
@@ -256,6 +265,15 @@
       <Filter>Header Files\Communications</Filter>
     </ClInclude>
     <ClInclude Include="Comport.h">
+      <Filter>Header Files\Communications</Filter>
+    </ClInclude>
+    <ClInclude Include="AutopilotComport.h">
+      <Filter>Header Files\Communications</Filter>
+    </ClInclude>
+    <ClInclude Include="RabbitComport.h">
+      <Filter>Header Files\Communications</Filter>
+    </ClInclude>
+    <ClInclude Include="ComportHandler.h">
       <Filter>Header Files\Communications</Filter>
     </ClInclude>
   </ItemGroup>

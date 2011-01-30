@@ -3,6 +3,7 @@
 #include "Comport.h"
 #include <time.h>
 #include "SimHandler.h"
+#include "ComportHandler.h
 
 /*
  * Serial use bytes
@@ -57,7 +58,7 @@ Comport::Comport(Object ^ theParent)
 	parent = theParent;
 
 	// DEBUG: removed the following
-	//comDelegate = gcnew comportUpdateDelegate(((Skynet::Form1 ^)theParent), &Skynet::Form1::updateComData );
+	comDelegate = gcnew comportUpdateDelegate(((ComportHandler ^)theParent), &ComportHandler::receiveData );
 }
 
 Comport::~Comport(void)
@@ -81,7 +82,7 @@ bool Comport::connect()
 			_serialPort->Open();
 			success = true;
 		}
-		catch( Exception ^ )
+		catch( Exception ^ theException)
 		{
 			System::Diagnostics::Trace::WriteLine("Exception ... could not connect");
 			success = false;
@@ -215,7 +216,7 @@ void Comport::readData(void)
 	byte tempByte;
 
 	array<System::Byte> ^ buffer = gcnew array<System::Byte>(BUFFER_SIZE);
-	ComportDownstream * packet = new ComportDownstream();
+	//ComportDownstream * packet = new ComportDownstream();
 
 	try
 	{
@@ -290,7 +291,7 @@ void Comport::readData(void)
 			return;
  		}
 
-		ComportDownstream * packet = new ComportDownstream();
+		/*ComportDownstream * packet = new ComportDownstream();
 
 		char * dataPtr = (char *)packet;
 
@@ -300,7 +301,7 @@ void Comport::readData(void)
 				dataPtr[letterPosition] = buffer[j*4 + i + 1];
 
 			}			
-		}
+		}*/
 
 		//save time that packet came in
 
@@ -309,7 +310,7 @@ void Comport::readData(void)
 
 		//read file
 
-		packet->error_code = buffer[bufLen - 4];
+		/*packet->error_code = buffer[bufLen - 4];
 
 		if (false && packet->error_code) {
 			System::Diagnostics::Trace::WriteLine("autopilot timeout \t     " + (bool)(packet->error_code & 0x01));
@@ -322,15 +323,23 @@ void Comport::readData(void)
 			System::Diagnostics::Trace::WriteLine("reserved                 " + (bool)(packet->error_code & 0x80));
 			System::Diagnostics::Trace::WriteLine("\n");
 		}
-
+		*/
 		// Verify checksum
 		
 
 		
-		((Simulator::SimHandler ^)theSimHandler)->writeTelemetry(packet);
+	//	((Simulator::SimHandler ^)theSimHandler)->writeTelemetry(packet);
 
 		// Callback to Form1 (stays in this offshoot thread)
-		comDelegate( packet );
+
+		// copy packet into new packet
+		array<System::Byte> ^ outBuffer = gcnew array<System::Byte>(bufLen);
+		for (int i = 0; i < bufLen; i++) {
+			outBuffer[i] = buffer[i];
+		}
+
+		// send data to delegate
+		comDelegate( outBuffer );
 
 		//JK..WRITE HERE!!
 
@@ -572,7 +581,7 @@ void Comport::writeRawData( array<System::Byte> ^ buffer )
 
 	
 	System::Diagnostics::Trace::WriteLine( "Comport: writeRawData" );
-	_serialPort->Write( buffer, 0, buffer.Length );	
+	_serialPort->Write( buffer, 0, buffer->Length );	
 }
 
 

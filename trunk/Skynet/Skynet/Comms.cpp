@@ -11,7 +11,8 @@ Comms::Comms(Object ^ newDelegate) {
 	theDelegate = newDelegate;
 	autopilotPortname = nullptr;
 	rabbitPortname = nullptr;
-
+	autopilot = gcnew AutopilotComport(this);
+	rabbit = gcnew RabbitComport(this);
 }
 
 void Comms::connectAll() {
@@ -63,6 +64,8 @@ void Comms::connectAll() {
 
 	}
 
+	autopilotPortname = "COM1";
+
 	// connect autopilot and rabbit
 	this->connectAutopilot();
 	this->connectRabbit();
@@ -83,17 +86,20 @@ void Comms::disconnectAll() {
 void Comms::connectAutopilot() {
 	if (autopilotPortname == nullptr)
 		return;
+	
+	System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
+	autopilot->connect(autopilotPortname);
+	System::Diagnostics::Trace::WriteLine("Connected to AUTOPILOT?");
 
-	connectAutopilotOnPort(autopilotPortname);
 }
 
 
-void Comms::connectRabbit() {{
+void Comms::connectRabbit() {
 	if (rabbitPortname == nullptr)
 		return;
 
 	
-	connectRabbitOnPort(rabbitPortname);
+	rabbit->connect(rabbitPortname);
 }
 
 
@@ -108,14 +114,9 @@ void Comms::disconnectRabbit() {
 }
 
 
-
-
-void Comms::connectAutopilotOnPort(String ^thePort) {
-}
-
-
-
-void Comms::connectRabbitOnPort(String ^thePort) {
+void Comms::gotoLatLon(float lat, float lon) 
+{
+	autopilot->gotoLatLon(lat, lon);
 }
 
 

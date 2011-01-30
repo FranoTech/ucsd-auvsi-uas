@@ -178,6 +178,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="AutopilotComport.cpp" />
     <ClCompile Include="Auvsi_cvFft.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
@@ -224,6 +225,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Comport.cpp" />
+    <ClCompile Include="ComportHandler.cpp" />
     <ClCompile Include="Database.cpp" />
     <ClCompile Include="DeckLinkAPI_i.c">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">false</CompileAsManaged>
@@ -237,6 +239,7 @@
     <ClCompile Include="Joystick.cpp" />
     <ClCompile Include="MapControl.cpp" />
     <ClCompile Include="OCR.cpp" />
+    <ClCompile Include="RabbitComport.cpp" />
     <ClCompile Include="Saliency.cpp" />
     <ClCompile Include="SaveImage.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">false</CompileAsManaged>
@@ -260,6 +263,7 @@
     <ClCompile Include="VideoSimulator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AutopilotComport.h" />
     <ClInclude Include="Auvsi_cvFft.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClInclude>
@@ -304,6 +308,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Comport.h" />
+    <ClInclude Include="ComportHandler.h" />
     <ClInclude Include="Database.h" />
     <ClInclude Include="DeckLinkAPI_h.h" />
     <ClInclude Include="DecklinkCallback.h" />
@@ -317,6 +322,7 @@
     <ClInclude Include="MasterChiefHeaderFile.h" />
     <ClInclude Include="OCR.h" />
     <ClInclude Include="OpenGLForm.h" />
+    <ClInclude Include="RabbitComport.h" />
     <ClInclude Include="Resampler.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClInclude>

@@ -333,8 +333,9 @@ private: System::Windows::Forms::Button^  button3;
 			ocrDelegate = gcnew Delegates::dataGridViewRowToVoid( this, &Form1::ocrUpdateData );
 
 			Communications::Comms ^ theComm = gcnew Communications::Comms(this);
-
+			
 			theComm->connectAll();
+			theComm->gotoLatLon(534.0f, 2878.0f);
 
 		}
 
