@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "ComportHandler.h"
 #include "Comport.h"
 
@@ -6,11 +8,11 @@ using namespace Communications;
 
 
 
-ComportHandler::ComportHandler(Object ^ newDelegate, String ^ comType) 
+ComportHandler::ComportHandler(TelemetrySimulator ^ telSimulator, Object ^ newDelegate, String ^ comType) 
 {
 	theDelegate = newDelegate;
 	type = comType;
-
+	theTelSimulator = telSimulator;
 	thePort = gcnew Comport(this);
 }
 
@@ -36,6 +38,14 @@ void ComportHandler::beginReading(String ^ comportType)
 	comReadThread->Name =  comportType + " Comport Read Thread";
 	comReadThread->Start();
 
+	afterBeginReading();
+}
+
+
+void ComportHandler::afterBeginReading()
+{
+	// overriden (by AutopilotComport) for custom events run right after we begin receiving packets
+
 }
 
 void ComportHandler::writeData( array<System::Byte> ^ inBuffer ) 
@@ -47,3 +57,9 @@ void ComportHandler::receiveData( array<System::Byte> ^ inBuffer )
 {
 	// do something with this data (probably up to theDelegate?)
 }
+
+
+/**
+Flip 2 Bytes. Works for 16 bit numbers. UNTESTED. Looks buff.
+inline void switchbytes(int &input) { input = (input >> 8) | (input << 8);}
+*/

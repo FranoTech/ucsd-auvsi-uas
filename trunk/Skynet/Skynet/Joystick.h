@@ -1,5 +1,5 @@
 #pragma once
-#include "Comport.h"
+#include "Comms.h"
 
 struct DIJOYCONFIG;
 struct XINPUT_DEVICE_NODE;
@@ -30,7 +30,7 @@ public:
 	virtual ~Joystick(void);
 	HRESULT UpdateInputState( HWND hDlg );
 	HRESULT init(HWND hDlg);
-	Communications::Comport ^ comm;
+	Communications::Comms ^ comm;
 
 	void setZoom( int level );
 	int getZoom( void );

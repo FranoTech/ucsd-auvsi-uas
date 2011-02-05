@@ -1,23 +1,30 @@
 #include "StdAfx.h"
 #include "Comms.h"
 #include "Comport.h"
+#include "Form1.h"
 
 using namespace Communications;
 using namespace System::Threading;
 
 
-Comms::Comms(Object ^ newDelegate) {
+Comms::Comms(Object ^ telSimulator, Object ^ newDelegate) {
 
 	theDelegate = newDelegate;
 	autopilotPortname = nullptr;
 	rabbitPortname = nullptr;
-	autopilot = gcnew AutopilotComport(this);
-	rabbit = gcnew RabbitComport(this);
+	autopilot = gcnew AutopilotComport((TelemetrySimulator ^)telSimulator, this);
+	rabbit = gcnew RabbitComport((TelemetrySimulator ^)telSimulator, this);
+
+	theTelSimulator = (TelemetrySimulator ^)telSimulator;
+
+	
+	comDelegate = gcnew comportUpdateDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::updateComData );
+
 }
 
 void Comms::connectAll() {
 
-	Comport ^ thePort = gcnew Comport(this);
+	Comport ^ thePort = gcnew Comport(nullptr);
 
 	array<String ^> ^ portNames = thePort->getPortNames();
 	array<System::Byte> ^ helloPacket = {0x33, 0x01 };
@@ -64,11 +71,21 @@ void Comms::connectAll() {
 
 	}
 
-	autopilotPortname = "COM1";
+	//autopilotPortname = "COM1";
 
 	// connect autopilot and rabbit
-	this->connectAutopilot();
-	this->connectRabbit();
+	int retval = BOTH_FAILED;
+	if (this->connectAutopilot())
+		retval += AUTOPILOT_CONNECTED;
+
+	if (this->connectRabbit())
+		retval += RABBIT_CONNECTED;
+
+	
+	tellGUIAboutConnection ^ tellGUIDelegate = gcnew tellGUIAboutConnection(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::handleConnectionResult );
+	array<Int32> ^ retArr = {(Int32)retval};
+	((Skynet::Form1 ^ )theDelegate)->Invoke( tellGUIDelegate, retArr );
+
 }
 
 
@@ -83,23 +100,28 @@ void Comms::disconnectAll() {
 
 
 
-void Comms::connectAutopilot() {
+bool Comms::connectAutopilot() {
 	if (autopilotPortname == nullptr)
-		return;
+		return false;
 	
-	System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
-	autopilot->connect(autopilotPortname);
-	System::Diagnostics::Trace::WriteLine("Connected to AUTOPILOT?");
+	//System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
 
+	autopilot->connect(autopilotPortname);
+	autopilot->beginReading("Autopilot");
+	
+	return true;
 }
 
 
-void Comms::connectRabbit() {
+bool Comms::connectRabbit() {
 	if (rabbitPortname == nullptr)
-		return;
+		return false;
 
 	
 	rabbit->connect(rabbitPortname);
+	rabbit->beginReading("Rabbit");
+
+	return true;
 }
 
 
@@ -119,5 +141,12 @@ void Comms::gotoLatLon(float lat, float lon)
 	autopilot->gotoLatLon(lat, lon);
 }
 
+
+
+void Comms::receiveRabbitPacket(ComportDownstream * packet) 
+{
+	
+	comDelegate(packet);
+}
 
 

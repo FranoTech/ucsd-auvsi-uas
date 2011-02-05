@@ -3,6 +3,7 @@
 
 #include "StdAfx.h"
 #include "SimHandler.h"
+#include "TelemetrySimulator.h"
 
 
 #include "Comport.h"
@@ -17,6 +18,7 @@ using namespace Simulator;
 using namespace System;
 using namespace System::Text;
 using namespace System::Windows::Forms;
+using namespace System::IO;
 
 
 // video write frame frequency (in milliseconds) (for 30 fps)
@@ -24,6 +26,19 @@ using namespace System::Windows::Forms;
 #define SHORT_WAIT_INTERVAL	2
 
 #define FRAME_FREQUENCY		1000 / VIDEO_FRAMERATE
+
+
+SimHandler::SimHandler(VideoSimulator ^ vidSim, OpenGLForm::COpenGL ^ opunGL)
+{
+	recordTelemetry = true;
+	recordVideo = true;
+	theVideoSimulator = vidSim;
+	openGLView = opunGL; //opUn is spelled as intended.
+	fileO = new ofstream();
+	fileI = NULL;
+
+	theTelSimulator = gcnew TelemetrySimulator(this, nullptr, nullptr);
+}
 
 	//True = Comport's calls will result in telemetry data being recorded.
 	//False = calls will result in return.
@@ -45,7 +60,7 @@ using namespace System::Windows::Forms;
 	 * Calls OpenGL's savevideo()
 	 * and initializes fileStream for telemetry.
 	 */
-void SimHandler::beginRecording(String ^ filename)
+bool SimHandler::beginRecording(String ^ filename)
 {
 	if(recordVideo)
 	{
@@ -59,25 +74,38 @@ void SimHandler::beginRecording(String ^ filename)
 			videoWriteThread->Abort();
 		}
 
+
+
+		if (!openGLView->enableVideoRecording(filename)) {
+			// SOMETHING WENT WRONG
+
+			return false;
+		}
+		
 		// make thread that reads frame 30 times per second
 		breakNow = false;
 		videoWriteThread = gcnew Thread(gcnew ThreadStart(this, &SimHandler::writeVideo));
 		videoWriteThread->Name = "SimHandler Video Write Thread";
 		videoWriteThread->Start();
 
-
-		openGLView->enableVideoRecording(filename);
-
 		System::Diagnostics::Trace::WriteLine("beginRecording in SimHandler");
 	}
 	if(recordTelemetry)
 	{
+
+
+		/*theTelSimulator->setRabbit(theComms->rabbit);
+		theTelSimulator->setAutopilot(theComms->autopilot);*/ // used only when playing back simulation info
+
+
 		firstPacket = true;
 		beginTelemetry(filename);
 	}
 
 	//if recordVideo call OpenGL
 	//if recordTelem call beginTelemetry();
+
+	return true;
 }
 void SimHandler::endRecording()
 	{
@@ -103,7 +131,7 @@ void SimHandler::endRecording()
 		if(recordTelemetry)
 		{
 			endTelemetry();
-			pleaseDontRecord=false;
+			pleaseRecord=false;
 		}
 		//if recordTelem call endTelem()
 	}
@@ -177,51 +205,23 @@ SimHandler::writeVideo() {
 	}
 }
 
-void SimHandler::writeTelemetry(Communications::ComportDownstream * packet)
+void SimHandler::writeTelemetry( System::TimeSpan time,  int type, int length, array<System::Byte>^ byteArray )
 {
-	if(pleaseDontRecord)
+	if(pleaseRecord)
 	{
-		if(firstPacket)
+		//*file0 << time;
+		*fileO << type;
+		*fileO << length;
+		int x;
+		for(x=0; x<length;x++)
 		{
-			/*
-			fileO << fixed << setprecision(2) << packet.time_offset << endl;
-			*/
-			*fileO << packet->time_offset << endl << endl;
+			*fileO << byteArray[x];
 			firstPacket = false;
 		}
-		/*
-		fileO << fixed << setprecision(2) << packet.time_offset << endl;
-		fileO << fixed << setprecision(2) << packet.gps_lat << endl;
-		fileO << fixed << setprecision(2) << packet.gps_lon << endl;
-		fileO << fixed << setprecision(2) << packet.gps_alt << endl;
-		fileO << fixed << setprecision(2) << packet.airplane_roll << endl;
-		fileO << fixed << setprecision(2) << packet.airplane_pitch << endl;
-		fileO << fixed << setprecision(2) << packet.airplane_heading << endl;
-		fileO << fixed << setprecision(2) << packet.gimbal.azimuth << endl;
-		fileO << fixed << setprecision(2) << packet.gimbal_elevation << endl;
-		fileO << fixed << setprecision(2) << packet.gimbal_heading << endl;
-		fileO << fixed << setprecision(2) << packet.camera_zoom << endl;
-		*/
-		*fileO << packet->time_offset << endl;
-		*fileO << packet->gps_lat << endl;
-		*fileO << packet->gps_lon << endl;
-		*fileO << packet->gps_alt << endl;
-		*fileO << packet->airplane_roll << endl;
-		*fileO << packet->airplane_pitch << endl;
-		*fileO << packet->airplane_heading << endl;
-		*fileO << packet->gimbal_azimuth << endl;
-		*fileO << packet->gimbal_elevation << endl;
-		*fileO << packet->gimbal_heading << endl;
-		*fileO << packet->camera_zoom << endl;
-		*fileO << packet->error_code << endl << endl;
+		*fileO << endl;
+		
 		fileO->flush();
 	}
-	/*
-	* IF recordTelemetry
-	write to file;
-	else
-	return;
-	*/
 }
 	//get ofstream stuff from Comport
 
@@ -239,7 +239,7 @@ void SimHandler::endTelemetry()
 	{
 			fileO->close();
 	}
-	pleaseDontRecord=false;
+	pleaseRecord=false;
 }
 /**
 	* Initializes Telemetry Stream and names it to video filename.
@@ -251,7 +251,7 @@ void SimHandler::beginTelemetry(String ^ filename)
 	{
 		fileO->close();
 	}
-	pleaseDontRecord=true;
+	pleaseRecord=true;
 	fileO->open(ManagedToSTL(filename+".telemetry.txt"));
 }
 /**
@@ -266,3 +266,5 @@ void SimHandler::beginTelemetry(String ^ filename)
 	//Unimplemented.
 	//void pauseVideo();
 	//void resumeVideo();
+
+//void SimHandler::write(System::TimeSpan theOffset, int type, int length, array<System::Byte> ^ byteArray) {} // TODO: finish implementing

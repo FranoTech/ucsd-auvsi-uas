@@ -276,6 +276,9 @@
     <ClInclude Include="ComportHandler.h">
       <Filter>Header Files\Communications</Filter>
     </ClInclude>
+    <ClInclude Include="TelemetrySimulator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc">

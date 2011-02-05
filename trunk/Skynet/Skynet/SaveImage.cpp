@@ -125,7 +125,7 @@ SaveImage::setupVideo( std::string path )
 	//stopVideo();
 	
 	_writer = cv::VideoWriter( path, _fourcc, _fps, cv::Size( _width, _height ) );
-	printf("setup video");
+	//printf("setup video");
 }
 
 void 

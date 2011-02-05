@@ -3,7 +3,7 @@
 #include "Comport.h"
 #include <time.h>
 #include "SimHandler.h"
-#include "ComportHandler.h
+#include "ComportHandler.h"
 
 /*
  * Serial use bytes
@@ -57,8 +57,9 @@ Comport::Comport(Object ^ theParent)
 
 	parent = theParent;
 
-	// DEBUG: removed the following
-	comDelegate = gcnew comportUpdateDelegate(((ComportHandler ^)theParent), &ComportHandler::receiveData );
+
+	if (theParent != nullptr)
+		comHandlerDelegate = gcnew comportHandlerUpdateDelegate(((ComportHandler ^)theParent), &ComportHandler::receiveData );
 }
 
 Comport::~Comport(void)
@@ -339,7 +340,7 @@ void Comport::readData(void)
 		}
 
 		// send data to delegate
-		comDelegate( outBuffer );
+		comHandlerDelegate( outBuffer );
 
 		//JK..WRITE HERE!!
 
@@ -352,12 +353,113 @@ void Comport::readData(void)
 	}
 	catch( Exception ^ )
 	{
-		delete packet;
+		//delete packet;
 		// TODO object disposed exception
 		((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->comportErrorDelegate );
 		//System::Diagnostics::Trace::WriteLine("catch in comport");
 		//comNoDataDelegate();
 	}
+}
+
+
+array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
+{
+	array<System::Byte> ^ buffer = gcnew array<System::Byte>(BUFFER_SIZE);
+	int bufLen = 0;
+	int packetIndex;
+	
+	int bufLen = 0;
+	byte tempByte;
+	byte tempByte2;
+
+	// Read until we get a start byte
+	while( true )
+	{
+		if (packetIndex < inBuffer->Length)
+			return nullptr;
+
+
+		tempByte = inBuffer[packetIndex];
+
+		if( tempByte == START_BYTE )
+		{
+			buffer[bufLen] = tempByte;
+			bufLen++;
+			break;
+		}
+
+		packetIndex++;
+	}
+
+	// Read in the message string, decoding as necessary
+	while( true )
+	{
+		if (packetIndex < inBuffer->Length)
+			return nullptr;
+
+		tempByte = inBuffer[packetIndex];
+
+		if( tempByte == END_BYTE )
+		{
+			buffer[bufLen] = tempByte;
+			bufLen++;
+			break;
+		}
+
+		// process actual byte
+		// if this is a special byte, decode it
+		if( tempByte == SPECIAL_BYTE )
+		{
+			
+			packetIndex++;
+			tempByte2 = inBuffer[packetIndex];
+
+			// Correct the byte here			
+			switch( tempByte2 )
+			{
+				case MAP_TO_START:
+					tempByte = START_BYTE;
+					break;
+				case MAP_TO_END:
+					tempByte = END_BYTE;
+					break;
+				case MAP_TO_SPECIAL:
+					tempByte = SPECIAL_BYTE;
+					break;
+				case MAP_TO_FUTURE:
+					tempByte = FUTURE_BYTE;
+					break;
+				default:
+					break;
+			}
+		}
+
+		buffer[bufLen] = tempByte;
+		bufLen++;
+		
+		packetIndex++;
+
+	}
+
+
+	__int16 checksum = calculateChecksum( buffer, bufLen - 3);
+
+	//System::Diagnostics::Trace::WriteLine("Checksum: " + String::Format("{0:X}", checksum));
+
+	if (!( ((unsigned char *)&checksum)[1] == buffer[bufLen - 3] && ((unsigned char *)&checksum)[0] == buffer[bufLen - 2] ))
+	{
+
+		return nullptr;
+ 	}
+
+
+	// copy packet into new packet
+	array<System::Byte> ^ outBuffer = gcnew array<System::Byte>(bufLen - 4);
+	for (int i = 1; i < bufLen - 3; i++) { // ignore ff, checksum, fe
+		outBuffer[i] = buffer[i];
+	}
+
+	return outBuffer;
 }
 
 __int16 Comport::calculateChecksum( array<System::Byte> ^data, int packetSize ) 

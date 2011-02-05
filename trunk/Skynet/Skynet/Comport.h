@@ -45,7 +45,7 @@ namespace Communications
 	float decodeZoomFloat( __int32 zoomRaw );
 	int decodeZoomInt( __int32 zoomRaw );
 
-	delegate void comportUpdateDelegate( ComportDownstream * data );
+	delegate void comportHandlerUpdateDelegate( array<System::Byte> ^ inBuffer );
 	delegate void comportNoDataDelegate( void );
 
 	ref class Comport
@@ -67,6 +67,7 @@ namespace Communications
 		void readData(void);
 		array<System::Byte> ^ readRawData(int timeout);
 
+		array<System::Byte> ^ decodeData(array<System::Byte> ^ inBuffer);
 
 		void writeData( ComportUpstream * data );
 		void writeRawData( array<System::Byte> ^ buffer );
@@ -74,24 +75,20 @@ namespace Communications
 
 
 		bool isConnected(void) { return _serialPort->IsOpen; }
-		void setSimHandler(Object ^ simHandler)
-		{
-			theSimHandler = simHandler;
-		}
 	private:
 		int decodeByte(void);
 		unsigned char encodeByte( unsigned char data );
 		inline bool isSpecialByte( unsigned char data );
 		__int16 calculateChecksum( array<System::Byte> ^data, int packetSize );
-		Object ^ theSimHandler;
 
 	protected:
 		SerialPort ^ _serialPort;
 		array<String ^> ^ data;
 		array<String ^> ^ portNames;
 		Object ^ parent;
-			
-		comportUpdateDelegate ^ comDelegate;
+		
+		comportHandlerUpdateDelegate ^ comHandlerDelegate;
+		//comportUpdateDelegate ^ comDelegate;
 		comportNoDataDelegate ^ comNoDataDelegate;
 	};
 }

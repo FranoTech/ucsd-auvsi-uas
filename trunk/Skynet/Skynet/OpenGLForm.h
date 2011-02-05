@@ -167,7 +167,8 @@ namespace OpenGLForm
 
 		System::Void saveImage( String ^ path )
 		{
-			imSaver->saveFrame( buffer, ManagedToSTL( path ) );
+			if (imSaver != nullptr)
+				imSaver->saveFrame( buffer, ManagedToSTL( path ) );
 		}
 
 		System::Void saveImage( String ^ path, String ^ pathBase, array<float> ^ homo, double heading )
@@ -179,20 +180,25 @@ namespace OpenGLForm
 			//homography[0] = homography[4] = homography[8] = 1.0;
 			//heading = 45;
 
-			imSaver->saveFrame( buffer, ManagedToSTL( path ), ManagedToSTL( pathBase ), homography, heading );
+			if (imSaver != nullptr)
+				imSaver->saveFrame( buffer, ManagedToSTL( path ), ManagedToSTL( pathBase ), homography, heading );
 		}
 
-		System::Void enableVideoRecording( String ^ path )
+		bool enableVideoRecording( String ^ path )
 		{
-				System::Diagnostics::Trace::WriteLine("enableVideoRecording in OpenGLForm.h");
-			imSaver->setupVideo( ManagedToSTL( path ) );
+			System::Diagnostics::Trace::WriteLine("enableVideoRecording in OpenGLForm.h");
+			if (imSaver != nullptr)
+				imSaver->setupVideo( ManagedToSTL( path ) );
+			else 
+				return false;
 			saveVideo = true;
 			benchmark = 0;
+			return true;
 		}
 
 		System::Void disableVideoRecording()
 		{
-				System::Diagnostics::Trace::WriteLine("disableVideoRecording in OpenGLForm.h");
+			System::Diagnostics::Trace::WriteLine("disableVideoRecording in OpenGLForm.h");
 			imSaver->stopVideo();
 			saveVideo = false;
 		}

@@ -11,7 +11,7 @@ namespace Communications
 
 	ref class RabbitComport : public ComportHandler {
 	public:
-		RabbitComport(Object ^ newDelegate) : ComportHandler(newDelegate, "Rabbit") {};
+		RabbitComport(TelemetrySimulator ^ telSimulator, Object ^ newDelegate) : ComportHandler(telSimulator, newDelegate, "Rabbit") {};
 
 		void receiveData( array<System::Byte> ^ inBuffer ); 
 

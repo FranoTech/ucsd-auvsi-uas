@@ -1,12 +1,12 @@
 #pragma once
 
-
 #include "VideoSimulator.h"
-#include "Comport.h"
 #include <fstream>
 #include <iostream>
 
 using namespace std;
+using namespace System;
+using namespace System::Runtime::InteropServices;
 
 namespace Simulator
 {
@@ -15,17 +15,10 @@ namespace Simulator
 	public:
 		int numframes;
 		System::DateTime before;
+		Object ^ theTelSimulator; // telemetry
+		Object ^ theComms;
 
-		SimHandler(Communications::Comport ^ comPort, Simulator::VideoSimulator ^ vidSim, OpenGLForm::COpenGL ^ opunGL)
-		{
-			recordTelemetry = true;
-			recordVideo = true;
-			theComport = comPort;
-			theVideoSimulator = vidSim;
-			openGLView = opunGL; //opUn is spelled as intended.
-			fileO = new ofstream();
-			fileI = NULL;
-		}
+		SimHandler(VideoSimulator ^ vidSim, OpenGLForm::COpenGL ^ opunGL);
 		~SimHandler()
 		{
 			delete(fileO);
@@ -51,7 +44,7 @@ namespace Simulator
 		 * Calls OpenGL's savevideo()
 		 * and initializes fileStream for telemetry.
 		 */
-		void beginRecording(String ^ filename);
+		bool beginRecording(String ^ filename);
 			//if recordVideo call OpenGL
 			//if recordTelem call beginTelemetryfileO->
 	
@@ -68,7 +61,7 @@ namespace Simulator
 				//UNIMPLEMENTED
 		//void feedVideofileO->
 
-		void writeTelemetry(Communications::ComportDownstream * packet);
+		void writeTelemetry( System::TimeSpan time,  int type, int length, array<System::Byte>^ byteArray);
 		/*
 		 * IF recordTelemetry
 			write to file;
@@ -77,16 +70,16 @@ namespace Simulator
 		 */
 		//get ofstream stuff from Comport
 
+		//void write(System::TimeSpan theOffset, int type, int length, array<System::Byte> ^ byteArray); // TODO: implement
 	private:
 		bool firstPacket;
 		ofstream * fileO;
 		ifstream * fileI;
 		bool recordTelemetry;
 		bool recordVideo;
-		bool pleaseDontRecord;
+		bool pleaseRecord;
 		bool breakNow;
 
-		Communications::Comport ^ theComport;
 		Simulator::VideoSimulator ^ theVideoSimulator;
 		OpenGLForm::COpenGL ^ openGLView;
 		

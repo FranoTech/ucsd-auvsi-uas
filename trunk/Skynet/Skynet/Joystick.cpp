@@ -24,6 +24,7 @@
 
 #include "Form1.h"
 #include "Joystick.h"
+#include "Comport.h"
 
 #define SAFE_DELETE(p)  { if(p) { delete (p);     (p)=NULL; } }
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
@@ -718,12 +719,12 @@ Joystick::UpdateInputState( HWND hDlg )
 			lastPacket = NULL;
 		}
 		lastPacket = packet;
-		comm->writeData(packet);
+		//comm->writeData(packet); // TODO: fix this
 		// This packet is deleted by the comport
 	}
 	else
 	{
-		comm->writeData(lastPacket);
+		//comm->writeData(lastPacket); // TODO: fix this
 		//delete packet;
 	}
 

@@ -334,6 +334,7 @@
     <ClInclude Include="TargetDialog.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="TelemetrySimulator.h" />
     <ClInclude Include="VideoReader.h" />
     <ClInclude Include="VideoSimulator.h" />
   </ItemGroup>

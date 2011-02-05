@@ -1,3 +1,5 @@
+#include "StdAfx.h"
+
 #include "RabbitComport.h"
 
 using namespace Communications;
@@ -10,7 +12,7 @@ void RabbitComport::receiveData( array<System::Byte> ^ inBuffer )
 	const int BYTES_PER_FLOAT = 4;
 
 	// check input
-	if (inBuffer->Length < (NUM_ELEMENT*BYTES_PER_FLOAT + 1)) // 1 IS FOR ERROR CODE
+	if (inBuffer->Length < (NUM_ELEMENTS*BYTES_PER_FLOAT + 1)) // 1 IS FOR ERROR CODE
 		return;
 
 	// override receiveData in ComportHandler
@@ -26,7 +28,7 @@ void RabbitComport::receiveData( array<System::Byte> ^ inBuffer )
 		}			
 	}
 
-	packet->error_code = buffer[inBuffer->Length - 4];
+	packet->error_code = inBuffer[inBuffer->Length - 4];
 
 
 

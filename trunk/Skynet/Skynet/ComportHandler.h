@@ -1,11 +1,14 @@
 #pragma once
 
 #include "Comport.h"
+#include "TelemetrySimulator.h"
 
 using namespace System::IO::Ports;
 using namespace System;
 using namespace System::Runtime::InteropServices;
 using namespace System::Threading;
+
+using namespace Simulator;
 
 namespace Communications
 {
@@ -13,7 +16,7 @@ namespace Communications
 
 	ref class ComportHandler {
 	public:
-		ComportHandler(Object ^ newDelegate, String ^ comType);
+		ComportHandler(TelemetrySimulator ^ telSimulator, Object ^ newDelegate, String ^ comType);
 
 		void connect(String ^ portName);
 		void disconnect();
@@ -22,12 +25,16 @@ namespace Communications
 		void writeData( array<System::Byte> ^ inBuffer ); 
 		void receiveData( array<System::Byte> ^ inBuffer );
 		void beginReading(String ^ comportType);
+		void afterBeginReading();
 
 	protected:
 		Object ^ theDelegate;
 		Comport ^ thePort;
 		Thread ^ comReadThread;
 		String ^ type;
+
+	private:
+		TelemetrySimulator ^ theTelSimulator;
 	};
 
 

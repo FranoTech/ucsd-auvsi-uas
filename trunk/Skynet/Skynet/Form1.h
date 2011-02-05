@@ -85,7 +85,9 @@ namespace Skynet {
 		String ^ fileExtension;
 		String ^ defaultMapCache;
 
-		Communications::Comport ^ theComport;
+		Communications::Comms ^ theComms;
+		bool isconnected;
+		bool isConnecting;
 		//OpenGLForm::COpenGL ^ openGLView2; // airplane virtual cockpit viewport
 		bool vidOptFolderDialogOpen;		// For video options directory
 		Joystick  ^ m_joystick; 			// joystick init
@@ -118,7 +120,7 @@ namespace Skynet {
 	private: System::Windows::Forms::TabControl^  tabControl1;
 	private: System::Windows::Forms::TabPage^  tabPage1;
 	private: System::Windows::Forms::TabPage^  tabPage2;
-	private: System::Windows::Forms::Button^  stopRecordButton;
+
 
 	private: System::Windows::Forms::Button^  startRecordButton;
 
@@ -217,6 +219,7 @@ private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
 private: System::Windows::Forms::Button^  button1;
 private: System::Windows::Forms::Button^  button2;
 private: System::Windows::Forms::Button^  button3;
+private: System::Windows::Forms::Button^  button4;
 
 	private: System::Windows::Forms::Label^  label7;
 			 
@@ -273,14 +276,12 @@ private: System::Windows::Forms::Button^  button3;
 			theVideoSimulator = gcnew Simulator::VideoSimulator( openGLView );
 
 			// Comport Stuff
-			theComport = gcnew Communications::Comport( this );
-			comPortStripComboBox->Items->AddRange( theComport->getPortNames() );
-			theSimHandler = gcnew Simulator::SimHandler(theComport, theVideoSimulator, openGLView);
-			theComport->setSimHandler(theSimHandler);
+			//theComport = gcnew Communications::Comport( this );
+			//comPortStripComboBox->Items->AddRange( theComport->getPortNames() );
+			theSimHandler = gcnew Simulator::SimHandler(theVideoSimulator, openGLView);
 
 			//set up Joystick
 			m_joystick = gcnew Joystick( this );
-			m_joystick->comm = theComport;
 			m_joystick->init( NULL );
 
 			//set up database
@@ -332,10 +333,14 @@ private: System::Windows::Forms::Button^  button3;
 
 			ocrDelegate = gcnew Delegates::dataGridViewRowToVoid( this, &Form1::ocrUpdateData );
 
-			Communications::Comms ^ theComm = gcnew Communications::Comms(this);
+			theComms = gcnew Communications::Comms(theSimHandler->theTelSimulator, this);
+			isconnected = false;
+			isConnecting = false;
+
+			m_joystick->comm = theComms;
 			
-			theComm->connectAll();
-			theComm->gotoLatLon(534.0f, 2878.0f);
+			//theComms->connectAll();
+			//theComms->gotoLatLon(534.0f, 2878.0f);
 
 		}
 
@@ -353,12 +358,12 @@ private: System::Windows::Forms::Button^  button3;
 				delete callback;
 				System::Diagnostics::Trace::WriteLine("Callback");
 			}
-			if (theComport)
+			if (theComms)
 			{
-				if( comReadThread )
-					comReadThread->Abort();
-				delete theComport;
-				System::Diagnostics::Trace::WriteLine("Comport Deleted");
+				//if( comReadThread )
+					//comReadThread->Abort();
+				//delete theComms;
+				System::Diagnostics::Trace::WriteLine("Comport Deleted via Garbage Collecting");
 			}
 			if( m_joystick )
 			{
@@ -408,9 +413,9 @@ private: System::Windows::Forms::Button^  button3;
 		void InitializeComponent(void)
 		{
 			this->components = (gcnew System::ComponentModel::Container());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle4 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle5 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
-			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle6 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle1 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle2 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
+			System::Windows::Forms::DataGridViewCellStyle^  dataGridViewCellStyle3 = (gcnew System::Windows::Forms::DataGridViewCellStyle());
 			this->menuStrip1 = (gcnew System::Windows::Forms::MenuStrip());
 			this->toolStripMenuItem1 = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->exportDataToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
@@ -456,7 +461,6 @@ private: System::Windows::Forms::Button^  button3;
 			this->splitLengthTextBox = (gcnew System::Windows::Forms::TextBox());
 			this->vidOptOutputDirText = (gcnew System::Windows::Forms::TextBox());
 			this->label1 = (gcnew System::Windows::Forms::Label());
-			this->stopRecordButton = (gcnew System::Windows::Forms::Button());
 			this->startRecordButton = (gcnew System::Windows::Forms::Button());
 			this->label5 = (gcnew System::Windows::Forms::Label());
 			this->label6 = (gcnew System::Windows::Forms::Label());
@@ -515,6 +519,7 @@ private: System::Windows::Forms::Button^  button3;
 			this->button1 = (gcnew System::Windows::Forms::Button());
 			this->button2 = (gcnew System::Windows::Forms::Button());
 			this->button3 = (gcnew System::Windows::Forms::Button());
+			this->button4 = (gcnew System::Windows::Forms::Button());
 			this->menuStrip1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->BeginInit();
 			this->tabControl1->SuspendLayout();
@@ -754,21 +759,21 @@ private: System::Windows::Forms::Button^  button3;
 			this->metadataTable->AllowUserToDeleteRows = false;
 			this->metadataTable->AllowUserToResizeColumns = false;
 			this->metadataTable->AllowUserToResizeRows = false;
-			dataGridViewCellStyle4->BackColor = System::Drawing::Color::DimGray;
-			dataGridViewCellStyle4->ForeColor = System::Drawing::Color::White;
-			dataGridViewCellStyle4->SelectionBackColor = System::Drawing::Color::White;
-			dataGridViewCellStyle4->SelectionForeColor = System::Drawing::Color::Black;
-			this->metadataTable->AlternatingRowsDefaultCellStyle = dataGridViewCellStyle4;
+			dataGridViewCellStyle1->BackColor = System::Drawing::Color::DimGray;
+			dataGridViewCellStyle1->ForeColor = System::Drawing::Color::White;
+			dataGridViewCellStyle1->SelectionBackColor = System::Drawing::Color::White;
+			dataGridViewCellStyle1->SelectionForeColor = System::Drawing::Color::Black;
+			this->metadataTable->AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
 			this->metadataTable->BackgroundColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle5->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
-			dataGridViewCellStyle5->BackColor = System::Drawing::Color::DimGray;
-			dataGridViewCellStyle5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
+			dataGridViewCellStyle2->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
+			dataGridViewCellStyle2->BackColor = System::Drawing::Color::DimGray;
+			dataGridViewCellStyle2->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(0)));
-			dataGridViewCellStyle5->ForeColor = System::Drawing::Color::White;
-			dataGridViewCellStyle5->SelectionBackColor = System::Drawing::Color::White;
-			dataGridViewCellStyle5->SelectionForeColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle5->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
-			this->metadataTable->ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
+			dataGridViewCellStyle2->ForeColor = System::Drawing::Color::White;
+			dataGridViewCellStyle2->SelectionBackColor = System::Drawing::Color::White;
+			dataGridViewCellStyle2->SelectionForeColor = System::Drawing::Color::Black;
+			dataGridViewCellStyle2->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
+			this->metadataTable->ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
 			this->metadataTable->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
 			this->metadataTable->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(2) {this->Property, 
 				this->Value});
@@ -777,15 +782,15 @@ private: System::Windows::Forms::Button^  button3;
 			this->metadataTable->Location = System::Drawing::Point(12, 55);
 			this->metadataTable->Name = L"metadataTable";
 			this->metadataTable->ReadOnly = true;
-			dataGridViewCellStyle6->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
-			dataGridViewCellStyle6->BackColor = System::Drawing::Color::Black;
-			dataGridViewCellStyle6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
+			dataGridViewCellStyle3->Alignment = System::Windows::Forms::DataGridViewContentAlignment::MiddleLeft;
+			dataGridViewCellStyle3->BackColor = System::Drawing::Color::Black;
+			dataGridViewCellStyle3->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, 
 				System::Drawing::GraphicsUnit::Point, static_cast<System::Byte>(0)));
-			dataGridViewCellStyle6->ForeColor = System::Drawing::SystemColors::WindowText;
-			dataGridViewCellStyle6->SelectionBackColor = System::Drawing::SystemColors::Highlight;
-			dataGridViewCellStyle6->SelectionForeColor = System::Drawing::SystemColors::HighlightText;
-			dataGridViewCellStyle6->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
-			this->metadataTable->RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
+			dataGridViewCellStyle3->ForeColor = System::Drawing::SystemColors::WindowText;
+			dataGridViewCellStyle3->SelectionBackColor = System::Drawing::SystemColors::Highlight;
+			dataGridViewCellStyle3->SelectionForeColor = System::Drawing::SystemColors::HighlightText;
+			dataGridViewCellStyle3->WrapMode = System::Windows::Forms::DataGridViewTriState::True;
+			this->metadataTable->RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
 			this->metadataTable->RowHeadersWidthSizeMode = System::Windows::Forms::DataGridViewRowHeadersWidthSizeMode::DisableResizing;
 			this->metadataTable->RowTemplate->DefaultCellStyle->BackColor = System::Drawing::Color::Black;
 			this->metadataTable->RowTemplate->DefaultCellStyle->ForeColor = System::Drawing::Color::White;
@@ -948,16 +953,6 @@ private: System::Windows::Forms::Button^  button3;
 			this->label1->Size = System::Drawing::Size(84, 13);
 			this->label1->TabIndex = 0;
 			this->label1->Text = L"Output Directory";
-			// 
-			// stopRecordButton
-			// 
-			this->stopRecordButton->Location = System::Drawing::Point(1103, 31);
-			this->stopRecordButton->Name = L"stopRecordButton";
-			this->stopRecordButton->Size = System::Drawing::Size(99, 23);
-			this->stopRecordButton->TabIndex = 8;
-			this->stopRecordButton->Text = L"Stop Recording";
-			this->stopRecordButton->UseVisualStyleBackColor = true;
-			this->stopRecordButton->Click += gcnew System::EventHandler(this, &Form1::stopRecordButton_Click);
 			// 
 			// startRecordButton
 			// 
@@ -1418,6 +1413,16 @@ private: System::Windows::Forms::Button^  button3;
 			this->button3->UseVisualStyleBackColor = true;
 			this->button3->Click += gcnew System::EventHandler(this, &Form1::button3_Click);
 			// 
+			// button4
+			// 
+			this->button4->Location = System::Drawing::Point(1266, 30);
+			this->button4->Name = L"button4";
+			this->button4->Size = System::Drawing::Size(100, 23);
+			this->button4->TabIndex = 18;
+			this->button4->Text = L"Connect";
+			this->button4->UseVisualStyleBackColor = true;
+			this->button4->Click += gcnew System::EventHandler(this, &Form1::connectButton_Click);
+			// 
 			// Form1
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -1425,6 +1430,7 @@ private: System::Windows::Forms::Button^  button3;
 			this->AutoValidate = System::Windows::Forms::AutoValidate::EnableAllowFocusChange;
 			this->BackColor = System::Drawing::Color::DimGray;
 			this->ClientSize = System::Drawing::Size(1924, 946);
+			this->Controls->Add(this->button4);
 			this->Controls->Add(this->button3);
 			this->Controls->Add(this->button2);
 			this->Controls->Add(this->button1);
@@ -1435,7 +1441,6 @@ private: System::Windows::Forms::Button^  button3;
 			this->Controls->Add(this->label7);
 			this->Controls->Add(this->label6);
 			this->Controls->Add(this->label5);
-			this->Controls->Add(this->stopRecordButton);
 			this->Controls->Add(this->tabControl1);
 			this->Controls->Add(this->metadataTable);
 			this->Controls->Add(this->startRecordButton);
@@ -1546,7 +1551,9 @@ private: System::Void errorMessage( String ^ message )
 
 private: System::Void comPortStripComboBox_TextChanged(System::Object^  sender, System::EventArgs^  e) {
 
-			 String ^ port = comPortStripComboBox->Text;
+			 // dont run this function, autoconnect makes this obsolete
+
+			/* String ^ port = comPortStripComboBox->Text;
 
 			 bool result = theComport->setPortName( port );
 
@@ -1557,11 +1564,16 @@ private: System::Void comPortStripComboBox_TextChanged(System::Object^  sender, 
 			 else
 			 {
 			 	errorMessage( "Failed changing comport to: " + port );
-			 }
+			 }*/
 		 }
 
 private: System::Void baudRateStripComboBox_TextChanged(System::Object^  sender, System::EventArgs^  e) {
 
+			 
+			 // dont run this function, autoconnect makes this obsolete
+
+
+			 /*
 			 String ^ baudRateString = baudRateStripComboBox->Text;
 			 // convert string to int
 			 int baudRate = Convert::ToInt32( baudRateString, 10 );
@@ -1575,7 +1587,7 @@ private: System::Void baudRateStripComboBox_TextChanged(System::Object^  sender,
 			 else
 			 {
 			 	errorMessage( "Failed changing baud rate to: " + baudRate );
-			 }
+			 }*/
 
 		 }
 
@@ -1586,7 +1598,10 @@ private: System::Void joystickTimer_Tick(System::Object^  sender, System::EventA
 
 private: System::Void connectToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) 
 		 {		
-			 bool result = theComport->connect();
+			 
+			 // dont run this function, autoconnect makes this obsolete
+			 
+			 /*bool result = theComport->connect();
 
 			 if (result)
 			 {
@@ -1599,11 +1614,16 @@ private: System::Void connectToolStripMenuItem_Click(System::Object^  sender, Sy
 			 	isReadingData = false;
 			 }
 			 else
-			 	errorMessage( "Failed to connect" );
+			 	errorMessage( "Failed to connect" );*/
 		 }
 
 private: System::Void disconnectToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 
+			 
+			// dont run this function, autoconnect makes this obsolete
+
+
+			 /*
 			bool result = theComport->disconnect();
 
 			if (result)
@@ -1613,6 +1633,8 @@ private: System::Void disconnectToolStripMenuItem_Click(System::Object^  sender,
 			}
 			else
 				errorMessage( "Failed to disconnect" );
+				*/
+
 		 }
 
 private: bool isReadingData;
@@ -1847,35 +1869,54 @@ private: System::Void encodingComboBox_SelectedIndexChanged(System::Object^  sen
 		 
 		 }
 private: System::Void startRecordButton_Click(System::Object^  sender, System::EventArgs^  e) {
-		 	if( recording )
-				stopRecordButton_Click(sender, e);
+		 	
+			 // stop recording
+			 if( recording ) {
 
-			DateTime time = DateTime::Now;
-			String ^ path;//vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+				theSimHandler->endRecording();
+				consoleMessage( "Stopped recording video and telemetry", Color::Green );	
+				recording = false;
+				System::Diagnostics::Trace::WriteLine("stopped recording in Form1");
+				this->errorLogTextBox->BackColor = System::Drawing::Color::Black;
+
+				// update button
+				((Windows::Forms::ButtonBase ^)sender)->Text = "Start Recording";
+			}
+
+			// start recording
+			else {
+				DateTime time = DateTime::Now;
+				String ^ path;//vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 			
-			path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+				path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 
-			recordStart = DateTime::Now;
-			//openGLView->enableVideoRecording( path );
-			// START TELEMETRY HERE
-			theSimHandler->beginRecording(path);
-			consoleMessage( "Started recording video and telemetry", Color::Green );	
-			recording = true;
-			System::Diagnostics::Trace::WriteLine("started recording in Form1 " + path);
+				recordStart = DateTime::Now;
+				//openGLView->enableVideoRecording( path );
+				// START TELEMETRY HERE
+				if (!theSimHandler->beginRecording(path)) {
+					// something went wrong
+					consoleMessage( "Failed to Start Recording", Color::Red );
+
+				}
+
+				else {
+					// recording began
+					consoleMessage( "Started recording video and telemetry", Color::Green );	
+					recording = true;
+					System::Diagnostics::Trace::WriteLine("started recording in Form1 " + path);
 			
-			this->errorLogTextBox->BackColor = System::Drawing::Color::FromArgb( 0, 40, 0);
-
+					this->errorLogTextBox->BackColor = System::Drawing::Color::FromArgb( 0, 40, 0);
+					
+					// update button
+					((Windows::Forms::ButtonBase ^)sender)->Text = "Stop Recording";
+				}
+			}
 		 }
 private: System::Void stopRecordButton_Click(System::Object^  sender, System::EventArgs^  e) {
 		 	if( !recording )
 				return;
 
-			//openGLView->disableVideoRecording();
-			theSimHandler->endRecording();
-			consoleMessage( "Stopped recording video and telemetry", Color::Green );	
-			recording = false;
-			System::Diagnostics::Trace::WriteLine("stopped recording in Form1");
-			this->errorLogTextBox->BackColor = System::Drawing::Color::Black;
+			// no longer used (moved to startRecording
 		 }
 
 #define SPLIT_LENGTH 300 // this->splitLengthTextBox->Text
@@ -2216,7 +2257,7 @@ private: System::Void mapLookGPSToolStripMenuItem_Click(System::Object^  sender,
 				packet->update_type = 0x0B;
 
 				for( int i = 0; i < 100; ++i )
-					theComport->writeData(packet);
+					;//theComport->writeData(packet); // TODO: send data correctly
 
 				delete packet;
 
@@ -2413,7 +2454,7 @@ private: System::Void Form1_KeyDown(System::Object^  sender, System::Windows::Fo
 			}
 
 			if (buffer != nullptr)
-				theComport->writeRawData(buffer);
+				;//theComport->writeRawData(buffer); // TODO: fix this
 
 		 }
 private: System::Void Form1_KeyPress(System::Object^  sender, System::Windows::Forms::KeyPressEventArgs^  e) {
@@ -2436,7 +2477,7 @@ private: System::Void button1_Click(System::Object^  sender, System::EventArgs^ 
 			
 
 			if (buffer != nullptr)
-				theComport->writeRawData(buffer);
+				;//theComport->writeRawData(buffer); // TODO: fix this
 		 }
 private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
 				array<System::Byte> ^ buffer = nullptr;
@@ -2453,7 +2494,7 @@ private: System::Void button2_Click(System::Object^  sender, System::EventArgs^ 
 
 
 			if (buffer != nullptr)
-				theComport->writeRawData(buffer);
+				;//theComport->writeRawData(buffer); // TODO: fix this
 		 }
 private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
 			array<System::Byte> ^ buffer = nullptr;
@@ -2471,13 +2512,84 @@ private: System::Void button3_Click(System::Object^  sender, System::EventArgs^ 
 			
 
 			if (buffer != nullptr)
-				theComport->writeRawData(buffer);
+				;//theComport->writeRawData(buffer); // TODO: fix this
 		 }
 private: System::Void Form1_Click(System::Object^  sender, System::EventArgs^  e) {
 			 //System::Diagnostics::Trace::WriteLine( "click\nKEYPRESS\nKEYPRESS\nKEYPRESS\nKEYPRESS\nKEYPRESS\NKEYPRESS\nKEYPRESS\n" );
 		 }
 private: System::Void errorLogTextBox_KeyPress(System::Object^  sender, System::Windows::Forms::KeyPressEventArgs^  e) {
 			 System::Diagnostics::Trace::WriteLine( "errorlog - keypress" );
+		 }
+public:	 System::Void handleConnectionResult(array<Int32> ^ retArr) {
+
+			int result = (int)retArr[0];
+			isConnecting = false;
+
+			if (result == BOTH_FAILED) {
+				// both failed to connect
+					consoleMessage( "Failed to Connect to Rabbit", Color::Red );
+					consoleMessage( "Failed to Connect to Autopilot", Color::Red );
+
+			}
+
+			else {
+				// recording began
+				if (result == BOTH_CONNECTED) {
+					consoleMessage( "Connected to Rabbit", Color::Green );
+					consoleMessage( "Connected to Autopilot", Color::Green );
+				} else if (result == RABBIT_CONNECTED) {
+					consoleMessage( "Connected to Rabbit", Color::Green );
+					consoleMessage( "Failed to Connect to Autopilot", Color::Red );
+				} else if (result == AUTOPILOT_CONNECTED) {
+					consoleMessage( "Failed to Connect to Rabbit", Color::Red );
+					consoleMessage( "Connected to Autopilot", Color::Green );
+				}
+
+				isconnected = true;
+				System::Diagnostics::Trace::WriteLine("Connected");
+			
+					
+				// update button
+				this->button4->Text = "Disconnect";
+				
+			}
+
+
+
+		 }
+private: System::Void connectButton_Click(System::Object^  sender, System::EventArgs^  e) {
+			 // disconnect
+			 if( isconnected ) {
+
+				 
+				theComms->disconnectAll();
+				consoleMessage( "Disconnected from Comms", Color::Green );	
+				isconnected = false;
+
+				System::Diagnostics::Trace::WriteLine("Disconnected from Comms in Form1");
+				
+				// update button
+				((Windows::Forms::ButtonBase ^)sender)->Text = "Start Recording";
+			}
+
+			// connect
+			else {
+
+				if (isConnecting)
+					return;
+				isConnecting = true;
+
+				consoleMessage( "Connecting...", Color::Green );
+
+				// spawn thread
+				Thread ^ comConnectThread = gcnew Thread(gcnew ThreadStart(theComms, &Communications::Comms::connectAll));
+				comConnectThread->Name = "Comms Connect Thread";
+				comConnectThread->Start();
+
+
+				
+			}
+
 		 }
 };
 }
