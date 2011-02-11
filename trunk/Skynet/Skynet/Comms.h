@@ -3,6 +3,7 @@
 #include "Comport.h"
 #include "AutopilotComport.h"
 #include "RabbitComport.h"
+#include "ColorRef.h"
 
 #define BOTH_CONNECTED			3
 #define RABBIT_CONNECTED		1
@@ -12,6 +13,7 @@
 using namespace System::IO::Ports;
 using namespace System;
 using namespace System::Runtime::InteropServices;
+using namespace System::Drawing;
 
 namespace Communications
 {
@@ -19,6 +21,7 @@ namespace Communications
 	
 	delegate void comportUpdateDelegate( ComportDownstream * data );
 	delegate void tellGUIAboutConnection( array<Int32> ^ retArr );
+	delegate void guiConsoleDelegate( array<Object ^> ^ retArr );
 
 	ref class Comms {
 	public:
@@ -40,6 +43,8 @@ namespace Communications
 		// receiving
 		void receiveRabbitPacket(ComportDownstream * packet);
 
+		void printToConsole( String ^ message, ColorRef ^ col );
+
 		// instance variables
 		AutopilotComport ^ autopilot;
 		RabbitComport ^ rabbit;
@@ -49,6 +54,7 @@ namespace Communications
 		TelemetrySimulator ^ theTelSimulator;
 		Object ^ theDelegate;
 		comportUpdateDelegate ^ comDelegate;
+		guiConsoleDelegate ^ consoleDelegate;
 
 		String ^ autopilotPortname;
 		String ^ rabbitPortname;

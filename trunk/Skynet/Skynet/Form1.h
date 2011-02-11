@@ -19,6 +19,7 @@
 //#include "VideoSimulator.h"
 #include "SimHandler.h"
 #include "Comms.h"
+#include "ColorRef.h"
 
 	// row indexes for comport data
 	const int A_ALT = 1;
@@ -558,20 +559,20 @@ private: System::Windows::Forms::Button^  button4;
 			// exportDataToolStripMenuItem
 			// 
 			this->exportDataToolStripMenuItem->Name = L"exportDataToolStripMenuItem";
-			this->exportDataToolStripMenuItem->Size = System::Drawing::Size(143, 22);
+			this->exportDataToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->exportDataToolStripMenuItem->Text = L"Export &Data...";
 			this->exportDataToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::exportDataToolStripMenuItem_Click);
 			// 
 			// toolStripSeparator3
 			// 
 			this->toolStripSeparator3->Name = L"toolStripSeparator3";
-			this->toolStripSeparator3->Size = System::Drawing::Size(140, 6);
+			this->toolStripSeparator3->Size = System::Drawing::Size(149, 6);
 			// 
 			// exitToolStripMenuItem
 			// 
 			this->exitToolStripMenuItem->Name = L"exitToolStripMenuItem";
 			this->exitToolStripMenuItem->ShortcutKeys = static_cast<System::Windows::Forms::Keys>((System::Windows::Forms::Keys::Alt | System::Windows::Forms::Keys::F4));
-			this->exitToolStripMenuItem->Size = System::Drawing::Size(143, 22);
+			this->exitToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->exitToolStripMenuItem->Text = L"&Exit";
 			this->exitToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::exitToolStripMenuItem_Click);
 			// 
@@ -580,8 +581,8 @@ private: System::Windows::Forms::Button^  button4;
 			this->serialCommunicationsToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(6) {this->connectToolStripMenuItem, 
 				this->toolStripSeparator1, this->comPortStripComboBox, this->baudRateStripComboBox, this->toolStripSeparator2, this->disconnectToolStripMenuItem});
 			this->serialCommunicationsToolStripMenuItem->Name = L"serialCommunicationsToolStripMenuItem";
-			this->serialCommunicationsToolStripMenuItem->Size = System::Drawing::Size(45, 20);
-			this->serialCommunicationsToolStripMenuItem->Text = L"Com";
+			this->serialCommunicationsToolStripMenuItem->Size = System::Drawing::Size(24, 20);
+			this->serialCommunicationsToolStripMenuItem->Text = L"-";
 			this->serialCommunicationsToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::serialCommunicationsToolStripMenuItem_Click);
 			// 
 			// connectToolStripMenuItem
@@ -637,41 +638,41 @@ private: System::Windows::Forms::Button^  button4;
 			this->providerToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(3) {this->mapnikToolStripMenuItem, 
 				this->osmarenderToolStripMenuItem, this->cyclemapToolStripMenuItem});
 			this->providerToolStripMenuItem->Name = L"providerToolStripMenuItem";
-			this->providerToolStripMenuItem->Size = System::Drawing::Size(128, 22);
+			this->providerToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->providerToolStripMenuItem->Text = L"Provider";
 			// 
 			// mapnikToolStripMenuItem
 			// 
 			this->mapnikToolStripMenuItem->Name = L"mapnikToolStripMenuItem";
-			this->mapnikToolStripMenuItem->Size = System::Drawing::Size(139, 22);
+			this->mapnikToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->mapnikToolStripMenuItem->Text = L"Mapnik";
 			this->mapnikToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::mapnikToolStripMenuItem_Click);
 			// 
 			// osmarenderToolStripMenuItem
 			// 
 			this->osmarenderToolStripMenuItem->Name = L"osmarenderToolStripMenuItem";
-			this->osmarenderToolStripMenuItem->Size = System::Drawing::Size(139, 22);
+			this->osmarenderToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->osmarenderToolStripMenuItem->Text = L"Osmarender";
 			this->osmarenderToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::osmarenderToolStripMenuItem_Click);
 			// 
 			// cyclemapToolStripMenuItem
 			// 
 			this->cyclemapToolStripMenuItem->Name = L"cyclemapToolStripMenuItem";
-			this->cyclemapToolStripMenuItem->Size = System::Drawing::Size(139, 22);
+			this->cyclemapToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->cyclemapToolStripMenuItem->Text = L"Cyclemap";
 			this->cyclemapToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::cyclemapToolStripMenuItem_Click);
 			// 
 			// lockToolStripMenuItem
 			// 
 			this->lockToolStripMenuItem->Name = L"lockToolStripMenuItem";
-			this->lockToolStripMenuItem->Size = System::Drawing::Size(128, 22);
+			this->lockToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->lockToolStripMenuItem->Text = L"Lock";
 			this->lockToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::lockToolStripMenuItem_Click);
 			// 
 			// downloadToolStripMenuItem
 			// 
 			this->downloadToolStripMenuItem->Name = L"downloadToolStripMenuItem";
-			this->downloadToolStripMenuItem->Size = System::Drawing::Size(128, 22);
+			this->downloadToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->downloadToolStripMenuItem->Text = L"Download";
 			this->downloadToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::downloadToolStripMenuItem_Click);
 			// 
@@ -685,7 +686,7 @@ private: System::Windows::Forms::Button^  button4;
 			// resetToolStripMenuItem
 			// 
 			this->resetToolStripMenuItem->Name = L"resetToolStripMenuItem";
-			this->resetToolStripMenuItem->Size = System::Drawing::Size(102, 22);
+			this->resetToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->resetToolStripMenuItem->Text = L"Reset";
 			this->resetToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::resetToolStripMenuItem_Click);
 			// 
@@ -700,28 +701,28 @@ private: System::Windows::Forms::Button^  button4;
 			// choosePathToolStripMenuItem
 			// 
 			this->choosePathToolStripMenuItem->Name = L"choosePathToolStripMenuItem";
-			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->choosePathToolStripMenuItem->Text = L"Choose Path";
 			this->choosePathToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::choosePathToolStripMenuItem_Click);
 			// 
 			// startToolStripMenuItem
 			// 
 			this->startToolStripMenuItem->Name = L"startToolStripMenuItem";
-			this->startToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->startToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->startToolStripMenuItem->Text = L"Start";
 			this->startToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::startToolStripMenuItem_Click);
 			// 
 			// pauseToolStripMenuItem
 			// 
 			this->pauseToolStripMenuItem->Name = L"pauseToolStripMenuItem";
-			this->pauseToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->pauseToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->pauseToolStripMenuItem->Text = L"Pause";
 			this->pauseToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::pauseToolStripMenuItem_Click);
 			// 
 			// stopToolStripMenuItem
 			// 
 			this->stopToolStripMenuItem->Name = L"stopToolStripMenuItem";
-			this->stopToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->stopToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->stopToolStripMenuItem->Text = L"Stop";
 			this->stopToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::stopToolStripMenuItem_Click);
 			// 
@@ -1543,6 +1544,12 @@ private: System::Void consoleMessage( String ^ message, Color col )
 		 	 return;
 		 }
 
+public:  System::Void printToConsole( array<Object ^> ^ retArr ) 
+		 {
+			 
+			System::Diagnostics::Trace::WriteLine("Form1::printToConsole");
+			 consoleMessage( (String ^)retArr[0], Color::Blue);//((ColorRef ^)retArr[1])->theColor );
+		 }
 private: System::Void errorMessage( String ^ message )
 		 {
 			 consoleMessage( "ERROR: " + message, Color::Red );
@@ -2550,6 +2557,7 @@ public:	 System::Void handleConnectionResult(array<Int32> ^ retArr) {
 			
 					
 				// update button
+				//this->button3 = (gcnew System::Windows::Forms::Button());
 				this->button4->Text = "Disconnect";
 				
 			}
@@ -2569,7 +2577,7 @@ private: System::Void connectButton_Click(System::Object^  sender, System::Event
 				System::Diagnostics::Trace::WriteLine("Disconnected from Comms in Form1");
 				
 				// update button
-				((Windows::Forms::ButtonBase ^)sender)->Text = "Start Recording";
+				((Windows::Forms::ButtonBase ^)sender)->Text = "Connect";
 			}
 
 			// connect

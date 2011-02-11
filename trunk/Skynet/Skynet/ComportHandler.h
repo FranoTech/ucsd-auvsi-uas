@@ -23,9 +23,9 @@ namespace Communications
 
 		//void beginReading();
 		void writeData( array<System::Byte> ^ inBuffer ); 
-		void receiveData( array<System::Byte> ^ inBuffer );
+		virtual void receiveData( array<System::Byte> ^ inBuffer );
 		void beginReading(String ^ comportType);
-		void afterBeginReading();
+		virtual void afterBeginReading();
 
 	protected:
 		Object ^ theDelegate;

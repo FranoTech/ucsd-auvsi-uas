@@ -355,7 +355,7 @@ void Comport::readData(void)
 	{
 		//delete packet;
 		// TODO object disposed exception
-		((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->comportErrorDelegate );
+		//((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->comportErrorDelegate );
 		//System::Diagnostics::Trace::WriteLine("catch in comport");
 		//comNoDataDelegate();
 	}
@@ -368,7 +368,6 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 	int bufLen = 0;
 	int packetIndex;
 	
-	int bufLen = 0;
 	byte tempByte;
 	byte tempByte2;
 

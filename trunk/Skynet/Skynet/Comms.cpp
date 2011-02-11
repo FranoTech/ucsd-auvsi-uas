@@ -19,6 +19,7 @@ Comms::Comms(Object ^ telSimulator, Object ^ newDelegate) {
 
 	
 	comDelegate = gcnew comportUpdateDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::updateComData );
+	consoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::printToConsole );
 
 }
 
@@ -33,7 +34,7 @@ void Comms::connectAll() {
 	for (int i = 0; i < portNames->Length; i++) {
 		
 		// set port name
-		System::Diagnostics::Trace::WriteLine("Connecting to port " + portNames[i] );
+		//System::Diagnostics::Trace::WriteLine("Connecting to port " + portNames[i] );
 		thePort->setPortName(portNames[i]);
 
 		// connect to port
@@ -86,6 +87,7 @@ void Comms::connectAll() {
 	array<Int32> ^ retArr = {(Int32)retval};
 	((Skynet::Form1 ^ )theDelegate)->Invoke( tellGUIDelegate, retArr );
 
+	//printToConsole("Hello", gcnew ColorRef(Color::Blue));
 }
 
 
@@ -104,7 +106,7 @@ bool Comms::connectAutopilot() {
 	if (autopilotPortname == nullptr)
 		return false;
 	
-	//System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
+	System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
 
 	autopilot->connect(autopilotPortname);
 	autopilot->beginReading("Autopilot");
@@ -118,6 +120,7 @@ bool Comms::connectRabbit() {
 		return false;
 
 	
+	System::Diagnostics::Trace::WriteLine("Connecting to RABBIT");
 	rabbit->connect(rabbitPortname);
 	rabbit->beginReading("Rabbit");
 
@@ -142,6 +145,26 @@ void Comms::gotoLatLon(float lat, float lon)
 }
 
 
+void Comms::printToConsole( String ^ message, ColorRef ^ col )
+{
+
+	// THIS DOESNT WORK
+	System::Diagnostics::Trace::WriteLine("Comms::printToConsole(): " + message);
+	return;
+	guiConsoleDelegate ^ newconsoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::printToConsole );
+	array< Object^ >^ local = gcnew array< Object^ >(1);
+	local[0] = message;
+	//local[1] = col;
+
+	array<Object ^> ^ retArr = {message};
+	
+	System::Diagnostics::Trace::WriteLine("about to invoke");
+	((Skynet::Form1 ^ )theDelegate)->Invoke( newconsoleDelegate, gcnew array<Object ^>{message, col});
+
+	//array<Object ^> ^ retArr = {message, col};
+	//((Skynet::Form1 ^ )theDelegate)->Invoke( consoleDelegate, retArr );
+	
+}
 
 void Comms::receiveRabbitPacket(ComportDownstream * packet) 
 {

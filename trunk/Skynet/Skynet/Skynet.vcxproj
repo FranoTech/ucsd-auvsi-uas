@@ -303,6 +303,7 @@
     <ClInclude Include="BlobResult.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="ColorRef.h" />
     <ClInclude Include="Comms.h" />
     <ClInclude Include="ComponentLabeling.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>

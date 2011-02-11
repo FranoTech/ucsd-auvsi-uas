@@ -1,9 +1,11 @@
 #include "StdAfx.h"
 
 #include "AutopilotComport.h"
+#include "Comms.h"
 
 using namespace Communications;
-
+using namespace System;
+using namespace System::Drawing;
 
 
 void AutopilotComport::writeData( array<System::Byte> ^ inBuffer )
@@ -17,6 +19,8 @@ void AutopilotComport::writeData( array<System::Byte> ^ inBuffer )
 
 void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 {
+	
+	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData()");
 
 	// handle data
 	PacketHeader *theHeader = new PacketHeader();
@@ -25,14 +29,43 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 	char * dataPtr = (char *)theHeader;
 	int packetIndex = 0;
 	for (int j = 0; j < 8; j++) {
-		dataPtr[j] = packet[packetIndex];
+		dataPtr[j] = inBuffer[packetIndex];
 		packetIndex++;
 	}
 	
-	if(theHeader->type == 10){  //pass through autopilot packet which we need to decode
+	if(theHeader->type == 10){  //pass through autopilot packet which we need to decode, passthrough non-guaranteed packet
+		array<System::Byte> ^ newPacket = thePort->decodeData(inBuffer);
+
+		if(newPacket != nullptr){  //if the decoded packet's xor worked out
+			__int16 sourceAddress = getInt16FromBytes(newPacket, 0);  //get the source address of the packet, it should be from agentAddress
+			unsigned char kestrelPacketType = getUCharFromBytes(newPacket, 2);  //the packet type, in kestrel terms rather than VC terms (ie, chapter 4 of kestrel comms guide)
+			
+			/*if(kestrelPacketType == 1){ // acknowledgement packet
+				unsigned char packetType = getUCharFromBytes(newPacket, 3);  //the packet type being acknowledged.  XXX we don't do anything with it, but we can if we need to
+			}*/
+			if(kestrelPacketType == 29)  //mixed telemetry response
+			{
+				planeState->roll = (float)(getInt16FromBytes(newPacket, 3)) / 1000.0;
+				planeState->pitch = (float)(getInt16FromBytes(newPacket, 5)) / 1000.0;
+				//planeState->heading = (float)(get  //XXX finish this
+			}
+		}
 
 	} else if(theHeader->type == 61) {  // get agent list response
-		unsigned char numAgents = get;
+		unsigned char numAgents = getUCharFromBytes(inBuffer, 8);  //get the number of agents in the list.  We typically expect 1
+		int counter = 0;
+		while(counter < numAgents && 9 + 2*counter < inBuffer->Length){
+			__int16 agentAddress = getInt16FromBytes(inBuffer, 9 + 2 * counter);  //get the agent address
+			if(planeState->address == 0){  //it is currently unassigned
+				planeState->address = agentAddress;  //set the autopilot address
+				System::Diagnostics::Trace::WriteLine("Set Autopilot Address to " + planeState->address);
+				((Comms ^)theDelegate)->printToConsole("Set Autopilot Address to " + planeState->address, gcnew ColorRef( Color::Green ));
+			}
+			counter ++;
+		}
+
+
+
 	}
 
 		//thePort->decodeData(packetData);
@@ -43,6 +76,7 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
  */
 void AutopilotComport::afterBeginReading()
 {
+	System::Diagnostics::Trace::WriteLine("running AutopilotComport::afterBeginReading()");
 	requestPacketForwarding();  //ask VC to pass on data
 	requestAgents();  //ask for all agents
 }
@@ -57,7 +91,7 @@ void AutopilotComport::gotoLatLon(float lat, float lon)
 
 	writeData( packet ); // set waypoint command on VC
 
-	packet = getVCPacket30(destAddr);  //get the upload commands packet
+	packet = getVCPacket30();  //get the upload commands packet
 
 	writeData( packet );  //upload waypoint from VC to Autopilot
 }
@@ -147,7 +181,7 @@ array<System::Byte> ^ AutopilotComport::getVCPacket30()
 	AutopilotVCPacket30 * theStruct = new AutopilotVCPacket30();
 
 	// copy data into struct
-	theStruct->destAddr = autopilotAddress;	
+	theStruct->destAddr = planeState->address;	
 
 	// copy packet over
 	dataPtr = (char *)theStruct;
@@ -186,7 +220,7 @@ array<System::Byte> ^  AutopilotComport::getVCPacket32(unsigned char commandType
 	AutopilotVCPacket32 * theStruct = new AutopilotVCPacket32();
 
 	// copy data into struct
-	theStruct->destAddr			 = autopilotAddress		;	
+	theStruct->destAddr			 = planeState->address;	
 	theStruct->commandType		 = commandType			;
 	theStruct->lat				 = lat					;
 	theStruct->lon				 = lon					;
@@ -249,7 +283,21 @@ __int16 AutopilotComport::getInt16FromBytes(array<System::Byte> ^ arr, int start
 		return 0;
 	}
 
-	return arr[startIndex] + (a[startIndex + 1] << 8);
+	//XXX fix all of these
+
+	return arr[startIndex] + (arr[startIndex + 1] << 8);
+}
+
+/*
+ * extracts an unsigned 16 bit integer from a byte array
+ */
+unsigned __int16 AutopilotComport::getUInt16FromBytes(array<System::Byte> ^ arr, int startIndex)
+{
+	if(arr->Length < startIndex + 2){
+		return 0;
+	}
+
+	return arr[startIndex] + (arr[startIndex + 1] << 8);
 }
 
 /*
@@ -295,7 +343,7 @@ float AutopilotComport::getFloatFromBytes(array<System::Byte> ^ arr, int startIn
 	}
 
 	float retVal;
-	unsigned char * pointerToFloat = &retVal;
+	unsigned char * pointerToFloat = (unsigned char *)(&retVal);
 	for(int i = startIndex + 3; i >= startIndex; i--){
 		* pointerToFloat = arr[i];
 		pointerToFloat ++;
@@ -303,3 +351,8 @@ float AutopilotComport::getFloatFromBytes(array<System::Byte> ^ arr, int startIn
 	
 	return retVal;
 }
+
+//XXX
+//TODO:
+// change all non-unsigned get functions to use the float pointer method
+// finish packet interpretation, packet 29 was where you left off

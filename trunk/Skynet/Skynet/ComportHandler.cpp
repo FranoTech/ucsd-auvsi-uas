@@ -55,6 +55,7 @@ void ComportHandler::writeData( array<System::Byte> ^ inBuffer )
 
 void ComportHandler::receiveData( array<System::Byte> ^ inBuffer ) 
 {
+	System::Diagnostics::Trace::WriteLine("ComportHandler::receiveData()");
 	// do something with this data (probably up to theDelegate?)
 }
 

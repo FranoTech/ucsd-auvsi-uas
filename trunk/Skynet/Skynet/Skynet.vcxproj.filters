@@ -279,6 +279,9 @@
     <ClInclude Include="TelemetrySimulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ColorRef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc">
