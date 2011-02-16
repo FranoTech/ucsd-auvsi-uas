@@ -1,35 +1,54 @@
 #include "StdAfx.h"
 
 #include "RabbitComport.h"
+#include "Comms.h"
 
 using namespace Communications;
 
-
+/*
+ * Right after comms are set up, ask for packet forwarding and for the agent id
+ */
+void RabbitComport::afterBeginReading()
+{
+	// better update frequency
+	thePort->updateFrequency = 5;
+}
 
 void RabbitComport::receiveData( array<System::Byte> ^ inBuffer )
 {
+	
+	System::Diagnostics::Trace::WriteLine("RabbitComport::receiveData()");
+	
+	// check input
+	if (inBuffer->Length < 1)
+		return;
+
 	const int NUM_ELEMENTS = 11;
 	const int BYTES_PER_FLOAT = 4;
 
-	// check input
-	if (inBuffer->Length < (NUM_ELEMENTS*BYTES_PER_FLOAT + 1)) // 1 IS FOR ERROR CODE
-		return;
 
-	// override receiveData in ComportHandler
-	ComportDownstream * packet = new ComportDownstream();
+	unsigned char packetType = inBuffer[0];
 
-	char * dataPtr = (char *)packet;
+	// gimbal info
+	if (packetType == 1) {
+		GimbalInfo * packet = new GimbalInfo();
+		const int bytesPerElement = 2;
+		const int packetStart = 1;
+		const int numElements = 2;
 
-	for (int j = 0; j < NUM_ELEMENTS; j++) {
-		for (int i = 3, k = 0; i > -1; i--, k++) {
-			int letterPosition = j*4 + k;
-			dataPtr[letterPosition] = inBuffer[j*4 + i + 1];
+		char * dataPtr = (char *)packet;
 
-		}			
+		for (int j = 0; j < numElements; j++) {
+			for (int i = 0; i < 2; i++) {
+				*dataPtr =  inBuffer[j*bytesPerElement + i + packetStart]; // 1 to ignore packetType byte
+				dataPtr++;
+
+			}			
+		}
+		
+		//System::Diagnostics::Trace::WriteLine("packet type 1. roll: " + packet->roll + " pitch: " + packet->pitch);
+		((Comms ^)theDelegate)->receiveRabbitPacket(packet);
+		
 	}
-
-	packet->error_code = inBuffer[inBuffer->Length - 4];
-
-
 
 }

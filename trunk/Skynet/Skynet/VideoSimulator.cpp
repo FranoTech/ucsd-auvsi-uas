@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "MasterChiefHeaderFile.h"
+#include "MasterHeader.h"
 
 using namespace Simulator;
 using namespace cv;

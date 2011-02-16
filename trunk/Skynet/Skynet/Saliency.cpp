@@ -242,10 +242,25 @@ Saliency::saveImagesThreadFunction()
 				data->mapping_longitude = 0;		// pixel to meter translation for longitude
 				data->homography = savingFrameData->homography;
 
-				// only save if it is a valid target i.e. right physicalsize range
+				// what we really need for first database (candidate regions):
+				//	plane info, gimbal info, camera info
+				//	image size
+				//	image data (the image itself, unrectified)
+
+				// second database (unconfirmed targets):
+				//	OCR info (letter, shape, letter color, letter shape)
+				//	target location, heading, width and height
+				//	image size
+				//	rectified image data (the image itself)
+				//	revision number (increment everytime we change the row)
+
+				// third database (confirmed targets):
+				//	all from second database except revision number
+
+				// only save if it is a valid target i.e. right physical size range
 				if (isValidTarget(data, currentBox)) 
 				{
-					theImSaver.saveFrame(tempBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_" + i + ".bmp"));
+					//theImSaver.saveFrame(tempBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_" + i + ".bmp"));
 
 					array<Object ^>^myArr = {data};
 					try {

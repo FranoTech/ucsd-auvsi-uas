@@ -16,21 +16,21 @@
 #define SPECIAL_BYTE 	0xFD
 #define FUTURE_BYTE		0xCC
 
-#define MAP_TO_START	0x00
+#define MAP_TO_START	0x02
 #define MAP_TO_END		0x01
-#define MAP_TO_SPECIAL	0x02
+#define MAP_TO_SPECIAL	0x00
 #define MAP_TO_FUTURE	0x03
 
-#define BAUD_RATE		115200
+#define BAUD_RATE		57600
 
 // Comport read timeout in miliseconds
 #define TIMEOUT_MS		1000
 
 // Comport update frequency (in miliseconds)
-#define UPDATE_FREQ 250
+#define DEFAULT_UPDATE_FREQ		250
 
 // buffer size in bytes to read in to
-#define BUFFER_SIZE		128
+#define BUFFER_SIZE		512
 
 using namespace Communications;
 using namespace System::Threading;
@@ -47,6 +47,14 @@ ComportUpstream::ComportUpstream()
 	update_type = 0;
 }
 
+GimbalInfo::GimbalInfo()
+{
+	roll = 0;
+	pitch = 0;
+}
+
+
+
 Comport::Comport(Object ^ theParent)
 {
 	_serialPort = gcnew SerialPort();
@@ -57,6 +65,7 @@ Comport::Comport(Object ^ theParent)
 
 	parent = theParent;
 
+	updateFrequency = DEFAULT_UPDATE_FREQ;
 
 	if (theParent != nullptr)
 		comHandlerDelegate = gcnew comportHandlerUpdateDelegate(((ComportHandler ^)theParent), &ComportHandler::receiveData );
@@ -75,6 +84,10 @@ array<String ^> ^ Comport::getPortNames()
 bool Comport::connect()
 {
 	bool success = false;
+
+	if (_serialPort->IsOpen)
+		_serialPort->Close();
+
 	if( !_serialPort->IsOpen ) 
 	{
 		// try ... catch, and check to see if comport exists first
@@ -197,19 +210,35 @@ unsigned char Comport::encodeByte( unsigned char data )
 
 void Comport::readThread(void)
 {
-	while( true )
-	{
+	System::Diagnostics::Trace::WriteLine("Comport::readThread() began");
+	bool lastResult = true;
+	try {
+		while( true )
+		{
 
-		// only read data if we are connected
-		if (isConnected())
-			readData();
+			// only read data if we are connected
+			if (isConnected()) {
+				if (lastResult != readData()) {
 
-		Thread::Sleep( UPDATE_FREQ );
+					// alert ui about change in status
+					lastResult = !lastResult;
+					((ComportHandler ^)parent)->updateComportStatus(lastResult);
+
+				}
+					
+
+			}
+
+			Thread::Sleep( updateFrequency );
+		}
 	}
-
+	catch (Exception ^) 
+	{
+		System::Diagnostics::Trace::WriteLine("Comport::readThread in Comport ending.");
+	}
 }
 
-void Comport::readData(void)
+bool Comport::readData(void)
 {
 	const int NUM_ELEMENTS = 11;
 	int dataIn = -1;
@@ -218,7 +247,8 @@ void Comport::readData(void)
 
 	array<System::Byte> ^ buffer = gcnew array<System::Byte>(BUFFER_SIZE);
 	//ComportDownstream * packet = new ComportDownstream();
-
+	
+	//System::Diagnostics::Trace::WriteLine("begin read");
 	try
 	{
 		// Read until we get a start byte
@@ -230,7 +260,8 @@ void Comport::readData(void)
 			if( dataIn < 0 )
 			{
 				_serialPort->DiscardInBuffer();
-				return;
+				System::Diagnostics::Trace::WriteLine("Comprt::readData(): bad byte");
+				return false;
 			}
 			else if( tempByte == START_BYTE )
 			{
@@ -239,25 +270,33 @@ void Comport::readData(void)
 				break;
 			}
 		}
+		//System::Diagnostics::Trace::WriteLine("found beginning");
 
 		// Read in the message string, decoding as necessary
 		while( true )
 		{
+			//System::Diagnostics::Trace::WriteLine("start iteration: " + bufLen);
 			dataIn = _serialPort->ReadByte();
 			tempByte = Convert::ToByte( dataIn );
+
+			//System::Diagnostics::Trace::WriteLine("look for end byte");
 
 			// error / end of data check
 			if( dataIn < 0 )
 			{
 				_serialPort->DiscardInBuffer();
-				return;
+				System::Diagnostics::Trace::WriteLine("Comprt::readData(): bad byte");
+				return false;
 			}
 			else if( tempByte == END_BYTE )
 			{
 				buffer[bufLen] = tempByte;
 				bufLen++;
+				//System::Diagnostics::Trace::WriteLine("FOUND END BYTE");
 				break;
 			}
+			
+			//System::Diagnostics::Trace::WriteLine("look for special byte");
 
 			// process actual byte
 			// if this is a special byte, decode it
@@ -268,18 +307,25 @@ void Comport::readData(void)
 				if( dataIn < 0 )
 				{
 					_serialPort->DiscardInBuffer();
-					return;
+					System::Diagnostics::Trace::WriteLine("Comprt::readData(): bad byte");
+					return false;
 				}
 				else
 					tempByte = Convert::ToByte( dataIn );
+
+				
 			}
+			//System::Diagnostics::Trace::WriteLine("save byte (" + bufLen + ") = 0x" + Convert::ToString(tempByte, 16) + " vs 0x" + Convert::ToString(END_BYTE, 16) + " " + tempByte + " vs " + 0xFE);
+			//if (tempByte == 0xFE)
+			//	System::Diagnostics::Trace::WriteLine("fuck you");
 
 			buffer[bufLen] = tempByte;
 			bufLen++;
 
 
 		}
-
+		
+		//System::Diagnostics::Trace::WriteLine("calculate checksum");
 
 		__int16 checksum = calculateChecksum( buffer, bufLen - 3);
 
@@ -289,7 +335,11 @@ void Comport::readData(void)
 		{
 			//System::Diagnostics::Trace::WriteLine("Checksum: FAILED");
 			_serialPort->DiscardInBuffer();
-			return;
+			System::Diagnostics::Trace::WriteLine("Comport::readData(): bad checksum. bufLen: " + (bufLen - 4));
+			System::Diagnostics::Trace::WriteLine("Comport::readData(): bad checksum. packettype:" + Convert::ToString(buffer[1], 10));
+			System::Diagnostics::Trace::WriteLine("Comport::readData(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
+																								Convert::ToString(buffer[bufLen - 3], 16) + Convert::ToString(buffer[bufLen - 2], 16));
+			return true;
  		}
 
 		/*ComportDownstream * packet = new ComportDownstream();
@@ -332,13 +382,17 @@ void Comport::readData(void)
 	//	((Simulator::SimHandler ^)theSimHandler)->writeTelemetry(packet);
 
 		// Callback to Form1 (stays in this offshoot thread)
+		//System::Diagnostics::Trace::WriteLine("about to copy to outbuffer");
 
 		// copy packet into new packet
-		array<System::Byte> ^ outBuffer = gcnew array<System::Byte>(bufLen);
-		for (int i = 0; i < bufLen; i++) {
-			outBuffer[i] = buffer[i];
+		array<System::Byte> ^ outBuffer = gcnew array<System::Byte>(bufLen - 4); // ignore ff, checksum*2, fe
+		int j = 0;
+		for (int i = 1; i < bufLen - 3; i++) { // ignore last three bytes (checksum checksum fe)
+			outBuffer[j] = buffer[i];
+			j++;
 		}
-
+		//System::Diagnostics::Trace::WriteLine("bufLen: " + bufLen);
+		//System::Diagnostics::Trace::WriteLine("send to delegate");
 		// send data to delegate
 		comHandlerDelegate( outBuffer );
 
@@ -350,14 +404,30 @@ void Comport::readData(void)
 
 		// clear the rest of the buffer
 		_serialPort->DiscardInBuffer();
+		return true;
 	}
-	catch( Exception ^ )
+	catch( ThreadAbortException ^ theException)
 	{
+		throw theException; // rethrow if its a threadAbortException
+	}
+	catch( TimeoutException ^ theException)
+	{
+		
+
 		//delete packet;
 		// TODO object disposed exception
 		//((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->comportErrorDelegate );
-		//System::Diagnostics::Trace::WriteLine("catch in comport");
+		/*String ^ bufferString = "0x" + Convert::ToString(buffer[0], 16);
+		for (int i = 1; i < buffer->Length; i++) {
+			bufferString = bufferString + " 0x" + Convert::ToString(buffer[i], 16);
+		}
+		
+		System::Diagnostics::Trace::WriteLine("Catch in comport. bufLen:" + bufLen + " buffer:" + bufferString);*/
 		//comNoDataDelegate();
+	}
+	catch( Exception ^ theException )
+	{
+		System::Diagnostics::Trace::WriteLine("WARNING: Unexpected catch in comport.");
 	}
 }
 
@@ -374,9 +444,10 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 	// Read until we get a start byte
 	while( true )
 	{
-		if (packetIndex < inBuffer->Length)
+		if (packetIndex >= inBuffer->Length) {
+			System::Diagnostics::Trace::WriteLine("Comport::decodeData(): didn't find start byte: " + packetIndex);
 			return nullptr;
-
+		}
 
 		tempByte = inBuffer[packetIndex];
 
@@ -393,8 +464,10 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 	// Read in the message string, decoding as necessary
 	while( true )
 	{
-		if (packetIndex < inBuffer->Length)
+		if (packetIndex >= inBuffer->Length) {
+			System::Diagnostics::Trace::WriteLine("Comport::decodeData(): did not find end byte: " + packetIndex + " last byte: " + Convert::ToString(tempByte, 16));
 			return nullptr;
+		}
 
 		tempByte = inBuffer[packetIndex];
 
@@ -447,7 +520,11 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 
 	if (!( ((unsigned char *)&checksum)[1] == buffer[bufLen - 3] && ((unsigned char *)&checksum)[0] == buffer[bufLen - 2] ))
 	{
-
+		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. bufLen: " + (bufLen - 4));
+		//System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. packettype:" + Convert::ToString(buffer[1], 10));
+		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
+																							Convert::ToString(buffer[bufLen - 3], 16) + Convert::ToString(buffer[bufLen - 2], 16));
+			
 		return nullptr;
  	}
 
@@ -455,7 +532,7 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 	// copy packet into new packet
 	array<System::Byte> ^ outBuffer = gcnew array<System::Byte>(bufLen - 4);
 	for (int i = 1; i < bufLen - 3; i++) { // ignore ff, checksum, fe
-		outBuffer[i] = buffer[i];
+		outBuffer[i - 1] = buffer[i];
 	}
 
 	return outBuffer;
@@ -463,18 +540,31 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 
 __int16 Comport::calculateChecksum( array<System::Byte> ^data, int packetSize ) 
 {
-	__int16 CheckValue = 0; 
+	const int startIndex = 1;
+	int endIndex = packetSize;
+	int realPacketSize = packetSize - 1;
+	
+	//__int16 CheckValue = 0; 
+	unsigned char checkHigh = 0;
+	unsigned char checkLow = 0;
 
-	for (int i = 1; i < packetSize - 1; i+= 2)
+	for (int i = startIndex; i < endIndex - 1; i+= 2)
 	{
-		CheckValue ^= data[i]<<8;
-		CheckValue ^= data[i+1];
+		checkHigh ^= data[i];
+		checkLow ^= data[i + 1];
+		//CheckValue ^= data[i];
+		//CheckValue ^= data[i+1]<<8;
 	}
 
-	if ((packetSize - 1)%2)
-		CheckValue ^= data[packetSize - 1]<<8;
+	if ((realPacketSize)%2 == 1) // odd
+		checkHigh ^= data[packetSize - 1];
 
-	return CheckValue;
+	__int16 retval;
+	unsigned char *ptr = (unsigned char *)&retval;
+	*ptr = checkLow; ptr++;
+	*ptr = checkHigh;
+
+	return retval;
 
 }
 

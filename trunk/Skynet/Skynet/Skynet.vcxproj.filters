@@ -145,6 +145,9 @@
     <ClCompile Include="ComportHandler.cpp">
       <Filter>Source Files\Communications</Filter>
     </ClCompile>
+    <ClCompile Include="PlaneWatcher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Auvsi_cvFft.h">
@@ -258,9 +261,6 @@
     <ClInclude Include="SimHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MasterChiefHeaderFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Comms.h">
       <Filter>Header Files\Communications</Filter>
     </ClInclude>
@@ -280,6 +280,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ColorRef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PlaneWatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MasterHeader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

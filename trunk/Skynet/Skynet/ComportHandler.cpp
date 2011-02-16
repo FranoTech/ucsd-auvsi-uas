@@ -2,6 +2,7 @@
 
 #include "ComportHandler.h"
 #include "Comport.h"
+#include "Comms.h"
 
 
 using namespace Communications;
@@ -14,22 +15,36 @@ ComportHandler::ComportHandler(TelemetrySimulator ^ telSimulator, Object ^ newDe
 	type = comType;
 	theTelSimulator = telSimulator;
 	thePort = gcnew Comport(this);
+	comReadThread = nullptr;
 }
 
-void ComportHandler::connect(String ^ portName) 
+bool ComportHandler::connect(String ^ portName) 
 {
 
 	thePort->setPortName(portName);
 	
-	thePort->connect();
+	return thePort->connect();
 }
 
 
 void ComportHandler::disconnect() 
 {
-	comReadThread->Abort();	
+	//try {
 	thePort->disconnect();
+	Thread::Sleep(10);
+	if (comReadThread != nullptr) {
+		comReadThread->Abort();	
+		comReadThread = nullptr;
+	}
+	//}
+	//catch (Exception ^) {}
 }
+
+void ComportHandler::updateComportStatus(bool status)
+{
+	((Comms ^)theDelegate)->updateUIAboutCommsStatus(status, type);
+}
+
 
 void ComportHandler::beginReading(String ^ comportType)
 {

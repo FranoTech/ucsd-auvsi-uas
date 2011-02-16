@@ -488,28 +488,28 @@ namespace Skynet {
 
 			// Goldenrod
 			_opAreaPoints = gcnew array<PointF>(12);
-			_opAreaPoints[0].X = 38.145400; _opAreaPoints[0].Y = -76.431586;
-			_opAreaPoints[1].X = 38.143425; _opAreaPoints[1].Y = -76.435358;
-			_opAreaPoints[2].X = 38.140394; _opAreaPoints[2].Y = -76.432628;
-			_opAreaPoints[3].X = 38.141569; _opAreaPoints[3].Y = -76.429547;
-			_opAreaPoints[4].X = 38.139789; _opAreaPoints[4].Y = -76.426203;
-			_opAreaPoints[5].X = 38.141606; _opAreaPoints[5].Y = -76.423592;
-			_opAreaPoints[6].X = 38.144108; _opAreaPoints[6].Y = -76.425353;
-			_opAreaPoints[7].X = 38.145283; _opAreaPoints[7].Y = -76.423389;
-			_opAreaPoints[8].X = 38.147111; _opAreaPoints[8].Y = -76.424292;
-			_opAreaPoints[9].X = 38.145817; _opAreaPoints[9].Y = -76.42705;
-			_opAreaPoints[10].X = 38.151325; _opAreaPoints[10].Y = -76.429144;
-			_opAreaPoints[11].X = 38.151094; _opAreaPoints[11].Y = -76.434708;
+			_opAreaPoints[0].X = 38.145400f; _opAreaPoints[0].Y = -76.431586f;
+			_opAreaPoints[1].X = 38.143425f; _opAreaPoints[1].Y = -76.435358f;
+			_opAreaPoints[2].X = 38.140394f; _opAreaPoints[2].Y = -76.432628f;
+			_opAreaPoints[3].X = 38.141569f; _opAreaPoints[3].Y = -76.429547f;
+			_opAreaPoints[4].X = 38.139789f; _opAreaPoints[4].Y = -76.426203f;
+			_opAreaPoints[5].X = 38.141606f; _opAreaPoints[5].Y = -76.423592f;
+			_opAreaPoints[6].X = 38.144108f; _opAreaPoints[6].Y = -76.425353f;
+			_opAreaPoints[7].X = 38.145283f; _opAreaPoints[7].Y = -76.423389f;
+			_opAreaPoints[8].X = 38.147111f; _opAreaPoints[8].Y = -76.424292f;
+			_opAreaPoints[9].X = 38.145817f; _opAreaPoints[9].Y = -76.42705f;
+			_opAreaPoints[10].X = 38.151325f; _opAreaPoints[10].Y = -76.429144f;
+			_opAreaPoints[11].X = 38.151094f; _opAreaPoints[11].Y = -76.434708f;
 
 			// Gold
 			_searchAreaPoints = gcnew array<PointF>(7);
-			_searchAreaPoints[0].X = 38.14465; _searchAreaPoints[0].Y = -76.431069;
-			_searchAreaPoints[1].X = 38.143239; _searchAreaPoints[1].Y = -76.43435;
-			_searchAreaPoints[2].X = 38.140992; _searchAreaPoints[2].Y = -76.432503;
-			_searchAreaPoints[3].X = 38.142022; _searchAreaPoints[3].Y = -76.429306;
-			_searchAreaPoints[4].X = 38.14015; _searchAreaPoints[4].Y = -76.426256;
-			_searchAreaPoints[5].X = 38.141797; _searchAreaPoints[5].Y = -76.424075;
-			_searchAreaPoints[6].X = 38.143867; _searchAreaPoints[6].Y = -76.425872;
+			_searchAreaPoints[0].X = 38.14465f; _searchAreaPoints[0].Y = -76.431069f;
+			_searchAreaPoints[1].X = 38.143239f; _searchAreaPoints[1].Y = -76.43435f;
+			_searchAreaPoints[2].X = 38.140992f; _searchAreaPoints[2].Y = -76.432503f;
+			_searchAreaPoints[3].X = 38.142022f; _searchAreaPoints[3].Y = -76.429306f;
+			_searchAreaPoints[4].X = 38.14015f; _searchAreaPoints[4].Y = -76.426256f;
+			_searchAreaPoints[5].X = 38.141797f; _searchAreaPoints[5].Y = -76.424075f;
+			_searchAreaPoints[6].X = 38.143867f; _searchAreaPoints[6].Y = -76.425872f;
 
 			// Blue
 
@@ -546,8 +546,8 @@ namespace Skynet {
 			double centerX = Longitude2TileX(_centerLongitude, _zoom);
 			double centerY = Latitude2TileY(_centerLatitude, _zoom);
 
-			x = ( dX - centerX ) * 256.0 + width/2.0;
-			y = ( dY - centerY ) * 256.0 + height/2.0;
+			x = (int)(( dX - centerX ) * 256.0 + width/2.0);
+			y = (int)(( dY - centerY ) * 256.0 + height/2.0);
 
 			return retVal;
 		}
@@ -1697,7 +1697,7 @@ namespace Skynet {
 			drawFormat->Alignment = System::Drawing::StringAlignment::Center;
 			drawFormat->LineAlignment = System::Drawing::StringAlignment::Center;
 
-			g->DrawString( sText, drawFont, fontBrush, System::Drawing::RectangleF( nX, nY, width, height ), drawFormat );
+			g->DrawString( sText, drawFont, fontBrush, System::Drawing::RectangleF( (float)nX, (float)nY, (float)width, (float)height ), drawFormat );
 		}
 
 		bool DrawScaleBar( Graphics ^ g )

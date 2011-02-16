@@ -49,7 +49,7 @@ namespace Communications
 	};
 
 	/*
-	 * All of the values associated with an autopilot
+	 * All of the values associated with an autopilot (194 bytes inc header)
 	 */
 	struct AutopilotState
 	{
@@ -61,6 +61,7 @@ namespace Communications
 		float turnRate;      //radians per second
 		float groundTrack;   //radians 0 to 2 pi
 		float altitudeHAL;   //meters above launch
+		float altitudeMSL;   //mean sea level
 		float airspeed;      //meters per second
 		float velocity;      //meters per second
 		float climbRate;     //meters per second
@@ -86,6 +87,7 @@ namespace Communications
 
 		float gpsHomePositionLatitude;  //latitude of the home position in degrees
 		float gpsHomePositionLongitude; //longitude of the home position in degrees
+		float gpsHomePositionAltitude;  //altitdude of the home position, MSL, in meters
 
 		unsigned char currentCommand;  //current command of flight script (0 = first waypoint, 2 = third waypoint, etc)
 
@@ -104,16 +106,16 @@ namespace Communications
 		float desiredVelocity;   //the desired velocity of the UAV in meters per second
 		float desiredRoll;       //desired roll, radians
 		float desiredPitch;      //desired pitch, radians
-		float desiredHEading;    //desired heading, radians (0 - 2 pi)
+		float desiredHeading;    //desired heading, radians (0 - 2 pi)
 		float desiredTurnRate;   //desired turn rate, radians per second
 		float desiredClimbRate;  //desired climb rate, meters per second
 
 		float timeToTarget;      //the estimalted time to get to the next target, or in the case of loiter, the time remaining in loiter (255 = infinite loiter), in seconds
 		float distanceToTarget;  //distance from UAV to desired target, meters
 		float headingToTarget;   //heading to desired UAV target, radians (0 to 2 pi)
-  
 		
 		float batteryVoltage;    //how many volts are being input to Kestrel
+		float airbornTimer;      //amount of time the autopilot has been airborn, in seconds
 	};
 
 	ref class AutopilotComport : public ComportHandler {
@@ -125,6 +127,7 @@ namespace Communications
 
 		void writeData( array<System::Byte> ^ inBuffer ); 
 		virtual void receiveData( array<System::Byte> ^ inBuffer ) override;
+		virtual void disconnect() override;
 		
 		void gotoLatLon(float lat, float lon);
 		void requestPacketForwarding();  //turn on packet forwarding from VC

@@ -19,7 +19,7 @@ namespace Communications
 {
 
 	
-	delegate void comportUpdateDelegate( ComportDownstream * data );
+	delegate void rabbitUpdateDelegate( GimbalInfo * data );
 	delegate void tellGUIAboutConnection( array<Int32> ^ retArr );
 	delegate void guiConsoleDelegate( array<Object ^> ^ retArr );
 
@@ -41,9 +41,10 @@ namespace Communications
 		void gotoLatLon(float lat, float lon);
 
 		// receiving
-		void receiveRabbitPacket(ComportDownstream * packet);
+		void receiveRabbitPacket(GimbalInfo * packet);
 
-		void printToConsole( String ^ message, ColorRef ^ col );
+		void printToConsole( String ^ message, Color col );
+		void updateUIAboutCommsStatus(bool status, String ^ type);
 
 		// instance variables
 		AutopilotComport ^ autopilot;
@@ -53,11 +54,13 @@ namespace Communications
 
 		TelemetrySimulator ^ theTelSimulator;
 		Object ^ theDelegate;
-		comportUpdateDelegate ^ comDelegate;
+		rabbitUpdateDelegate ^ rabbitDelegate;
 		guiConsoleDelegate ^ consoleDelegate;
 
 		String ^ autopilotPortname;
 		String ^ rabbitPortname;
+		bool autopilotConnected;
+		bool rabbitConnected;
  	};
 
 }

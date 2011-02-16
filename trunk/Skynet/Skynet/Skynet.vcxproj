@@ -239,6 +239,7 @@
     <ClCompile Include="Joystick.cpp" />
     <ClCompile Include="MapControl.cpp" />
     <ClCompile Include="OCR.cpp" />
+    <ClCompile Include="PlaneWatcher.cpp" />
     <ClCompile Include="RabbitComport.cpp" />
     <ClCompile Include="Saliency.cpp" />
     <ClCompile Include="SaveImage.cpp">
@@ -320,9 +321,10 @@
     <ClInclude Include="GeoReference.h" />
     <ClInclude Include="Joystick.h" />
     <ClInclude Include="MapControl.h" />
-    <ClInclude Include="MasterChiefHeaderFile.h" />
+    <ClInclude Include="MasterHeader.h" />
     <ClInclude Include="OCR.h" />
     <ClInclude Include="OpenGLForm.h" />
+    <ClInclude Include="PlaneWatcher.h" />
     <ClInclude Include="RabbitComport.h" />
     <ClInclude Include="Resampler.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</ExcludedFromBuild>

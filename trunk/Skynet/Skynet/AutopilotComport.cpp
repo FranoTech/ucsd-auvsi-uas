@@ -7,20 +7,35 @@ using namespace Communications;
 using namespace System;
 using namespace System::Drawing;
 
+void AutopilotComport::disconnect() 
+{
+	System::Diagnostics::Trace::WriteLine("disconnecting AutopilotComport::request termination of packet forwarding()");
+
+	array<System::Byte> ^ packet = getVCPacket20(0, 0);
+
+	writeData(packet);
+	
+	//try {
+	thePort->disconnect();
+	Thread::Sleep(10);
+	if (comReadThread != nullptr) {
+		comReadThread->Abort();	
+		comReadThread = nullptr;
+	}
+	//}
+	//catch (Exception ^) {}
+}
 
 void AutopilotComport::writeData( array<System::Byte> ^ inBuffer )
 {
-	// write data differently
-	
 	thePort->writeEncodedData( inBuffer );
-
 }
 
 
 void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 {
 	
-	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData()");
+	//System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData()");
 
 	// handle data
 	PacketHeader *theHeader = new PacketHeader();
@@ -32,6 +47,14 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 		dataPtr[j] = inBuffer[packetIndex];
 		packetIndex++;
 	}
+
+	/* 	char * dataPtr = (char *)theHeader;
+	int packetIndex = 0;
+	
+	theHeader->type = getInt32FromBytes(inBuffer, 0);
+	theHeader->size = getInt32FromBytes(inBuffer, 4); */
+
+	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData(): packetType: " + theHeader->type);
 	
 	if(theHeader->type == 10){  //pass through autopilot packet which we need to decode, passthrough non-guaranteed packet
 		array<System::Byte> ^ newPacket = thePort->decodeData(inBuffer);
@@ -43,25 +66,92 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 			/*if(kestrelPacketType == 1){ // acknowledgement packet
 				unsigned char packetType = getUCharFromBytes(newPacket, 3);  //the packet type being acknowledged.  XXX we don't do anything with it, but we can if we need to
 			}*/
+			System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData(): kestrelPacketType: " + kestrelPacketType);
 			if(kestrelPacketType == 29)  //mixed telemetry response
 			{
 				planeState->roll = (float)(getInt16FromBytes(newPacket, 3)) / 1000.0;
 				planeState->pitch = (float)(getInt16FromBytes(newPacket, 5)) / 1000.0;
-				//planeState->heading = (float)(get  //XXX finish this
+				planeState->heading = (float)(getUInt16FromBytes(newPacket, 7)) / 1000.0;
+				planeState->groundTrack = (float)(getUInt16FromBytes(newPacket, 9)) / 1000.0;
+				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 11)) / 6.0 - 1000.0;
+				planeState->gpsLatitude = getFloatFromBytes(newPacket, 13);
+				planeState->gpsLongitude = getFloatFromBytes(newPacket, 17);
+				planeState->UTCyear = getUCharFromBytes(newPacket, 23);
+				planeState->UTCmonth = getUCharFromBytes(newPacket, 24);
+				planeState->UTCday = getUCharFromBytes(newPacket, 25);
+				planeState->UTChour = getUCharFromBytes(newPacket, 26);
+				planeState->UTCmin = getUCharFromBytes(newPacket, 27);
+				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 28);
+				planeState->airspeed = (float)(getUInt16FromBytes(newPacket, 30)) / 20.0 - 10.0;
+				System::Diagnostics::Trace::WriteLine("TESTING: Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude);
+			} 
+			else if(kestrelPacketType == 248)  //navigation packet
+			{
+				planeState->gpsVelocity = (float)(getUInt16FromBytes(newPacket, 3)) / 20.0 - 10.0;
+				planeState->gpsAltitude = (float)(getUInt16FromBytes(newPacket, 5)) / 6.0 - 1000.0;
+				planeState->gpsHeading = (float)(getUInt16FromBytes(newPacket, 7)) / 1000.0;
+				planeState->gpsLatitude = getFloatFromBytes(newPacket, 11);
+				planeState->gpsLongitude = getFloatFromBytes(newPacket, 17);
+				planeState->gpsHomePositionLatitude = getFloatFromBytes(newPacket, 21);
+				planeState->gpsHomePositionLongitude = getFloatFromBytes(newPacket, 25);
+				planeState->currentCommand = getUCharFromBytes(newPacket, 29);
+				planeState->desiredLatitude = getFloatFromBytes(newPacket, 31);
+				planeState->desiredLongitude = getFloatFromBytes(newPacket, 35);
+				planeState->timeToTarget = getFloatFromBytes(newPacket, 39);
+				planeState->distanceToTarget = getFloatFromBytes(newPacket, 43);
+				planeState->headingToTarget = (float)(getUInt16FromBytes(newPacket, 47)) / 1000.0;
+				planeState->UTCyear = getUCharFromBytes(newPacket, 56);
+				planeState->UTCmonth = getUCharFromBytes(newPacket, 57);
+				planeState->UTCday = getUCharFromBytes(newPacket, 58);
+				planeState->UTChour = getUCharFromBytes(newPacket, 59);
+				planeState->UTCmin = getUCharFromBytes(newPacket, 60);
+				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 61);
+				planeState->gpsHomePositionAltitude = (float)(getUInt16FromBytes(newPacket, 63) / 6.0 - 1000.0);
+				System::Diagnostics::Trace::WriteLine("TESTING: Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude); 
+			}
+			else if(kestrelPacketType == 249) //telemetry packet
+			{
+				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 3)) / 6.0 - 1000.0;
+				planeState->velocity = (float)(getUInt16FromBytes(newPacket, 5)) / 20.0 - 10.0;
+				planeState->roll = (float)(getInt16FromBytes(newPacket, 7)) / 1000.0;
+				planeState->pitch = (float)(getInt16FromBytes(newPacket, 9)) / 1000.0;
+				planeState->heading = (float)(getUInt16FromBytes(newPacket, 11)) / 1000.0;
+				planeState->turnRate = (float)(getInt16FromBytes(newPacket, 13)) / 1000.0;
+				planeState->batteryVoltage = (float)(getUCharFromBytes(newPacket, 18)) / 5.0;
+				planeState->gpsNumSats = getUCharFromBytes(newPacket, 21);
+				planeState->desiredAltitude = (float)(getUInt16FromBytes(newPacket, 23)) / 6.0 - 1000.0;
+				planeState->desiredVelocity = (float)(getUCharFromBytes(newPacket, 25)) / 2.0 - 10.0;
+				planeState->desiredRoll = (float)(getInt16FromBytes(newPacket, 26)) / 1000.0;
+				planeState->desiredPitch = (float)(getInt16FromBytes(newPacket, 28)) / 1000.0;
+				planeState->desiredHeading = (float)(getUInt16FromBytes(newPacket, 30)) / 1000.0;
+				planeState->desiredTurnRate = (float)(getInt16FromBytes(newPacket, 32)) / 1000.0;
+				planeState->airbornTimer = getFloatFromBytes(newPacket, 43);
+				//Note: I am not extractin gps time update here
+				planeState->rollRate = ((float)(getCharFromBytes(newPacket, 57)) - 128.0) / 80.0;
+				planeState->pitchRate = ((float)(getCharFromBytes(newPacket, 58)) - 128.0) / 80.0;
+				planeState->yawRate = ((float)(getCharFromBytes(newPacket, 59)) - 128.0) / 80.0;
+				planeState->altitudeMSL = (float)(getUInt16FromBytes(newPacket, 60)) / 6.0 - 1000.0;
+				planeState->desiredClimbRate = (float)(getInt16FromBytes(newPacket, 77)) / 300.0;
+				planeState->climbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0;
 			}
 		}
 
 	} else if(theHeader->type == 61) {  // get agent list response
+		System::Diagnostics::Trace::WriteLine("Got agent list response");
+
+		String ^ bufferString = "0x" + Convert::ToString(inBuffer[0], 16);
+		for (int i = 1; i < inBuffer->Length; i++) {
+			bufferString = bufferString + " 0x" + Convert::ToString(inBuffer[i], 16);
+		}
+		
+		//System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData bufLen:" + inBuffer->Length + " buffer:" + bufferString);
+
 		unsigned char numAgents = getUCharFromBytes(inBuffer, 8);  //get the number of agents in the list.  We typically expect 1
-		int counter = 0;
-		while(counter < numAgents && 9 + 2*counter < inBuffer->Length){
-			__int16 agentAddress = getInt16FromBytes(inBuffer, 9 + 2 * counter);  //get the agent address
-			if(planeState->address == 0){  //it is currently unassigned
+		if(numAgents > 0){
+			__int16 agentAddress = getInt16FromBytes(inBuffer, 9);  //get the agent address
 				planeState->address = agentAddress;  //set the autopilot address
 				System::Diagnostics::Trace::WriteLine("Set Autopilot Address to " + planeState->address);
-				((Comms ^)theDelegate)->printToConsole("Set Autopilot Address to " + planeState->address, gcnew ColorRef( Color::Green ));
-			}
-			counter ++;
+				//((Comms ^)theDelegate)->printToConsole("Set Autopilot Address to " + planeState->address, gcnew ColorRef( Color::Green ));
 		}
 
 
@@ -76,9 +166,15 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
  */
 void AutopilotComport::afterBeginReading()
 {
+	// better update frequency
+	thePort->updateFrequency = 5;
+
+
 	System::Diagnostics::Trace::WriteLine("running AutopilotComport::afterBeginReading()");
-	requestPacketForwarding();  //ask VC to pass on data
+	Thread::Sleep( 250 );
 	requestAgents();  //ask for all agents
+	Thread::Sleep( 250 );
+	requestPacketForwarding();  //ask VC to pass on data
 }
 
 void AutopilotComport::gotoLatLon(float lat, float lon) 
@@ -283,9 +379,15 @@ __int16 AutopilotComport::getInt16FromBytes(array<System::Byte> ^ arr, int start
 		return 0;
 	}
 
-	//XXX fix all of these
-
-	return arr[startIndex] + (arr[startIndex + 1] << 8);
+	__int16 retVal;
+	unsigned char * pointerToVal = (unsigned char *)(&retVal);
+	for(int i = startIndex; i < startIndex + 2; i++){
+		* pointerToVal = arr[i];
+		pointerToVal ++;
+		//System::Diagnostics::Trace::WriteLine("AutopilotComport::getInt16FromBytes(): byte being converted: " + Convert::ToString(arr[i], 16));
+	}
+	
+	return retVal;
 }
 
 /*
@@ -297,7 +399,14 @@ unsigned __int16 AutopilotComport::getUInt16FromBytes(array<System::Byte> ^ arr,
 		return 0;
 	}
 
-	return arr[startIndex] + (arr[startIndex + 1] << 8);
+	unsigned __int16 retVal;
+	unsigned char * pointerToVal = (unsigned char *)(&retVal);
+	for(int i = startIndex + 1; i >= startIndex; i--){
+		* pointerToVal = arr[i];
+		pointerToVal ++;
+	}
+	
+	return retVal;
 }
 
 /*
@@ -308,7 +417,15 @@ __int32 AutopilotComport::getInt32FromBytes(array<System::Byte> ^ arr, int start
 	if(arr->Length < startIndex + 4){
 		return 0;
 	}
-	return arr[startIndex] + (arr[startIndex + 1] << 8) + (arr[startIndex + 2] << 16) + (arr[startIndex + 3] << 24); 
+
+	__int32 retVal;
+	unsigned char * pointerToVal = (unsigned char *)(&retVal);
+	for(int i = startIndex + 3; i >= startIndex; i--){
+		* pointerToVal = arr[i];
+		pointerToVal ++;
+	}
+	
+	return retVal;
 }
 
 /*

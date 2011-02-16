@@ -26,6 +26,16 @@ namespace Communications
 		char update_type;
 	};
 
+	struct GimbalInfo
+	{
+		GimbalInfo();
+
+		unsigned __int16 roll;
+		unsigned __int16 pitch;
+	};
+
+	struct GPSInfo; // TODO: finish this
+
 	struct ComportDownstream
 	{
 		__int32 time_offset;
@@ -35,9 +45,8 @@ namespace Communications
 		float airplane_roll;
 		float airplane_pitch;
 		float airplane_heading;
-		__int32 gimbal_azimuth;
-		__int32 gimbal_elevation;
-		float gimbal_heading;
+		__int32 gimbal_roll;
+		__int32 gimbal_pitch;
 		__int32 camera_zoom;
 		char error_code;
 	};
@@ -64,7 +73,7 @@ namespace Communications
 
 		void readThread(void);
 
-		void readData(void);
+		bool readData(void);
 		array<System::Byte> ^ readRawData(int timeout);
 
 		array<System::Byte> ^ decodeData(array<System::Byte> ^ inBuffer);
@@ -75,6 +84,8 @@ namespace Communications
 
 
 		bool isConnected(void) { return _serialPort->IsOpen; }
+		bool kill;
+		int updateFrequency;
 	private:
 		int decodeByte(void);
 		unsigned char encodeByte( unsigned char data );

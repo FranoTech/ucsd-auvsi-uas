@@ -17,8 +17,10 @@ Comms::Comms(Object ^ telSimulator, Object ^ newDelegate) {
 
 	theTelSimulator = (TelemetrySimulator ^)telSimulator;
 
+	autopilotConnected = false;
+	rabbitConnected = false;
 	
-	comDelegate = gcnew comportUpdateDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::updateComData );
+	rabbitDelegate = gcnew rabbitUpdateDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::updateGimbalInfo );
 	consoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::printToConsole );
 
 }
@@ -73,6 +75,7 @@ void Comms::connectAll() {
 	}
 
 	//autopilotPortname = "COM1";
+	rabbitPortname = "COM1";
 
 	// connect autopilot and rabbit
 	int retval = BOTH_FAILED;
@@ -87,7 +90,7 @@ void Comms::connectAll() {
 	array<Int32> ^ retArr = {(Int32)retval};
 	((Skynet::Form1 ^ )theDelegate)->Invoke( tellGUIDelegate, retArr );
 
-	//printToConsole("Hello", gcnew ColorRef(Color::Blue));
+	printToConsole("Hello", Color::Orange);
 }
 
 
@@ -106,36 +109,53 @@ bool Comms::connectAutopilot() {
 	if (autopilotPortname == nullptr)
 		return false;
 	
+	bool success = false;
+
 	System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
 
-	autopilot->connect(autopilotPortname);
-	autopilot->beginReading("Autopilot");
+	success = autopilot->connect(autopilotPortname);
+	if (success) {
+		autopilotConnected = true;
+		autopilot->beginReading("Autopilot");
+	}
 	
-	return true;
+	return success;
 }
 
 
 bool Comms::connectRabbit() {
+	bool success = false;
 	if (rabbitPortname == nullptr)
 		return false;
 
 	
 	System::Diagnostics::Trace::WriteLine("Connecting to RABBIT");
-	rabbit->connect(rabbitPortname);
-	rabbit->beginReading("Rabbit");
+	success = rabbit->connect(rabbitPortname);
+	if (success) {
+		rabbitConnected = true;
+		rabbit->beginReading("Rabbit");
+	}
 
-	return true;
+	return success;
 }
 
 
 
 		
 void Comms::disconnectAutopilot() {
+	if (autopilotConnected) {
+		autopilot->disconnect();
+		autopilotConnected = false;
+	}
 }
 
 
 
 void Comms::disconnectRabbit() {
+	if (rabbitConnected) {
+		rabbit->disconnect();
+		rabbitConnected = false;
+	}
 }
 
 
@@ -145,31 +165,37 @@ void Comms::gotoLatLon(float lat, float lon)
 }
 
 
-void Comms::printToConsole( String ^ message, ColorRef ^ col )
+void Comms::printToConsole( String ^ message, Color col )
 {
 
-	// THIS DOESNT WORK
-	System::Diagnostics::Trace::WriteLine("Comms::printToConsole(): " + message);
-	return;
-	guiConsoleDelegate ^ newconsoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::printToConsole );
-	array< Object^ >^ local = gcnew array< Object^ >(1);
-	local[0] = message;
-	//local[1] = col;
-
-	array<Object ^> ^ retArr = {message};
 	
-	System::Diagnostics::Trace::WriteLine("about to invoke");
-	((Skynet::Form1 ^ )theDelegate)->Invoke( newconsoleDelegate, gcnew array<Object ^>{message, col});
+	//System::Diagnostics::Trace::WriteLine("Comms::printToConsole(): " + message);
+	
 
-	//array<Object ^> ^ retArr = {message, col};
-	//((Skynet::Form1 ^ )theDelegate)->Invoke( consoleDelegate, retArr );
+
+	guiConsoleDelegate ^ newconsoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::printToConsole );
+
+	array<Object ^> ^ retArr = gcnew array< Object^ >{message, col};
+	
+	((Skynet::Form1 ^ )theDelegate)->Invoke( newconsoleDelegate, gcnew array<Object ^>{retArr});
+
 	
 }
 
-void Comms::receiveRabbitPacket(ComportDownstream * packet) 
+void Comms::updateUIAboutCommsStatus(bool status, String ^ type)
+{
+	guiConsoleDelegate ^ newconsoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::updateCommsStatus );
+
+	Boolean value = status;
+	array<Object ^> ^ retArr = gcnew array< Object^ >{type, value};
+	
+	((Skynet::Form1 ^ )theDelegate)->Invoke( newconsoleDelegate, gcnew array<Object ^>{retArr});
+}
+
+void Comms::receiveRabbitPacket(GimbalInfo * packet) 
 {
 	
-	comDelegate(packet);
+	rabbitDelegate(packet);
 }
 
 

@@ -19,7 +19,11 @@
 //#include "VideoSimulator.h"
 #include "SimHandler.h"
 #include "Comms.h"
-#include "ColorRef.h"
+#include "PlaneWatcher.h"
+
+#define GREEN_IMAGE_PATH	"D:\\Skynet Files\\greenled.png"
+#define RED_IMAGE_PATH	"D:\\Skynet Files\\redled.png"
+#define YELLOW_IMAGE_PATH	"D:\\Skynet Files\\yellowled.png"
 
 	// row indexes for comport data
 	const int A_ALT = 1;
@@ -28,8 +32,8 @@
 	const int A_HEAD = 4;
 	const int A_ROLL = 5;
 	const int A_PITCH = 6;
-	const int G_AZIM = 8;
-	const int G_ELEV = 9;
+	const int G_PITCH = 8;
+	const int G_ROLL = 9;
 	const int V_ZOOM = 11;
 	const int V_FORMAT = 12;
 
@@ -117,6 +121,12 @@ namespace Skynet {
 
 		Simulator::VideoSimulator ^ theVideoSimulator;
 		Simulator::SimHandler ^ theSimHandler;
+
+		Communications::PlaneWatcher ^ thePlaneWatcher;
+
+		Image ^redImage;
+		Image ^yellowImage;
+		Image ^greenImage;
 
 	private: System::Windows::Forms::TabControl^  tabControl1;
 	private: System::Windows::Forms::TabPage^  tabPage1;
@@ -221,6 +231,18 @@ private: System::Windows::Forms::Button^  button1;
 private: System::Windows::Forms::Button^  button2;
 private: System::Windows::Forms::Button^  button3;
 private: System::Windows::Forms::Button^  button4;
+private: System::Windows::Forms::Label^  label8;
+private: System::Windows::Forms::Label^  label11;
+private: System::Windows::Forms::Label^  label12;
+private: System::Windows::Forms::PictureBox^  pictureBox1;
+private: System::Windows::Forms::PictureBox^  pictureBox2;
+private: System::Windows::Forms::PictureBox^  pictureBox3;
+private: System::Windows::Forms::Label^  label9;
+private: System::Windows::Forms::Label^  label10;
+private: System::Windows::Forms::Label^  label13;
+private: System::Windows::Forms::Label^  label14;
+private: System::Windows::Forms::Label^  label15;
+private: System::Windows::Forms::Label^  label16;
 
 	private: System::Windows::Forms::Label^  label7;
 			 
@@ -312,12 +334,12 @@ private: System::Windows::Forms::Button^  button4;
 			this->metadataTable->Rows->Add("    Roll");
 			this->metadataTable->Rows->Add("    Pitch");
 			this->metadataTable->Rows->Add("Gimbal Data", "---");
-			this->metadataTable->Rows->Add("    Azimuth");
-			this->metadataTable->Rows->Add("    Elevation");
+			this->metadataTable->Rows->Add("    Roll");
+			this->metadataTable->Rows->Add("    Pitch");
 			this->metadataTable->Rows->Add("Video Data", "---");
 			this->metadataTable->Rows->Add("    Zoom");
-			this->metadataTable->Rows->Add("    Format");
-			this->metadataTable[1, V_FORMAT]->Value = "NTSC";
+		//	this->metadataTable->Rows->Add("    Format");
+		//	this->metadataTable[1, V_FORMAT]->Value = "NTSC";
 
 			// Delegates
 			comportErrorDelegate = gcnew Delegates::voidToVoid( this, &Form1::noComportData );
@@ -339,6 +361,19 @@ private: System::Windows::Forms::Button^  button4;
 			isConnecting = false;
 
 			m_joystick->comm = theComms;
+
+			redImage = Image::FromFile( RED_IMAGE_PATH );
+			yellowImage = Image::FromFile( YELLOW_IMAGE_PATH );
+			greenImage = Image::FromFile( GREEN_IMAGE_PATH );
+
+			pictureBox1->SizeMode = PictureBoxSizeMode::StretchImage;
+			pictureBox2->SizeMode = PictureBoxSizeMode::StretchImage;
+			pictureBox3->SizeMode = PictureBoxSizeMode::StretchImage;
+			pictureBox1->Image = dynamic_cast<Image^>(redImage);
+			pictureBox2->Image = dynamic_cast<Image^>(redImage);
+			pictureBox3->Image = dynamic_cast<Image^>(redImage);
+
+			thePlaneWatcher = gcnew Communications::PlaneWatcher(this);
 			
 			//theComms->connectAll();
 			//theComms->gotoLatLon(534.0f, 2878.0f);
@@ -521,6 +556,18 @@ private: System::Windows::Forms::Button^  button4;
 			this->button2 = (gcnew System::Windows::Forms::Button());
 			this->button3 = (gcnew System::Windows::Forms::Button());
 			this->button4 = (gcnew System::Windows::Forms::Button());
+			this->label8 = (gcnew System::Windows::Forms::Label());
+			this->label11 = (gcnew System::Windows::Forms::Label());
+			this->label12 = (gcnew System::Windows::Forms::Label());
+			this->pictureBox1 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBox2 = (gcnew System::Windows::Forms::PictureBox());
+			this->pictureBox3 = (gcnew System::Windows::Forms::PictureBox());
+			this->label9 = (gcnew System::Windows::Forms::Label());
+			this->label10 = (gcnew System::Windows::Forms::Label());
+			this->label13 = (gcnew System::Windows::Forms::Label());
+			this->label14 = (gcnew System::Windows::Forms::Label());
+			this->label15 = (gcnew System::Windows::Forms::Label());
+			this->label16 = (gcnew System::Windows::Forms::Label());
 			this->menuStrip1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->BeginInit();
 			this->tabControl1->SuspendLayout();
@@ -535,6 +582,9 @@ private: System::Windows::Forms::Button^  button4;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->dataGridView3))->BeginInit();
 			this->tableLayoutPanel1->SuspendLayout();
 			this->mapMenuStrip->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox1))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox2))->BeginInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox3))->BeginInit();
 			this->SuspendLayout();
 			// 
 			// menuStrip1
@@ -559,20 +609,20 @@ private: System::Windows::Forms::Button^  button4;
 			// exportDataToolStripMenuItem
 			// 
 			this->exportDataToolStripMenuItem->Name = L"exportDataToolStripMenuItem";
-			this->exportDataToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->exportDataToolStripMenuItem->Size = System::Drawing::Size(143, 22);
 			this->exportDataToolStripMenuItem->Text = L"Export &Data...";
 			this->exportDataToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::exportDataToolStripMenuItem_Click);
 			// 
 			// toolStripSeparator3
 			// 
 			this->toolStripSeparator3->Name = L"toolStripSeparator3";
-			this->toolStripSeparator3->Size = System::Drawing::Size(149, 6);
+			this->toolStripSeparator3->Size = System::Drawing::Size(140, 6);
 			// 
 			// exitToolStripMenuItem
 			// 
 			this->exitToolStripMenuItem->Name = L"exitToolStripMenuItem";
 			this->exitToolStripMenuItem->ShortcutKeys = static_cast<System::Windows::Forms::Keys>((System::Windows::Forms::Keys::Alt | System::Windows::Forms::Keys::F4));
-			this->exitToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->exitToolStripMenuItem->Size = System::Drawing::Size(143, 22);
 			this->exitToolStripMenuItem->Text = L"&Exit";
 			this->exitToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::exitToolStripMenuItem_Click);
 			// 
@@ -638,41 +688,41 @@ private: System::Windows::Forms::Button^  button4;
 			this->providerToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(3) {this->mapnikToolStripMenuItem, 
 				this->osmarenderToolStripMenuItem, this->cyclemapToolStripMenuItem});
 			this->providerToolStripMenuItem->Name = L"providerToolStripMenuItem";
-			this->providerToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->providerToolStripMenuItem->Size = System::Drawing::Size(128, 22);
 			this->providerToolStripMenuItem->Text = L"Provider";
 			// 
 			// mapnikToolStripMenuItem
 			// 
 			this->mapnikToolStripMenuItem->Name = L"mapnikToolStripMenuItem";
-			this->mapnikToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->mapnikToolStripMenuItem->Size = System::Drawing::Size(139, 22);
 			this->mapnikToolStripMenuItem->Text = L"Mapnik";
 			this->mapnikToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::mapnikToolStripMenuItem_Click);
 			// 
 			// osmarenderToolStripMenuItem
 			// 
 			this->osmarenderToolStripMenuItem->Name = L"osmarenderToolStripMenuItem";
-			this->osmarenderToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->osmarenderToolStripMenuItem->Size = System::Drawing::Size(139, 22);
 			this->osmarenderToolStripMenuItem->Text = L"Osmarender";
 			this->osmarenderToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::osmarenderToolStripMenuItem_Click);
 			// 
 			// cyclemapToolStripMenuItem
 			// 
 			this->cyclemapToolStripMenuItem->Name = L"cyclemapToolStripMenuItem";
-			this->cyclemapToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->cyclemapToolStripMenuItem->Size = System::Drawing::Size(139, 22);
 			this->cyclemapToolStripMenuItem->Text = L"Cyclemap";
 			this->cyclemapToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::cyclemapToolStripMenuItem_Click);
 			// 
 			// lockToolStripMenuItem
 			// 
 			this->lockToolStripMenuItem->Name = L"lockToolStripMenuItem";
-			this->lockToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->lockToolStripMenuItem->Size = System::Drawing::Size(128, 22);
 			this->lockToolStripMenuItem->Text = L"Lock";
 			this->lockToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::lockToolStripMenuItem_Click);
 			// 
 			// downloadToolStripMenuItem
 			// 
 			this->downloadToolStripMenuItem->Name = L"downloadToolStripMenuItem";
-			this->downloadToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->downloadToolStripMenuItem->Size = System::Drawing::Size(128, 22);
 			this->downloadToolStripMenuItem->Text = L"Download";
 			this->downloadToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::downloadToolStripMenuItem_Click);
 			// 
@@ -686,7 +736,7 @@ private: System::Windows::Forms::Button^  button4;
 			// resetToolStripMenuItem
 			// 
 			this->resetToolStripMenuItem->Name = L"resetToolStripMenuItem";
-			this->resetToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->resetToolStripMenuItem->Size = System::Drawing::Size(102, 22);
 			this->resetToolStripMenuItem->Text = L"Reset";
 			this->resetToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::resetToolStripMenuItem_Click);
 			// 
@@ -701,28 +751,28 @@ private: System::Windows::Forms::Button^  button4;
 			// choosePathToolStripMenuItem
 			// 
 			this->choosePathToolStripMenuItem->Name = L"choosePathToolStripMenuItem";
-			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(141, 22);
 			this->choosePathToolStripMenuItem->Text = L"Choose Path";
 			this->choosePathToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::choosePathToolStripMenuItem_Click);
 			// 
 			// startToolStripMenuItem
 			// 
 			this->startToolStripMenuItem->Name = L"startToolStripMenuItem";
-			this->startToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->startToolStripMenuItem->Size = System::Drawing::Size(141, 22);
 			this->startToolStripMenuItem->Text = L"Start";
 			this->startToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::startToolStripMenuItem_Click);
 			// 
 			// pauseToolStripMenuItem
 			// 
 			this->pauseToolStripMenuItem->Name = L"pauseToolStripMenuItem";
-			this->pauseToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->pauseToolStripMenuItem->Size = System::Drawing::Size(141, 22);
 			this->pauseToolStripMenuItem->Text = L"Pause";
 			this->pauseToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::pauseToolStripMenuItem_Click);
 			// 
 			// stopToolStripMenuItem
 			// 
 			this->stopToolStripMenuItem->Name = L"stopToolStripMenuItem";
-			this->stopToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->stopToolStripMenuItem->Size = System::Drawing::Size(141, 22);
 			this->stopToolStripMenuItem->Text = L"Stop";
 			this->stopToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::stopToolStripMenuItem_Click);
 			// 
@@ -1424,6 +1474,136 @@ private: System::Windows::Forms::Button^  button4;
 			this->button4->UseVisualStyleBackColor = true;
 			this->button4->Click += gcnew System::EventHandler(this, &Form1::connectButton_Click);
 			// 
+			// label8
+			// 
+			this->label8->AutoSize = true;
+			this->label8->BackColor = System::Drawing::Color::DimGray;
+			this->label8->Enabled = false;
+			this->label8->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label8->Location = System::Drawing::Point(305, 76);
+			this->label8->Name = L"label8";
+			this->label8->Size = System::Drawing::Size(80, 16);
+			this->label8->TabIndex = 19;
+			this->label8->Text = L"Recording";
+			// 
+			// label11
+			// 
+			this->label11->AutoSize = true;
+			this->label11->Enabled = false;
+			this->label11->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label11->Location = System::Drawing::Point(310, 176);
+			this->label11->Name = L"label11";
+			this->label11->Size = System::Drawing::Size(69, 16);
+			this->label11->TabIndex = 22;
+			this->label11->Text = L"Autopilot";
+			// 
+			// label12
+			// 
+			this->label12->AutoSize = true;
+			this->label12->Enabled = false;
+			this->label12->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label12->Location = System::Drawing::Point(312, 276);
+			this->label12->Name = L"label12";
+			this->label12->Size = System::Drawing::Size(57, 16);
+			this->label12->TabIndex = 23;
+			this->label12->Text = L"Gimbal";
+			// 
+			// pictureBox1
+			// 
+			this->pictureBox1->Enabled = false;
+			this->pictureBox1->Location = System::Drawing::Point(310, 95);
+			this->pictureBox1->Name = L"pictureBox1";
+			this->pictureBox1->Size = System::Drawing::Size(69, 69);
+			this->pictureBox1->TabIndex = 24;
+			this->pictureBox1->TabStop = false;
+			// 
+			// pictureBox2
+			// 
+			this->pictureBox2->Enabled = false;
+			this->pictureBox2->Location = System::Drawing::Point(310, 195);
+			this->pictureBox2->Name = L"pictureBox2";
+			this->pictureBox2->Size = System::Drawing::Size(69, 69);
+			this->pictureBox2->TabIndex = 25;
+			this->pictureBox2->TabStop = false;
+			// 
+			// pictureBox3
+			// 
+			this->pictureBox3->Enabled = false;
+			this->pictureBox3->Location = System::Drawing::Point(310, 295);
+			this->pictureBox3->Name = L"pictureBox3";
+			this->pictureBox3->Size = System::Drawing::Size(69, 69);
+			this->pictureBox3->TabIndex = 26;
+			this->pictureBox3->TabStop = false;
+			// 
+			// label9
+			// 
+			this->label9->AutoSize = true;
+			this->label9->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label9->Location = System::Drawing::Point(16, 787);
+			this->label9->Name = L"label9";
+			this->label9->Size = System::Drawing::Size(182, 16);
+			this->label9->TabIndex = 27;
+			this->label9->Text = L"Green = Running / Connected";
+			// 
+			// label10
+			// 
+			this->label10->AutoSize = true;
+			this->label10->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label10->Location = System::Drawing::Point(16, 809);
+			this->label10->Name = L"label10";
+			this->label10->Size = System::Drawing::Size(135, 16);
+			this->label10->TabIndex = 28;
+			this->label10->Text = L"Yellow = Packet Loss";
+			// 
+			// label13
+			// 
+			this->label13->AutoSize = true;
+			this->label13->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label13->Location = System::Drawing::Point(16, 833);
+			this->label13->Name = L"label13";
+			this->label13->Size = System::Drawing::Size(213, 16);
+			this->label13->TabIndex = 29;
+			this->label13->Text = L"Red = Not Running / Disconnected";
+			// 
+			// label14
+			// 
+			this->label14->AutoSize = true;
+			this->label14->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label14->Location = System::Drawing::Point(16, 882);
+			this->label14->Name = L"label14";
+			this->label14->Size = System::Drawing::Size(226, 16);
+			this->label14->TabIndex = 30;
+			this->label14->Text = L"Autopilot = Telemetry Data from UAV";
+			// 
+			// label15
+			// 
+			this->label15->AutoSize = true;
+			this->label15->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label15->Location = System::Drawing::Point(16, 906);
+			this->label15->Name = L"label15";
+			this->label15->Size = System::Drawing::Size(283, 16);
+			this->label15->TabIndex = 31;
+			this->label15->Text = L"Gimbal = Communications for Pointing Camera";
+			// 
+			// label16
+			// 
+			this->label16->AutoSize = true;
+			this->label16->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label16->Location = System::Drawing::Point(16, 858);
+			this->label16->Name = L"label16";
+			this->label16->Size = System::Drawing::Size(276, 16);
+			this->label16->TabIndex = 32;
+			this->label16->Text = L"Recording = Recording Telemetry and Video";
+			// 
 			// Form1
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -1431,8 +1611,20 @@ private: System::Windows::Forms::Button^  button4;
 			this->AutoValidate = System::Windows::Forms::AutoValidate::EnableAllowFocusChange;
 			this->BackColor = System::Drawing::Color::DimGray;
 			this->ClientSize = System::Drawing::Size(1924, 946);
+			this->Controls->Add(this->label16);
+			this->Controls->Add(this->label15);
+			this->Controls->Add(this->label14);
+			this->Controls->Add(this->label13);
+			this->Controls->Add(this->label10);
+			this->Controls->Add(this->label9);
+			this->Controls->Add(this->pictureBox3);
+			this->Controls->Add(this->pictureBox2);
+			this->Controls->Add(this->pictureBox1);
+			this->Controls->Add(this->label12);
+			this->Controls->Add(this->label11);
 			this->Controls->Add(this->button4);
 			this->Controls->Add(this->button3);
+			this->Controls->Add(this->label8);
 			this->Controls->Add(this->button2);
 			this->Controls->Add(this->button1);
 			this->Controls->Add(this->tableLayoutPanel1);
@@ -1473,6 +1665,9 @@ private: System::Windows::Forms::Button^  button4;
 			this->tableLayoutPanel1->ResumeLayout(false);
 			this->tableLayoutPanel1->PerformLayout();
 			this->mapMenuStrip->ResumeLayout(false);
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox1))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox2))->EndInit();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox3))->EndInit();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -1547,8 +1742,28 @@ private: System::Void consoleMessage( String ^ message, Color col )
 public:  System::Void printToConsole( array<Object ^> ^ retArr ) 
 		 {
 			 
-			System::Diagnostics::Trace::WriteLine("Form1::printToConsole");
-			 consoleMessage( (String ^)retArr[0], Color::Blue);//((ColorRef ^)retArr[1])->theColor );
+			//System::Diagnostics::Trace::WriteLine("Form1::printToConsole");
+			//consoleMessage( (String ^)retArr[0] + ((Int32)retArr[1]), Color::Blue);
+			consoleMessage( (String ^)retArr[0], ((Color)retArr[1]));//((ColorRef ^)retArr[1])->theColor );
+		 }
+public:	 System::Void updateCommsStatus( array<Object ^> ^ retArr )
+		 {
+			 if (!isconnected)
+				 return;
+
+			 Image ^theImage;
+			 // get result (yellow vs green)
+			 if ((Boolean)retArr[1])
+				 theImage = greenImage;
+			 else 
+				 theImage = yellowImage;
+
+			 // get type (rabbit vs autopilot) and update image
+			 if (((String ^)retArr[0])->Equals("Autopilot"))
+				 pictureBox2->Image = theImage;
+			 else if (((String ^)retArr[0])->Equals("Rabbit"))
+				 pictureBox3->Image = theImage;
+
 		 }
 private: System::Void errorMessage( String ^ message )
 		 {
@@ -1715,8 +1930,7 @@ public: System::Void saveImage(){
 			data->mapping_latitude = Convert::ToDouble( this->metadataTable[1, A_LAT]->Value );			// pixel to meter translation for latitude
 			data->mapping_longitude = Convert::ToDouble( this->metadataTable[1, A_LON]->Value );		// pixel to meter translation for longitude
 			
-#ifndef OPENCV_DISABLED
-			data->homography = GeoReference::computeHomography( Convert::ToDouble( this->metadataTable[1, A_LAT]->Value ),
+			/*data->homography = GeoReference::computeHomography( Convert::ToDouble( this->metadataTable[1, A_LAT]->Value ),
 				Convert::ToDouble( this->metadataTable[1, A_LON]->Value ),
 				Convert::ToDouble( this->metadataTable[1, A_ALT]->Value ),
 				Convert::ToDouble( this->metadataTable[1, A_ROLL]->Value ),
@@ -1724,8 +1938,7 @@ public: System::Void saveImage(){
 				Convert::ToDouble( this->metadataTable[1, A_HEAD]->Value ),
 				Convert::ToDouble( this->metadataTable[1, G_AZIM]->Value ),
 				Convert::ToDouble( this->metadataTable[1, G_ELEV]->Value ),
-				Convert::ToDouble( this->metadataTable[1, V_ZOOM]->Value ) );	
-#endif
+				Convert::ToDouble( this->metadataTable[1, V_ZOOM]->Value ) );	*/
 
 			//openGLView->saveImage( path );
 			openGLView->saveImage( path, pathBase, data->homography, Convert::ToDouble( this->metadataTable[1, A_HEAD]->Value ) );
@@ -1792,8 +2005,23 @@ private: void AddText( Stream^ fs, String^ value )
    fs->Write( info, 0, info->Length );
 }
 
+public: System::Void updateGimbalInfo( Communications::GimbalInfo * data ) {
+
+			// save data for later
+			thePlaneWatcher->updateGimbalInfo(data);
+
+			float roll = (((float)data->roll) - 3000.0f)/20.0f;
+			float pitch = (((float)data->pitch) - 3000.0f)/20.0f;
+
+			this->metadataTable[1, G_ROLL]->Value = "" + thePlaneWatcher->gimbalRollInDegrees() + "*"; //azimuth;
+			this->metadataTable[1, G_PITCH]->Value = "" + thePlaneWatcher->gimbalPitchInDegrees() + "*"; //elevation;
+
+		}
+
 public: System::Void updateComData( Communications::ComportDownstream * data ) {
-			 if( !isReadingData )
+			// TODO: split this function into many others
+
+			/* if( !isReadingData )
 			 {
 			 	this->Invoke( this->comportEstablishDelegate );
 			 }
@@ -1819,8 +2047,8 @@ public: System::Void updateComData( Communications::ComportDownstream * data ) {
 			 elevation *= 360.0f / 1600.0f;
 			 //elevation -= 180.0f;
 
-			 this->metadataTable[1, G_AZIM]->Value = azimuth;
-			 this->metadataTable[1, G_ELEV]->Value = elevation;
+			 this->metadataTable[1, G_AZIM]->Value = data->gimbal_roll; //azimuth;
+			 this->metadataTable[1, G_ELEV]->Value = data->gimbal_pitch; //elevation;
 
 			 // Camera Stuff
 			 this->metadataTable[1, V_ZOOM]->Value = Communications::decodeZoomFloat( data->camera_zoom );			 
@@ -1846,10 +2074,10 @@ public: System::Void updateComData( Communications::ComportDownstream * data ) {
 			 }
 			 catch( Exception ^ )
 			 {
-		System::Diagnostics::Trace::WriteLine("catch in comport");
+				System::Diagnostics::Trace::WriteLine("catch in comport");
 			 }
 
-			 delete data;
+			 delete data;*/
 		 }
 private: System::Void splitLengthTextBox_Validated(System::Object^  sender, System::EventArgs^  e) {
 			 try
@@ -1884,10 +2112,11 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 				consoleMessage( "Stopped recording video and telemetry", Color::Green );	
 				recording = false;
 				System::Diagnostics::Trace::WriteLine("stopped recording in Form1");
-				this->errorLogTextBox->BackColor = System::Drawing::Color::Black;
 
 				// update button
 				((Windows::Forms::ButtonBase ^)sender)->Text = "Start Recording";
+				
+				pictureBox1->Image = dynamic_cast<Image^>(redImage);
 			}
 
 			// start recording
@@ -1912,10 +2141,10 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 					recording = true;
 					System::Diagnostics::Trace::WriteLine("started recording in Form1 " + path);
 			
-					this->errorLogTextBox->BackColor = System::Drawing::Color::FromArgb( 0, 40, 0);
 					
 					// update button
 					((Windows::Forms::ButtonBase ^)sender)->Text = "Stop Recording";
+					pictureBox1->Image = dynamic_cast<Image^>(greenImage);
 				}
 			}
 		 }
@@ -1923,7 +2152,7 @@ private: System::Void stopRecordButton_Click(System::Object^  sender, System::Ev
 		 	if( !recording )
 				return;
 
-			// no longer used (moved to startRecording
+			// no longer used (moved to startRecording)
 		 }
 
 #define SPLIT_LENGTH 300 // this->splitLengthTextBox->Text
@@ -2204,8 +2433,7 @@ private: System::Void mapUpdateTimer_Tick(System::Object^  sender, System::Event
 					 Convert::ToDouble(this->metadataTable[1, A_LON]->Value), 
 					 Convert::ToDouble(this->metadataTable[1, A_HEAD]->Value) );
 				 
-#ifndef OPENCV_DISABLED
-				 array<float> ^ homography = GeoReference::computeHomography( Convert::ToDouble(this->metadataTable[1, A_LAT]->Value),
+				/* array<float> ^ homography = GeoReference::computeHomography( Convert::ToDouble(this->metadataTable[1, A_LAT]->Value),
 					 Convert::ToDouble(this->metadataTable[1, A_LON]->Value),
 					 Convert::ToDouble(this->metadataTable[1, A_LAT]->Value),
 					 Convert::ToDouble(this->metadataTable[1, A_ROLL]->Value),
@@ -2213,8 +2441,7 @@ private: System::Void mapUpdateTimer_Tick(System::Object^  sender, System::Event
 					 Convert::ToDouble(this->metadataTable[1, A_HEAD]->Value),
 					 Convert::ToDouble(this->metadataTable[1, G_AZIM]->Value),
 					 Convert::ToDouble(this->metadataTable[1, G_ELEV]->Value),
-					 Convert::ToDouble(this->metadataTable[1, V_ZOOM]->Value) );
-#endif
+					 Convert::ToDouble(this->metadataTable[1, V_ZOOM]->Value) );*/
 
 				 /*mapView->SetCameraLookLocation( homography, 
 					 Convert::ToDouble(this->metadataTable[1, A_LAT]->Value), 
@@ -2536,6 +2763,8 @@ public:	 System::Void handleConnectionResult(array<Int32> ^ retArr) {
 				// both failed to connect
 					consoleMessage( "Failed to Connect to Rabbit", Color::Red );
 					consoleMessage( "Failed to Connect to Autopilot", Color::Red );
+					pictureBox2->Image = dynamic_cast<Image^>(redImage);
+					pictureBox3->Image = dynamic_cast<Image^>(redImage);
 
 			}
 
@@ -2544,12 +2773,18 @@ public:	 System::Void handleConnectionResult(array<Int32> ^ retArr) {
 				if (result == BOTH_CONNECTED) {
 					consoleMessage( "Connected to Rabbit", Color::Green );
 					consoleMessage( "Connected to Autopilot", Color::Green );
+					pictureBox2->Image = dynamic_cast<Image^>(greenImage);
+					pictureBox3->Image = dynamic_cast<Image^>(greenImage);
 				} else if (result == RABBIT_CONNECTED) {
 					consoleMessage( "Connected to Rabbit", Color::Green );
 					consoleMessage( "Failed to Connect to Autopilot", Color::Red );
+					pictureBox2->Image = dynamic_cast<Image^>(redImage);
+					pictureBox3->Image = dynamic_cast<Image^>(greenImage);
 				} else if (result == AUTOPILOT_CONNECTED) {
 					consoleMessage( "Failed to Connect to Rabbit", Color::Red );
 					consoleMessage( "Connected to Autopilot", Color::Green );
+					pictureBox2->Image = dynamic_cast<Image^>(greenImage);
+					pictureBox3->Image = dynamic_cast<Image^>(redImage);
 				}
 
 				isconnected = true;
@@ -2578,6 +2813,8 @@ private: System::Void connectButton_Click(System::Object^  sender, System::Event
 				
 				// update button
 				((Windows::Forms::ButtonBase ^)sender)->Text = "Connect";
+				pictureBox2->Image = dynamic_cast<Image^>(redImage);
+				pictureBox3->Image = dynamic_cast<Image^>(redImage);
 			}
 
 			// connect
