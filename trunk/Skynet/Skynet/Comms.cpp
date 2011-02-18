@@ -51,6 +51,7 @@ void Comms::connectAll() {
 		// test response
 		int responseType = -1; // 3 for autopilot, 2 for rabbit
 		if (response->Length >= 4) {
+			System::Diagnostics::Trace::WriteLine("4 or more bytes in response");
 			if (response[0] == 0xFF && response[1] == 0x33 && response[5] == 0xFE) {
 					responseType = response[2];
 			}
@@ -75,7 +76,7 @@ void Comms::connectAll() {
 	}
 
 	//autopilotPortname = "COM1";
-	rabbitPortname = "COM1";
+	//rabbitPortname = "COM1";
 
 	// connect autopilot and rabbit
 	int retval = BOTH_FAILED;

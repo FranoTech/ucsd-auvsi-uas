@@ -296,7 +296,7 @@ bool Comport::readData(void)
 				break;
 			}
 			
-			//System::Diagnostics::Trace::WriteLine("look for special byte");
+			//System::Diagnostics::Trace::WriteLine("look for special byte 0x" + Convert::ToString(tempByte, 16));
 
 			// process actual byte
 			// if this is a special byte, decode it
@@ -325,7 +325,6 @@ bool Comport::readData(void)
 
 		}
 		
-		//System::Diagnostics::Trace::WriteLine("calculate checksum");
 
 		__int16 checksum = calculateChecksum( buffer, bufLen - 3);
 
@@ -428,15 +427,52 @@ bool Comport::readData(void)
 	catch( Exception ^ theException )
 	{
 		System::Diagnostics::Trace::WriteLine("WARNING: Unexpected catch in comport.");
+		String ^ bufferString = "0x" + Convert::ToString(buffer[0], 16);
+		for (int i = 1; i < buffer->Length; i++) {
+			bufferString = bufferString + " 0x" + Convert::ToString(buffer[i], 16);
+		}
+		System::Diagnostics::Trace::WriteLine("Catch in comport. bufLen:" + bufLen + " buffer:" + bufferString);
 	}
 }
 
+array<System::Byte> ^ Comport::stripAndChecksum(array<System::Byte> ^ inBuffer)
+{
+	int bufLen = inBuffer->Length;
+
+
+	__int16 checksum = calculateChecksum( inBuffer, bufLen - 3);
+
+	//System::Diagnostics::Trace::WriteLine("Checksum: " + String::Format("{0:X}", checksum));
+
+	if (!( ((unsigned char *)&checksum)[1] == inBuffer[bufLen - 3] && ((unsigned char *)&checksum)[0] == inBuffer[bufLen - 2] ))
+	{
+		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. bufLen: " + (bufLen - 4));
+		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
+																							Convert::ToString(inBuffer[bufLen - 3], 16) + Convert::ToString(inBuffer[bufLen - 2], 16));
+			
+		String ^ bufferString = "0x" + Convert::ToString(inBuffer[0], 16);
+		for (int i = 1; i < inBuffer->Length; i++) {
+			bufferString = bufferString + " 0x" + Convert::ToString(inBuffer[i], 16);
+		}
+		System::Diagnostics::Trace::WriteLine("Comport::decodeData():" + bufLen + " buffer:" + bufferString);
+		return nullptr;
+ 	}
+
+
+	// copy packet into new packet
+	array<System::Byte> ^ outBuffer = gcnew array<System::Byte>(bufLen - 4);
+	for (int i = 1; i < bufLen - 3; i++) { // ignore ff, checksum, fe
+		outBuffer[i - 1] = inBuffer[i];
+	}
+
+	return outBuffer;
+}
 
 array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 {
-	array<System::Byte> ^ buffer = gcnew array<System::Byte>(BUFFER_SIZE);
+	array<System::Byte> ^ buffer = gcnew array<System::Byte>(inBuffer->Length);
 	int bufLen = 0;
-	int packetIndex;
+	int packetIndex = 0;
 	
 	byte tempByte;
 	byte tempByte2;
@@ -450,15 +486,16 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 		}
 
 		tempByte = inBuffer[packetIndex];
+		packetIndex++;
 
 		if( tempByte == START_BYTE )
 		{
 			buffer[bufLen] = tempByte;
 			bufLen++;
+			//System::Diagnostics::Trace::WriteLine("Comport::decodeData(): start packetIndex: " + packetIndex);
 			break;
 		}
 
-		packetIndex++;
 	}
 
 	// Read in the message string, decoding as necessary
@@ -471,10 +508,11 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 
 		tempByte = inBuffer[packetIndex];
 
-		if( tempByte == END_BYTE )
+		if( packetIndex + 1 == inBuffer->Length ) // tempByte == END_BYTE )
 		{
 			buffer[bufLen] = tempByte;
 			bufLen++;
+		//	System::Diagnostics::Trace::WriteLine("Comport::decodeData(): end packetIndex: " + packetIndex);
 			break;
 		}
 
@@ -521,10 +559,14 @@ array<System::Byte> ^ Comport::decodeData(array<System::Byte> ^ inBuffer)
 	if (!( ((unsigned char *)&checksum)[1] == buffer[bufLen - 3] && ((unsigned char *)&checksum)[0] == buffer[bufLen - 2] ))
 	{
 		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. bufLen: " + (bufLen - 4));
-		//System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. packettype:" + Convert::ToString(buffer[1], 10));
 		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
 																							Convert::ToString(buffer[bufLen - 3], 16) + Convert::ToString(buffer[bufLen - 2], 16));
 			
+		String ^ bufferString = "0x" + Convert::ToString(buffer[0], 16);
+		for (int i = 1; i < buffer->Length; i++) {
+			bufferString = bufferString + " 0x" + Convert::ToString(buffer[i], 16);
+		}
+		System::Diagnostics::Trace::WriteLine("Comport::decodeData():" + bufLen + " buffer:" + bufferString);
 		return nullptr;
  	}
 
@@ -555,7 +597,7 @@ __int16 Comport::calculateChecksum( array<System::Byte> ^data, int packetSize )
 		//CheckValue ^= data[i];
 		//CheckValue ^= data[i+1]<<8;
 	}
-
+	
 	if ((realPacketSize)%2 == 1) // odd
 		checkHigh ^= data[packetSize - 1];
 

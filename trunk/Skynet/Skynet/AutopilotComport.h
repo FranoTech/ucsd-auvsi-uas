@@ -48,6 +48,8 @@ namespace Communications
 		float				unusedtwo;
 	};
 
+	//TODO: create two additional structures, one for packet 248 and one for packet 249 to be passed to PlaneState
+
 	/*
 	 * All of the values associated with an autopilot (194 bytes inc header)
 	 */

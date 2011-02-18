@@ -32,15 +32,17 @@ namespace Communications
 
 		unsigned __int16 roll;
 		unsigned __int16 pitch;
-	};
 
-	struct GPSInfo; // TODO: finish this
+		//TODO: add zoom
+	};
 
 	struct ComportDownstream
 	{
 		__int32 time_offset;
 		float gps_lat;
 		float gps_lon;
+
+
 		float gps_alt;
 		float airplane_roll;
 		float airplane_pitch;
@@ -77,6 +79,7 @@ namespace Communications
 		array<System::Byte> ^ readRawData(int timeout);
 
 		array<System::Byte> ^ decodeData(array<System::Byte> ^ inBuffer);
+		array<System::Byte> ^ stripAndChecksum(array<System::Byte> ^ inBuffer);
 
 		void writeData( ComportUpstream * data );
 		void writeRawData( array<System::Byte> ^ buffer );
