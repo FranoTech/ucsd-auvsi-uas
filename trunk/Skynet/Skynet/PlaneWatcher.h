@@ -7,16 +7,20 @@ using namespace std;
 using namespace System;
 using namespace System::Runtime::InteropServices;
 
-#define NUM_PLANE_DATA 100
+#define NUM_GPS_DATA 100
+#define NUM_TELEM_DATA 100
+#define NUM_GIMBAL_DATA 100
 
 namespace Communications
 {
+
 
 	ref class PlaneWatcher {
 	public:
 		PlaneWatcher(Object ^ theParent);
 
-		void updateAutopilotInfo( AutopilotState *data);
+		void updatePlaneGPSInfo(PlaneGPSPacket * data);
+		void updatePlaneTelemInfo(PlaneTelemPacket * data);
 		void updateGimbalInfo( GimbalInfo *data);
 
 		float gimbalRollInDegrees();
@@ -26,15 +30,21 @@ namespace Communications
 
 	private:
 		Object ^ parent;
-		array<AutopilotState *> ^ autopilotInfo;
-		int autopilotInfoIndex;
 
-		GimbalInfo *gimbalInfo;
+		array<GimbalInfo *> ^ gimbalInfo;
+		array<PlaneGPSPacket *> ^ autopilotGPSInfo;
+		array<PlaneTelemPacket *> ^ autopilotTelemInfo;
+		int gimbalInfoIndex;
+		int autopilotGPSInfoIndex;
+		int autopilotTelemInfoIndex;
+		
+		void incrementGimbalInfoIndex();
+		void incrementGPSInfoIndex();
+		void incrementTemelInfoIndex();
 
-		AutopilotState *copyAutopilotState(AutopilotState *state);
-		void incrementAutopilotInfoIndex();
 		AutopilotState *getClosestAutopilotState( float timeOffset );  //time offset in seconds
-		__int32 getTimeUTC(AutopilotState *state);
+		__int32 getTimeUTC(PlaneGPSPacket *state);
+		__int32 getTimeUTC(PlaneTelemPacket *state);
 	};
 
 }

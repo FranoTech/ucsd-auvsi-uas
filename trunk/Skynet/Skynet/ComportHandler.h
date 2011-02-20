@@ -23,7 +23,8 @@ namespace Communications
 
 		//void beginReading();
 		void writeData( array<System::Byte> ^ inBuffer ); 
-		virtual void receiveData( array<System::Byte> ^ inBuffer );
+		void receiveData( array<System::Byte> ^ inBuffer );
+		virtual void analyzeData( array<System::Byte> ^ inBuffer );
 		void beginReading(String ^ comportType);
 		virtual void afterBeginReading();
 		void updateComportStatus(bool status);
@@ -33,6 +34,7 @@ namespace Communications
 		Comport ^ thePort;
 		Thread ^ comReadThread;
 		String ^ type;
+		int intType;
 
 	private:
 		TelemetrySimulator ^ theTelSimulator;

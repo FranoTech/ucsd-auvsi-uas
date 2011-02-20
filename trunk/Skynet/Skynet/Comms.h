@@ -20,6 +20,8 @@ namespace Communications
 
 	
 	delegate void rabbitUpdateDelegate( GimbalInfo * data );
+	delegate void planeGPSDelegate( TelemPacket248 * data );
+	delegate void planeTelemDelegate( TelemPacket249 * data );
 	delegate void tellGUIAboutConnection( array<Int32> ^ retArr );
 	delegate void guiConsoleDelegate( array<Object ^> ^ retArr );
 
@@ -30,6 +32,9 @@ namespace Communications
 		// connecting
 		void connectAll();
 		void disconnectAll();
+
+		
+		void attemptConnectionOnPort( Object ^ port );
 
 		bool connectAutopilot();
 		bool connectRabbit();
@@ -42,6 +47,8 @@ namespace Communications
 
 		// receiving
 		void receiveRabbitPacket(GimbalInfo * packet);
+		void receivePlaneGPS(TelemPacket * packet);
+		void receivePlaneTelem(TelemPacket * packet);
 
 		void printToConsole( String ^ message, Color col );
 		void updateUIAboutCommsStatus(bool status, String ^ type);
@@ -50,11 +57,14 @@ namespace Communications
 		AutopilotComport ^ autopilot;
 		RabbitComport ^ rabbit;
 
+
 	private:
 
 		TelemetrySimulator ^ theTelSimulator;
 		Object ^ theDelegate;
 		rabbitUpdateDelegate ^ rabbitDelegate;
+		planeGPSDelegate ^ planeGPS;
+		planeTelemDelegate ^ planeTelem;
 		guiConsoleDelegate ^ consoleDelegate;
 
 		String ^ autopilotPortname;

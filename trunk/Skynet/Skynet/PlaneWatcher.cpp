@@ -1,39 +1,72 @@
 #include "StdAfx.h"
 #include "PlaneWatcher.h"
+//#include "Form1.h"
 
 using namespace Communications;
 
 PlaneWatcher::PlaneWatcher(Object ^ theParent)
 { 
 	parent = theParent; 
-	//gpsInfo = new AutopilotInfo();
-	gimbalInfo = new GimbalInfo();
-	 
-	autopilotInfo = gcnew array<AutopilotState *>(NUM_PLANE_DATA);  //create a new array with num entities
-	autopilotInfoIndex = 0;  //point it to the front of the array
-}
 
-void PlaneWatcher::updateAutopilotInfo( AutopilotState *data)
-{
-	incrementAutopilotInfoIndex();  //increment it
-	autopilotInfo[autopilotInfoIndex] = copyAutopilotState(data);
+	array<GimbalInfo *> ^ gimbalInfo;
+		array<PlaneGPSPacket *> ^ autopilotGPSInfo;
+		array<PlaneTelemPacket *> ^ autopilotTelemInfo;
+		int gimbalInfoIndex;
+		int autopilotGPSInfoIndex;
+		int autopilotTelemInfoIndex;
 
-	// TODO: fix memory leak here. what happens to old struct? its just floating out in space, all alone, never to be used again ... :(
+    gimbalInfo = gcnew array<GimbalInfo *>(NUM_GIMBAL_DATA);  //create a new array with num entities
+	autopilotGPSInfo = gcnew array<PlaneGPSPacket *>(NUM_GPS_DATA);
+	autopilotTelemInfo = gcnew array<PlaneTelemPacket *>(NUM_TELEM_DATA);
 
-	// a good way to handle that would be to make a copyStruct function that took source struct and destination struct (just like memcpy())
-	//	and copied one to the other. then, you would have alloc each element in the array, but after that, no more allocations. thats faster.
+	gimbalInfoIndex  = 0;  //point it to the front of the array
+	autopilotGPSInfoIndex = 0;
+	autopilotTelemInfoIndex = 0;
+
+	for(int a = 0; a < NUM_GIMBAL_DATA; a++){
+		gimbalInfo[a] = 0;
+	}
+
+	for(int a = 0; a < NUM_GPS_DATA; a++){
+		autopilotGPSInfo[a] = 0;
+	}
+
+	for(int a = 0; a < NUM_TELEM_DATA; a++){
+		autopilotTelemInfo[a] = 0;
+	}
 }
 		
 void PlaneWatcher::updateGimbalInfo( GimbalInfo *data)
 {
-	gimbalInfo->roll = data->roll;
-	gimbalInfo->pitch = data->pitch;
+	incrementGimbalInfoIndex();
+
+	delete gimbalInfo[gimbalInfoIndex];
+
+	gimbalInfo[gimbalInfoIndex] = data;
+}
+
+void PlaneWatcher::updatePlaneGPSInfo( PlaneGPSPacket * data)
+{
+	incrementGPSInfoIndex();
+
+	delete autopilotGPSInfo[autopilotGPSInfoIndex];
+
+	autopilotGPSInfo[autopilotGPSInfoIndex] = data;
+}
+
+void PlaneWatcher::updatePlaneTelemInfo( PlaneTelemPacket * data)
+{
+	incrementTemelInfoIndex();
+
+	delete autopilotTelemInfo[autopilotTelemInfoIndex];
+
+	autopilotTelemInfo[autopilotTelemInfoIndex] = data;
 }
 
 		
 AutopilotState * PlaneWatcher::predictLocationAtTime( float timeOffset )
 {
-	
+	//TODO:  that's right, something else for Todo to do.
 	return 0;
 }
 
@@ -52,43 +85,112 @@ float PlaneWatcher::gimbalPitchInDegrees()
 
 }
 
-AutopilotState *PlaneWatcher::copyAutopilotState(AutopilotState *state)
+void PlaneWatcher::incrementGimbalInfoIndex()
 {
-	AutopilotState *AI = new AutopilotState();  //create a new autopilot state
-
-	memcpy(AI, state, sizeof(struct AutopilotState));
-
-	return AI;
-}
-
-void PlaneWatcher::incrementAutopilotInfoIndex()
-{
-	autopilotInfoIndex ++;  //increment
-	if(autopilotInfoIndex >= NUM_PLANE_DATA){
-		autopilotInfoIndex = 0;  //reset to zero
+	gimbalInfoIndex ++;  //increment
+	if(gimbalInfoIndex >= NUM_GIMBAL_DATA){
+		gimbalInfoIndex = 0;  //reset to zero
 	}
 }
 
-AutopilotState *PlaneWatcher::getClosestAutopilotState( float timeOffset )
+void PlaneWatcher::incrementGPSInfoIndex()
 {
-	// TIM: does the UTC time of the packet refer to time gps was updated, or time the packet was sent?
-
-	__int32 millisOffset = (__int32)(timeOffset * 1000.0);  //get the time in millis
-	__int32 destTime = getTimeUTC(autopilotInfo[autopilotInfoIndex]) + millisOffset;  //get the current time, plus offset
-	int i = autopilotInfoIndex;
-	__int32 smallestDifference = 2147483646;  //maximum size of int32
-	//XXX Todo: this stuff
-
-	return 0;
+	autopilotGPSInfoIndex ++;  //increment
+	if(autopilotGPSInfoIndex >= NUM_GPS_DATA){
+		autopilotGPSInfoIndex = 0;  //reset to zero
+	}
 }
 
-__int32 PlaneWatcher::getTimeUTC(AutopilotState *state)
+void PlaneWatcher::incrementTelemInfoIndex()
+{
+	autopilotTelemInfoIndex ++;  //increment
+	if(autopilotTelemInfoIndex >= NUM_TELEM_DATA){
+		autopilotTelemInfoIndex = 0;  //reset to zero
+	}
+}
+
+PlaneState *PlaneWatcher::getClosestAutopilotState( float timeOffset )
+{
+	
+	System::DataTime targetTime = System::DateTime::Now.AddSeconds(timeOffset);
+
+	__int32 target = targetTime.Millisecond + 1000*targetTime.Second + 60000*targetTime.Minute + 3600000*targetTime.Hour;  //time in __int32 which we want to compare to
+	
+	/*
+	 * cases: 
+	 * (1) empty list, return 0
+	 * (2) list of size 1, do 1 point prediction
+	 * (3) before the most recent GPS location
+	 * (4) within the list of points
+	 * (5) after the oldest GPS location
+	 *
+	 * remember to discount any array pointer values of 0, as these have not been instantiated 
+	 */
+
+	//case 1 for GPS and Telem
+	if(autopilotGPSInfoIndex == 0 && autopilotGPSInfo[autopilotGPSInfoIndex] == 0 || autopilotTelemInfoIndex == 0 && autopilotTelemInfo[autopilotTelemInfoIndex] == 0){
+		return 0;
+	}
+
+	PlaneState * retval = new PlaneState();
+
+	//we know that we can get prediction data for both GPS and telem
+	//do GPS prediction
+
+	//for now, just returning the two closest values
+	__int32 smallestDistance = 3600000;  //arbitrarily large
+	int smallestIndex = 0;
+	for(int i = 0; i < NUM_GPS_DATA; i++){
+		if(autopilotGPSInfo[i] ! = 0){
+			__int32 dist = abs(timeOffset - getTimeUTC(autopilotGPSInfo[i]));
+			if(dist < smallestDistace){
+				smallestDistance = dist;
+				smallestIndex = i;
+			}
+		}
+	}
+
+	retval->gpsData->gpsVelocity = autopilotGPSInfo[smallestIndex]->gpsVelocity;
+	retval->gpsData->gpsAltitude = autopilotGPSInfo[smallestIndex]->gpsAltitude;
+	retval->gpsData->gpsHeading = autopilotGPSInfo[smallestIndex]->gpsHeading;
+	retval->gpsData->gpsLatitude = autopilotGPSInfo[smallestIndex]->gpsLatitude;
+	retval->gpsData->gpsLongitude = autopilotGPSInfo[smallestIndex]->gpsLongitude;
+
+	smallestDistance = 3600000;  //arbitrarily large
+	smallestIndex = 0;
+	for(int i = 0; i < NUM_TELEM_DATA; i++){
+		if(autopilotTelemInfo[i] ! = 0){
+			__int32 dist = abs(timeOffset - getTimeUTC(autopilotTelemInfo[i]));
+			if(dist < smallestDistace){
+				smallestDistance = dist;
+				smallestIndex = i;
+			}
+		}
+	}
+
+	retval->telemData->roll = autopilotTelemInfo[smallestIndex]->roll;
+	retval->telemData->pitch = autopilotTelemInfo[smallestIndex]->pitch;
+	retval->telemData->heading = autopilotTelemInfo[smallestIndex]->heading;
+
+	return retval;
+}
+
+__int32 PlaneWatcher::getTimeUTC(PlaneGPSPacket *state)
 {
 	__int32 time = 0;
 	time += state->UTCmillisecond;
 	time += state->UTCmin * 60000;
 	time += state->UTChour * 3600000;
-	time += state->UTCday * 86400000;
+
+	return time;
+}
+
+__int32 PlaneWatcher::getTimeUTC(PlaneTelemPacket *state)
+{
+	__int32 time = 0;
+	time += state->UTCmillisecond;
+	time += state->UTCmin * 60000;
+	time += state->UTChour * 3600000;
 
 	return time;
 }

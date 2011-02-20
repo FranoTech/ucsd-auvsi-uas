@@ -36,6 +36,10 @@ namespace Vision
 		bool canAcceptFrame() { return !currentlyAnalyzing;}	// call to see if ready to accept new frame
 		void analyzeFrame(float * buffer, FrameData ^ theData);						// pass in new frame to analyze
 		float * postSaliency;		// results of saliency (black and white)
+		cv::Mat EulerAngles(bool transpose, cv::Mat Orig_Vector, float Roll, float Pitch, float Yaw);
+		void getGPS(float plane_latitude, float plane_longitude, float plane_altitude, float plane_roll, float plane_pitch, float plane_heading, float gimbal_roll, float gimbal_pitch, float gimbal_yaw, 
+				float target_x, float target_y, float zoom, float & Target_Latitude, float & Target_Longitude, float & Target_Height);
+
 	protected:
 		bool currentlyAnalyzing;	// saliency is running
 		bool newFrameReady;			// saliency is ready for new frame

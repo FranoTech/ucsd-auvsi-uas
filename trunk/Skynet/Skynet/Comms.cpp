@@ -21,6 +21,8 @@ Comms::Comms(Object ^ telSimulator, Object ^ newDelegate) {
 	rabbitConnected = false;
 	
 	rabbitDelegate = gcnew rabbitUpdateDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::updateGimbalInfo );
+	planeGPS = gcnew planeGPSDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::updatePlaneGPSInfo );
+	planeTelem = gcnew planeTelemDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::updatePlaneTelemInfo );
 	consoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^ )theDelegate), &Skynet::Form1::printToConsole );
 
 }
@@ -35,7 +37,14 @@ void Comms::connectAll() {
 
 	for (int i = 0; i < portNames->Length; i++) {
 		
-		// set port name
+		String ^thePortName = portNames[i];
+
+		Thread ^ connectThread = gcnew Thread(gcnew ParameterizedThreadStart(this, &Comms::attemptConnectionOnPort));
+		connectThread->Name = "Comms Connection Thread for port " + thePortName;
+		connectThread->Start(thePortName);
+			
+
+		/*// set port name
 		//System::Diagnostics::Trace::WriteLine("Connecting to port " + portNames[i] );
 		thePort->setPortName(portNames[i]);
 
@@ -71,9 +80,11 @@ void Comms::connectAll() {
 		else if (responseType == 3) {
 			autopilotPortname = portNames[i];
 			System::Diagnostics::Trace::WriteLine("FOUND AUTOPILOT");
-		}
+		}*/
 
 	}
+
+	Thread::Sleep( 700 );
 
 	//autopilotPortname = "COM1";
 	//rabbitPortname = "COM1";
@@ -94,7 +105,52 @@ void Comms::connectAll() {
 	printToConsole("Hello", Color::Orange);
 }
 
+void Comms::attemptConnectionOnPort( Object ^ port )
+{
+	String ^ portName = (String ^) port;
+	System::Diagnostics::Trace::WriteLine("Comms: attempting to connect on port " + portName);
+	
+	Comport ^ thePort = gcnew Comport(nullptr);
+	array<System::Byte> ^ helloPacket = {0x33, 0x01 };
 
+	thePort->setPortName(portName);
+
+	// connect to port
+	thePort->connect();
+
+	// send "hello" packet
+	thePort->writeEncodedData( helloPacket );
+
+	// wait for response
+	array<System::Byte> ^ response = thePort->readRawData( 500 );
+
+	// test response
+	int responseType = -1; // 3 for autopilot, 2 for rabbit
+	if (response->Length >= 4) {
+		System::Diagnostics::Trace::WriteLine("4 or more bytes in response");
+		if (response[0] == 0xFF && response[1] == 0x33 && response[5] == 0xFE) {
+				responseType = response[2];
+		}
+
+	}
+
+
+	// close comport
+	thePort->disconnect();
+
+	// save port name if valid
+	if (responseType == 2) {
+		rabbitPortname = portName;
+
+	}
+	else if (responseType == 3) {
+		autopilotPortname = portName;
+	}
+
+	
+	System::Diagnostics::Trace::WriteLine("Comms: Finished attempting to connect on port " + portName);
+
+}
 
 void Comms::disconnectAll() {
 
@@ -169,11 +225,6 @@ void Comms::gotoLatLon(float lat, float lon)
 void Comms::printToConsole( String ^ message, Color col )
 {
 
-	
-	//System::Diagnostics::Trace::WriteLine("Comms::printToConsole(): " + message);
-	
-
-
 	guiConsoleDelegate ^ newconsoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::printToConsole );
 
 	array<Object ^> ^ retArr = gcnew array< Object^ >{message, col};
@@ -194,9 +245,18 @@ void Comms::updateUIAboutCommsStatus(bool status, String ^ type)
 }
 
 void Comms::receiveRabbitPacket(GimbalInfo * packet) 
-{
-	
+{	
 	rabbitDelegate(packet);
+}
+
+void Comms::receiveKestrelPacket248(TelemPacket248 * packet)
+{
+
+}
+
+void Comms::receiveKestrelPacket249(TelemPacket249 * packet)
+{
+
 }
 
 

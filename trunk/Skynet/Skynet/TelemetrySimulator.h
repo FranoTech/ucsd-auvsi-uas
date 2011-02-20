@@ -11,6 +11,8 @@ namespace Simulator
 {
 	ref class TelemetrySimulator{
 	public:
+		System::DateTime time;
+
 		TelemetrySimulator(SimHandler ^ simHandler, Object ^ rabbitComport, Object ^ autopilotComport)
 		{
 			theRabbitComport = rabbitComport;
@@ -30,8 +32,10 @@ namespace Simulator
 		}
 		void write(int type, array<System::Byte> ^ byteArray)
 		{
+			//System::Diagnostics::Trace::WriteLine("WRITE IN TELEMETRYSIM IS CALLED "+record);
 			if(record)
 			{
+				//System::Diagnostics::Trace::WriteLine("WRITE IN TELEMETRYSIM IS CALLED FOR REALS");
 				theSimHandler->writeTelemetry(System::DateTime::Now.Subtract(time), type, byteArray->Length, byteArray);
 			}
 			else{return;}
@@ -43,7 +47,6 @@ namespace Simulator
 	protected:
 	private:
 		bool record;
-		System::DateTime time;
 		Object ^ theRabbitComport;
 		Object ^ theAutopilotComport;
 		SimHandler ^ theSimHandler;

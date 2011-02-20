@@ -31,11 +31,20 @@ void AutopilotComport::writeData( array<System::Byte> ^ inBuffer )
 	thePort->writeEncodedData( inBuffer );
 }
 
+String ^ bufferToString( array<System::Byte> ^ inBuffer )
+{
+	String ^ bufferString = "0x" + Convert::ToString(inBuffer[0], 16);
+	for (int i = 1; i < inBuffer->Length; i++) {
+		bufferString = bufferString + " 0x" + Convert::ToString(inBuffer[i], 16);
+	}
 
-void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
+	return bufferString;
+}
+
+void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 {
 	if (inBuffer->Length < 8){ 
-		System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData(): inbuffer too short");
+		System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): inbuffer too short");
 		return;
 	}
 	//System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData()");
@@ -57,15 +66,11 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 	theHeader->type = getInt32FromBytes(inBuffer, 0);
 	theHeader->size = getInt32FromBytes(inBuffer, 4); */
 
-	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData() began: packetType: " + theHeader->type + " length: " + inBuffer->Length);
+	//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() began: packetType: " + theHeader->type + " length: " + inBuffer->Length);
 	
 	if(theHeader->type == 10){  //pass through autopilot packet which we need to decode, passthrough non-guaranteed packet {
 
-	//	String ^ bufferString = "0x" + Convert::ToString(inBuffer[0], 16);
-	//	for (int i = 1; i < inBuffer->Length; i++) {
-	//		bufferString = bufferString + " 0x" + Convert::ToString(inBuffer[i], 16);
-	//	}
-	//	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData() before:" + inBuffer->Length + " buffer:" + bufferString);
+	//	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData() before:" + inBuffer->Length + " buffer:" + bufferToString(inBuffer));
 
 		array<System::Byte> ^ newPacket = gcnew array<System::Byte>(inBuffer->Length - 8); // ignore header
 		int j = 0;
@@ -73,11 +78,7 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 			newPacket[j] = inBuffer[i];
 			j++;
 		}
-	//	bufferString = "0x" + Convert::ToString(newPacket[0], 16);
-	//	for (int i = 1; i < newPacket->Length; i++) {
-	//		bufferString = bufferString + " 0x" + Convert::ToString(newPacket[i], 16);
-	//	}
-	//	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData() after:" + newPacket->Length + " buffer:" + bufferString);
+	//	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData() after:" + newPacket->Length + " buffer:" + bufferToString(newPacket));
 
 		newPacket = thePort->stripAndChecksum(newPacket);
 
@@ -90,8 +91,8 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 			/*if(kestrelPacketType == 1){ // acknowledgement packet
 				unsigned char packetType = getUCharFromBytes(newPacket, 3);  //the packet type being acknowledged.  XXX we don't do anything with it, but we can if we need to
 			}*/
-			System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData(): kestrelPacketType: " + kestrelPacketType);
-			if(kestrelPacketType == 29)  //mixed telemetry response
+			//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): kestrelPacketType: " + kestrelPacketType);
+			/*if(kestrelPacketType == 29)  //mixed telemetry response
 			{
 				planeState->roll = (float)(getInt16FromBytes(newPacket, 5)) / 1000.0;
 				planeState->pitch = (float)(getInt16FromBytes(newPacket, 7)) / 1000.0;
@@ -109,8 +110,9 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 				planeState->airspeed = (float)(getUInt16FromBytes(newPacket, 32)) / 20.0 - 10.0;
 				System::Diagnostics::Trace::WriteLine("TESTING: Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude);
 			} 
-			else if(kestrelPacketType == 248)  //navigation packet
+			else*/ if(kestrelPacketType == 248)  //navigation packet
 			{
+				PlaneGPSPacket *planeState = new PlaneGPSPacket();
 				planeState->gpsVelocity = (float)(getUInt16FromBytes(newPacket, 5)) / 20.0 - 10.0;
 				planeState->gpsAltitude = (float)(getUInt16FromBytes(newPacket, 7)) / 6.0 - 1000.0;
 				planeState->gpsHeading = (float)(getUInt16FromBytes(newPacket, 9)) / 1000.0;
@@ -131,10 +133,14 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 				planeState->UTCmin = getUCharFromBytes(newPacket, 62);
 				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 63);
 				planeState->gpsHomePositionAltitude = (float)(getUInt16FromBytes(newPacket, 64) / 6.0 - 1000.0);
+
+				theDelegate->receivePlaneGPS(planeState);
+
 				System::Diagnostics::Trace::WriteLine("TESTING: Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude); 
 			}
 			else if(kestrelPacketType == 249) //telemetry packet
 			{
+				PlaneTelemPacket *planeState = new PlaneTelemPacket();
 				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 5)) / 6.0 - 1000.0;
 				planeState->velocity = (float)(getUInt16FromBytes(newPacket, 7)) / 20.0 - 10.0;
 				planeState->roll = (float)(getInt16FromBytes(newPacket, 9)) / 1000.0;
@@ -150,15 +156,21 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 				planeState->desiredHeading = (float)(getUInt16FromBytes(newPacket, 32)) / 1000.0;
 				planeState->desiredTurnRate = (float)(getInt16FromBytes(newPacket, 34)) / 1000.0;
 				planeState->airbornTimer = getFloatFromBytes(newPacket, 45);
-				//TODO: extract time here
+				planeState->UTCyear = getUCharFromBytes(newPacket, 49);
+				planeState->UTCmonth = getUCharFromBytes(newPacket, 50);
+				planeState->UTCday = getUCharFromBytes(newPacket, 51);
+				planeState->UTChour = getUCharFromBytes(newPacket, 52);
+				planeState->UTCmin = getUCharFromBytes(newPacket, 75);
+				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 76);
 				planeState->rollRate = ((float)(getCharFromBytes(newPacket, 59)) - 128.0) / 80.0;
 				planeState->pitchRate = ((float)(getCharFromBytes(newPacket, 60)) - 128.0) / 80.0;
 				planeState->yawRate = ((float)(getCharFromBytes(newPacket, 61)) - 128.0) / 80.0;
 				planeState->altitudeMSL = (float)(getUInt16FromBytes(newPacket, 62)) / 6.0 - 1000.0;
 				planeState->desiredClimbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0;
 				planeState->climbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0;
+
+				theDelegate->receivePlaneTelem(planeState);
 			}
-			// TODO: pass planeState to PlaneWatcher
 		}
 
 	} else if(theHeader->type == 61) {  // get agent list response
@@ -173,16 +185,15 @@ void AutopilotComport::receiveData( array<System::Byte> ^ inBuffer )
 
 		unsigned char numAgents = getUCharFromBytes(inBuffer, 8);  //get the number of agents in the list.  We typically expect 1
 		if(numAgents > 0){
-			__int16 agentAddress = getInt16FromBytes(inBuffer, 9);  //get the agent address
-				planeState->address = agentAddress;  //set the autopilot address
-				System::Diagnostics::Trace::WriteLine("Set Autopilot Address to " + planeState->address);
-				//((Comms ^)theDelegate)->printToConsole("Set Autopilot Address to " + planeState->address, gcnew ColorRef( Color::Green ));
+			planeAddress = getInt16FromBytes(inBuffer, 9);  //get the agent address
+			System::Diagnostics::Trace::WriteLine("Set Autopilot Address to " + planeState->address);
+			//((Comms ^)theDelegate)->printToConsole("Set Autopilot Address to " + planeState->address, gcnew ColorRef( Color::Green ));
 		}
 
 
 
 	}
-	System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData(): finishing");
+	//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): finishing");
 		//thePort->decodeData(packetData);
 }
 		

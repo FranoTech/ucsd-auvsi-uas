@@ -14,7 +14,7 @@ void RabbitComport::afterBeginReading()
 	thePort->updateFrequency = 5;
 }
 
-void RabbitComport::receiveData( array<System::Byte> ^ inBuffer )
+void RabbitComport::analyzeData( array<System::Byte> ^ inBuffer )
 {
 	
 	System::Diagnostics::Trace::WriteLine("RabbitComport::receiveData()");

@@ -34,6 +34,17 @@ Saliency::Saliency()
 	boundingBoxes = NULL;
 	postSaliency = NULL;
 	tempPause = false;
+	
+	System::DateTime start = System::DateTime::Now;
+	System::Diagnostics::Trace::WriteLine("Saliency: Running Georeference:");
+	float plane_lat = 32, plane_lon = -117, plane_alt = 75, plane_roll = 0, plane_pitch = 0, plane_heading = 0, gimbal_roll = 0, gimbal_pitch = 0, gimbal_yaw = 0;
+	float target_x = 0, target_y = 0, zoom = 1, t_lat = -1, t_lon = -1, t_alt = -1;
+	for (int i = 0; i < 100; i++)
+		getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat, t_lon, t_alt);
+
+			
+	System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " t: " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
+
 }
 
 void 
@@ -360,3 +371,209 @@ Saliency::~Saliency()
 		saveImagesThread->Abort();
 
 }
+
+// DEBUG testing
+	
+#define PI 3.14159265
+
+float cosd(float input)
+{
+	return cos(input*PI/180.0);
+}
+
+float sind(float input)
+{
+	return sin(input*PI/180.0);
+}
+
+float atand(float input)
+{
+	return atan(input)*180.0/PI;
+}
+
+cv::Mat Saliency::EulerAngles(bool transpose, cv::Mat Orig_Vector, float Roll, float Pitch, float Yaw)
+{
+	float R = Roll;
+	float P = Pitch;
+	float Y = Yaw;
+
+	 
+	float transarr[3][3] = {{cosd(P)*cosd(Y), cosd(P)*sind(Y), -sind(P)},
+							{sind(R)*sind(P)*cosd(Y)-cosd(R)*sind(Y), sind(R)*sind(P)*sind(Y)+cosd(R)*cosd(Y), sind(R)*cosd(P)},  
+	{cosd(R)*sind(P)*cosd(Y)+sind(R)*sind(Y), cosd(R)*sind(P)*sind(Y)-sind(R)*cosd(Y), cosd(R)*cosd(P)}};
+	cv::Mat Transfer = cv::Mat(3, 3, CV_32FC1, transarr).inv();
+
+	if (transpose)
+		Transfer = Transfer.t();
+
+	return Transfer*Orig_Vector;
+}
+
+String ^ matToString(cv::Mat in)
+{
+	String ^ ret = "{";
+	typedef cv::Vec<float, 1> VT;
+
+	for (int r = 0; r < in.rows; r++)
+	{
+		ret += "{";
+		for (int c = 0; c < in.cols; c++)
+		{
+			ret += in.at<VT>(r, c)[0];
+		}
+		ret += "}, ";
+	}
+
+	ret += "}";
+	return ret;
+
+}
+
+void Saliency::getGPS(float plane_latitude, float plane_longitude, float plane_altitude, float plane_roll, float plane_pitch, float plane_heading, float gimbal_roll, float gimbal_pitch, float gimbal_yaw, 
+				float target_x, float target_y, float zoom, float & Target_Latitude, float & Target_Longitude, float & Target_Height)
+{
+	float x_fov = 46.0f;
+	float y_fov = 34.0f;
+	float x_pixels = 700;
+	float y_pixels = 420;
+	float zoom_factor = zoom;
+	float target_pixel_x = target_x;
+	float target_pixel_y = target_y;
+
+
+	typedef cv::Vec<float, 1> VT;
+	float pix[3][1] = {{0}, {0}, {1}};
+	cv::Mat Pixel_CF_Vector(3, 1, CV_32FC1, pix );
+
+	float ground_altitude = 0;
+
+	float a = 6378137;
+	float b = 6356752.3142;
+
+	// PART A
+	float fovarr[3][1] = {{x_fov}, {y_fov}, {1}};
+	cv::Mat FOV(3, 1, CV_32FC1, fovarr );
+	
+
+	cv::Mat Scale(3, 3, CV_32FC1 );
+	Scale.at<VT>(0, 0)[0] = 1/zoom_factor;
+	Scale.at<VT>(0, 1)[0] = 0;
+	Scale.at<VT>(0, 2)[0] = 0;
+	Scale.at<VT>(1, 0)[0] = 1;
+	Scale.at<VT>(1, 1)[0] = 1/zoom_factor;
+	Scale.at<VT>(1, 2)[0] = 0;
+	Scale.at<VT>(2, 0)[0] = 0;
+	Scale.at<VT>(2, 1)[0] = 0;
+	Scale.at<VT>(2, 2)[0] = 1;
+	
+	cv::Mat FOV_zoom_accounted = Scale*FOV;
+
+	// PART B
+	float Pixel_Roll = (FOV_zoom_accounted.at<VT>(1, 0)[0])/2 * target_pixel_x / (x_pixels);
+	float Pixel_Pitch = (FOV_zoom_accounted.at<VT>(2, 0)[0])/2 * target_pixel_y / (y_pixels);
+	float Pixel_Yaw = 0;
+
+	//TODO: define EulerAngles function
+	cv::Mat CC_CF_Vector = EulerAngles(1, Pixel_CF_Vector, Pixel_Roll, Pixel_Pitch, Pixel_Yaw);
+
+	// PART C
+	cv::Mat GZ_CF_Vector = EulerAngles(1, CC_CF_Vector, gimbal_roll, gimbal_pitch, gimbal_yaw);
+
+	// PART D
+	cv::Mat Plane_CF_Vector = EulerAngles(1, GZ_CF_Vector, plane_roll, plane_pitch, plane_heading);
+
+	// PART E
+	float f = a/(a-b);
+	//float temp = ;
+	float e = sqrt( (1.0 / f ) * (2 - 1*(1 / f ))  );
+	float N = a/(sqrt((float)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude))));
+
+	float X = (N+plane_altitude)*cosd(plane_latitude)*cosd(plane_longitude);
+	float Y = (N+plane_altitude)*cosd(plane_latitude)*sind(plane_longitude);
+	float Z = (N*(1-e*e)+plane_altitude)*sind(plane_latitude);
+
+	float m[3][1] = {{X}, {Y}, {Z}};
+	cv::Mat InitialXYZ = cv::Mat(3, 1, CV_32FC1, m);//.inv();
+	
+	/*System::Diagnostics::Trace::WriteLine("Part E initialxyz: " + matToString(InitialXYZ) + " f:" + f + " e:" + e + " N:" + N + " X:" + X + " Y:" + Y + " Z:" + Z);
+	System::Diagnostics::Trace::WriteLine("Part E a:" + a + " b:" + b + " plane_latitude:" + plane_latitude + " plane_longitude:" + plane_longitude);
+	System::Diagnostics::Trace::WriteLine("Part E a:" + sind(plane_latitude));
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (e*e)*sind(plane_latitude)*sind(plane_latitude));
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (float)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)));
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (sqrt((float)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)))));*/
+
+	// PART F
+	float n = 1;
+	Target_Height = 0;
+
+	const float MAX_DISTANCE = 500; // all of this in meters
+	const float MIN_DISTANCE = 0;
+	const float HEIGHT_OF_FIELD = 3.3333333333;
+	const float MARGIN_OF_ERROR = 0.5;
+	float range = MAX_DISTANCE - MIN_DISTANCE;
+	n = range/2 + MIN_DISTANCE;
+	range /= 2;
+
+	float h, p, mlong, latchange, newlat, lat;
+	int loopcounter = 0;
+	while (loopcounter < 100 && fabs(Target_Height - HEIGHT_OF_FIELD) > MARGIN_OF_ERROR)
+	{
+		cv::Mat NED = Plane_CF_Vector * n;
+
+
+		float transarr[3][3] = {{-sind(plane_latitude)*cosd(plane_longitude), -sind(plane_longitude), -cosd(plane_latitude)*cosd(plane_longitude)}, 
+								{-sind(plane_latitude)*sind(plane_longitude), -cosd(plane_longitude), -cosd(plane_latitude)*sind(plane_longitude)}, 
+								{cosd(plane_latitude), 0, -sind(plane_latitude)}};
+		cv::Mat Trans = cv::Mat(3, 3, CV_32FC1, transarr).inv();
+		cv::Mat XYZ = InitialXYZ + Trans*NED;
+
+		X = XYZ.at<VT>(0, 0)[0];
+		Y = XYZ.at<VT>(1, 0)[0];
+		Z = XYZ.at<VT>(2, 0)[0];
+		h = 0;
+		N = a;
+		p = sqrt(X*X + Y*Y);
+		mlong = atand(Y/X);
+		latchange = 10;
+		newlat = 10;
+		int count = 0;
+		float sinfind;
+		while (latchange > 0.0001)
+		{
+			sinfind = Z/(N*(1-e*e) + h);
+			lat = atand((Z+e*e*N*sinfind)/p);
+			N = a/(sqrt(1-e*e*sind(lat)*sind(lat)));
+			h = p/cosd(lat)-N;
+			latchange = abs(newlat - lat);
+			count ++;
+			newlat = lat;
+		}
+
+		mlong = (180-mlong)*-1;
+		Target_Latitude = lat;
+		Target_Longitude = mlong;
+		Target_Height = h;
+
+
+		if (norm(NED) > MAX_DISTANCE) {
+			System::Diagnostics::Trace::WriteLine("FAILURE NO TARGET IN RANGE");
+			return;
+		}
+
+		if (h < HEIGHT_OF_FIELD)
+			n = n - range/2;
+		else 
+			n = n + range/2;
+
+		range /= 2;
+		loopcounter++;
+		
+	}
+
+	// return values!!!
+	Target_Latitude = lat;
+	Target_Longitude = mlong;
+	Target_Height = h;
+}
+
+// DEBUG testing end

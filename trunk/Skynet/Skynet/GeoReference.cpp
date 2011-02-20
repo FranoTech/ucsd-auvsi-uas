@@ -19,6 +19,157 @@ Defense Mapping Agency. 1987b. DMA Technical Report: Supplement to Department of
 1984 Technical Report. Part I and II. Washington, DC: Defense Mapping Agency
 */
 
+/*cv::Mat EulerAngles(bool transpose, cv::Mat Orig_Vector, float Roll, float Pitch, float Yaw)
+{
+	float R = Roll;
+	float P = Pitch;
+	float Y = Yaw;
+
+	 
+	float transarr[3][3] = {{cosd(P)*cosd(Y), cosd(P)*sind(Y), -sind(P)},
+							{sind(R)*sind(P)*cosd(Y)-cosd(R)*sind(Y), sind(R)*sind(P)*sind(Y)+cosd(R)*cosd(Y), sind(R)*cosd(P)},  
+	{cosd(R)*sind(P)*cosd(Y)+sind(R)*sind(Y), cosd(R)*sind(P)*sind(Y)-sind(R)*cosd(Y), cosd(R)*cosd(P)}};
+	cv::Mat Transfer = cv::Mat(3, 3, CV_32FC1, transarr).inv();
+
+	if (transpose)
+		Transfer = Transfer.t();
+
+	return Transfer;
+}
+
+void getGPS(float lat, float lon, float alt, float plane_roll, float plane_pitch, float plane_heading, float gimbal_roll, float gimbal_pitch, float gimbal_yaw, 
+				float target_x, float target_y, float zoom, float & Target_Latitude, float & Target_Longitude, float & Target_Height)
+{
+	float x_fov = 46.0f;
+	float y_fov = 34.0f;
+	float x_pixels = 700;
+	float y_pixels = 420;
+	float zoom_factor = zoom;
+
+	typedef cv::Vec<float, 1> VT;
+	cv::Mat Pixel_CF_Vector(3, 1, CV_32FC1 );
+	Pixel_CF_Vector.at<VT>[0] = 0;
+	Pixel_CF_Vector.at<VT>[0] = 0;
+	Pixel_CF_Vector.at<VT>[0] = 1;
+
+	float ground_altitude = 0;
+
+	float a = 6378137;
+	float b = 6356752.3142;
+
+	// PART A
+	cv::Mat FOV(3, 1, CV_32FC1 );
+	FOV.at<VT>[0] = x_fov;
+	FOV.at<VT>[0] = y_fov;
+	FOV.at<VT>[0] = 1;
+	
+
+	cv::Mat Scale(3, 3, CV_32FC1 );
+	Scale.at<VT>(0, 0)[0] = 1/zoom_factor;
+	Scale.at<VT>(0, 1)[0] = 0;
+	Scale.at<VT>(0, 2)[0] = 0;
+	Scale.at<VT>(1, 0)[0] = 1;
+	Scale.at<VT>(1, 1)[0] = 1/zoom_factor;
+	Scale.at<VT>(1, 2)[0] = 0;
+	Scale.at<VT>(2, 0)[0] = 0;
+	Scale.at<VT>(2, 1)[0] = 0;
+	Scale.at<VT>(2, 2)[0] = 1;
+	
+	cv::Mat FOV_zoom_accounted = Scale*FOV;
+
+	// PART B
+	float Pixel_Roll = (FOV_zoom_accounted.at<VT>(1, 0)[0])/2 * target_pixel_x / (x_pixels);
+	float Pixel_Pitch = (FOV_zoom_accounted.at<VT>(2, 0)[0])/2 * target_pixel_y / (y_pixels);
+	float Pixel_Yaw = 0;
+
+	//TODO: define EulerAngles function
+	CC_CF_Vector = EulerAngles(1, Pixel_CF_Vector, Pixel_Roll, Pixel_Pitch, Pixel_Yaw);
+
+	// PART C
+	GZ_CF_Vector = EulerAngles(1, CC_CF_Vector, gimbal_roll, gimbal_pitch, gimbal_yaw);
+
+	// PART D
+	Plane_CF_Vector = EulerAngles(1, GZ_CF_Vector, plane_roll, plane_pitch, plane_heading);
+
+	// PART E
+	float f = a/(a-b);
+	float e = sqrt((1/f)*(2-1(1/f)));
+	float N = a/(sqrt(1-(e*e)*sind(plane_latitude)*sind(plane_latitude)));
+
+	float X = (N+plane_altitude)*cosd(plane_latitude)*cosd(plane_longitude);
+	float Y = (N+plane_altitude)*cosd(plane_latitude)*sind(plane_longitude);
+	float Z = (N*(1-e*e)+plane_altitude)*sind(plane_latitude);
+
+	float m[3][1] = {{X}, {Y}, {Z}};
+	cv::Mat InitialXYZ = cv::Mat(3, 1, CV_32FC1, m).inv();
+
+	// PART F
+	float n = 1;
+	float Target_Height = 0;
+
+	const float MAX_DISTANCE = 500; // all of this in meters
+	const float MIN_DISTANCE = 0;
+	const float HEIGHT_OF_FIELD = 3.3333333333;
+	const float MARGIN_OF_ERROR = 0.5
+	float range = MAX_DISTANCE - MIN_DISTANCE;
+	n = range/2 + MIN_DISTANCE;
+	range /= 2;
+	while (fabs(Target_Height - HEIGHT_OF_FIELD) > MARGIN_OF_ERROR)
+	{
+		cv::Mat NED = Plane_CF_Vector * n;
+
+
+		float transarr[3][3] = {{-sind(plane_latitude)*cosd(plane_longitude), -sind(plane_longitude), -cosd(plane_latitude)*cosd(plane_longitude)}, 
+								{-sind(plane_latitude)*sind(plane_longitude), -cosd(plane_longitude), -cosd(plane_latitude)*sind(plane_longitude)}, 
+								{cosd(plane_latitude), 0, -sind(plane_latitude)}};
+		cv::Mat Trans = cv::Mat(3, 3, CV_32FC1, transarr).inv();
+		X = XYZ.at<VT>(0, 0)[0];
+		Y = XYZ.at<VT>(1, 0)[0];
+		Z = XYZ.at<VT>(2, 0)[0];
+		float h = 0;
+		N = a;
+		p = sqrt(X*X + Y*Y);
+		float mlong = atand(Y/X);
+		float latchange = 10;
+		float newlat = 10;
+		int count = 0;
+		float sinfind, lat;
+		while (latchange > 0.0001)
+		{
+			sinfind = Z/(N*(1-e*e) + h);
+			lat = atand((Z+e*e*N*sinfind)/p);
+			N = a/(sqrt(1-e*e*sind(lat)*sind(lat)));
+			h = p/cosd(lat)-N;
+			latchange = abs(newlat - lat);
+			count ++;
+			newlat = lat;
+		}
+
+		mlong = (180-mlong)*-1;
+		Target_Latitude = lat;
+		Target_Longitude = mlong;
+		Target_Height = h;
+
+
+		if (norm(NED) > MAX_DISTANCE) {
+			System::Diagnostics::Trace::WriteLine("FAILURE NO TARGET IN RANGE
+			return;
+		}
+
+		if (h < HEIGHT_OF_FIELD)
+			n = n - range/2;
+		else 
+			n = n + range/2;
+
+		range /= 2;
+	}
+
+	// return values!!!
+	Target_Latitude = lat;
+	Target_Longitude = mlong;
+	Target_Height = h;
+}*/
+
 void 
 GeoReference::LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
 			 double &UTMNorthing, double &UTMEasting, char* UTMZone)

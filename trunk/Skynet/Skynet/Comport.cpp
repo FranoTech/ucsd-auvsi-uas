@@ -336,8 +336,15 @@ bool Comport::readData(void)
 			_serialPort->DiscardInBuffer();
 			System::Diagnostics::Trace::WriteLine("Comport::readData(): bad checksum. bufLen: " + (bufLen - 4));
 			System::Diagnostics::Trace::WriteLine("Comport::readData(): bad checksum. packettype:" + Convert::ToString(buffer[1], 10));
-			System::Diagnostics::Trace::WriteLine("Comport::readData(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
-																								Convert::ToString(buffer[bufLen - 3], 16) + Convert::ToString(buffer[bufLen - 2], 16));
+			System::Diagnostics::Trace::WriteLine("Comport::readData(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + " " + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
+																								Convert::ToString(buffer[bufLen - 3], 16) + " " + Convert::ToString(buffer[bufLen - 2], 16));
+			String ^ bufferString = "0x" + Convert::ToString(buffer[0], 16);
+			for (int i = 1; i < bufLen; i++) {
+				bufferString = bufferString + " 0x" + Convert::ToString(buffer[i], 16);
+			}
+		
+			System::Diagnostics::Trace::WriteLine("Packet ^^. bufLen:" + bufLen + " buffer:" + bufferString);
+			
 			return true;
  		}
 

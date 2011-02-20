@@ -21,21 +21,26 @@
 #include "Comms.h"
 #include "PlaneWatcher.h"
 
+#include <math.h>
+
 #define GREEN_IMAGE_PATH	"D:\\Skynet Files\\greenled.png"
 #define RED_IMAGE_PATH	"D:\\Skynet Files\\redled.png"
 #define YELLOW_IMAGE_PATH	"D:\\Skynet Files\\yellowled.png"
 
 	// row indexes for comport data
-	const int A_ALT = 1;
-	const int A_LAT = 2;
-	const int A_LON = 3;
-	const int A_HEAD = 4;
-	const int A_ROLL = 5;
-	const int A_PITCH = 6;
-	const int G_PITCH = 8;
-	const int G_ROLL = 9;
-	const int V_ZOOM = 11;
-	const int V_FORMAT = 12;
+	const int A_ALT			= 1;
+	const int A_LAT			= 2;
+	const int A_LON			= 3;
+	const int A_HEAD		= 4;
+	const int A_ROLL		= 5;
+	const int A_PITCH		= 6;
+	const int G_PITCH		= 8;
+	const int G_ROLL		= 9;
+	const int V_ZOOM		= 11;
+	const int V_FORMAT		= 12;
+
+
+	
 
 namespace Skynet {
 
@@ -377,6 +382,7 @@ private: System::Windows::Forms::Label^  label16;
 			
 			//theComms->connectAll();
 			//theComms->gotoLatLon(534.0f, 2878.0f);
+
 
 		}
 
@@ -2004,19 +2010,44 @@ private: void AddText( Stream^ fs, String^ value )
    array<Byte>^info = (gcnew UTF8Encoding( true ))->GetBytes( value );
    fs->Write( info, 0, info->Length );
 }
+		 
+public: System::Void reloadTable( ) {
+			
+			PlaneState *state = thePlaneWatcher->predictLocationAtTime(0.0);
+
+			this->metadataTable[1, G_ROLL]->Value = "" + thePlaneWatcher->gimbalRollInDegrees() + "*"; //azimuth;
+			this->metadataTable[1, G_PITCH]->Value = "" + thePlaneWatcher->gimbalPitchInDegrees() + "*"; //elevation;
+			this->metadataTable[1, A_ALT]->Value = "" + state->gpsData->gpsAltitude + ""; // altitude;
+			this->metadataTable[1, A_LAT]->Value = "" + state->gpsData->gpsLatitude + ""; // latitude;
+			this->metadataTable[1, A_LON]->Value = "" + state->gpsData->gpsLongitude + ""; // longitude;
+			this->metadataTable[1, A_HEAD]->Value = "" + state->telemData->heading + "*"; //heading;
+			this->metadataTable[1, A_ROLL]->Value = "" + state->telemData->roll + "*"; // roll;
+			this->metadataTable[1, A_PITCH]->Value = "" + state->telemData->pitch + "*"; //pitch;
+			this->metadataTable[1, V_ZOOM]->Value = "1.0"; // zoom;
+
+			delete state;
+		}
 
 public: System::Void updateGimbalInfo( Communications::GimbalInfo * data ) {
 
 			// save data for later
 			thePlaneWatcher->updateGimbalInfo(data);
 
-			float roll = (((float)data->roll) - 3000.0f)/20.0f;
-			float pitch = (((float)data->pitch) - 3000.0f)/20.0f;
 
-			this->metadataTable[1, G_ROLL]->Value = "" + thePlaneWatcher->gimbalRollInDegrees() + "*"; //azimuth;
-			this->metadataTable[1, G_PITCH]->Value = "" + thePlaneWatcher->gimbalPitchInDegrees() + "*"; //elevation;
 
 		}
+
+public: System::Void updatePlaneGPSInfo( Communications::PlaneGPSPacket * data ) {
+			thePlaneWatcher->updatePlaneGPSInfo(data);
+
+			//TODO: update the table the user sees in el GUI
+}
+
+public: System::Void updatePlaneTelemInfo( Communications::PlaneTelemPacket * data ) {
+			thePlaneWatcher->updatePlaneTelemInfo(data);
+
+			//TODO: update the table the user sees in el GUI
+}
 
 public: System::Void updateComData( Communications::ComportDownstream * data ) {
 			// TODO: split this function into many others
@@ -2124,7 +2155,7 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 				DateTime time = DateTime::Now;
 				String ^ path;//vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
 			
-				path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+				path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-");// + fileExtensionVideo;
 
 				recordStart = DateTime::Now;
 				//openGLView->enableVideoRecording( path );

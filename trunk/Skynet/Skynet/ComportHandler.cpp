@@ -3,6 +3,7 @@
 #include "ComportHandler.h"
 #include "Comport.h"
 #include "Comms.h"
+#include "TelemetrySimulator.h"
 
 
 using namespace Communications;
@@ -16,6 +17,18 @@ ComportHandler::ComportHandler(TelemetrySimulator ^ telSimulator, Object ^ newDe
 	theTelSimulator = telSimulator;
 	thePort = gcnew Comport(this);
 	comReadThread = nullptr;
+	if(comType->Equals("Rabbit"))
+	{
+		intType = RABBIT;
+	}
+	else if(comType->Equals("Autopilot"))
+	{
+		intType = AUTOPILOT;
+	}
+	else
+	{
+		intType = UNKNOWN;
+	}
 }
 
 bool ComportHandler::connect(String ^ portName) 
@@ -38,7 +51,7 @@ void ComportHandler::disconnect()
 	}
 	//}
 	//catch (Exception ^) {}
-}
+}	
 
 void ComportHandler::updateComportStatus(bool status)
 {
@@ -71,7 +84,19 @@ void ComportHandler::writeData( array<System::Byte> ^ inBuffer )
 void ComportHandler::receiveData( array<System::Byte> ^ inBuffer ) 
 {
 	System::Diagnostics::Trace::WriteLine("ComportHandler::receiveData()");
-	// do something with this data (probably up to theDelegate?)
+	analyzeData( inBuffer );
+
+	// save data
+	theTelSimulator->write(intType, inBuffer);
+}
+
+
+void ComportHandler::analyzeData( array<System::Byte> ^ inBuffer )
+{
+	System::Diagnostics::Trace::WriteLine("ComportHandler::analyzeData()");
+	
+	// overriden in AutopilotComport and RabbitComport to interpret packets
+
 }
 
 

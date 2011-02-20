@@ -13,7 +13,7 @@ namespace Communications
 	public:
 		RabbitComport(TelemetrySimulator ^ telSimulator, Object ^ newDelegate) : ComportHandler(telSimulator, newDelegate, "Rabbit") {};
 
-		virtual void receiveData( array<System::Byte> ^ inBuffer ) override; 
+		virtual void analyzeData( array<System::Byte> ^ inBuffer ) override; 
 		virtual void afterBeginReading() override;
 
 	private:

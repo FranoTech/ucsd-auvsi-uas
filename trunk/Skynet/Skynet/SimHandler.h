@@ -8,6 +8,20 @@ using namespace std;
 using namespace System;
 using namespace System::Runtime::InteropServices;
 
+
+
+#define ALL_FAILED			0
+#define RECORDING_VIDEO		1
+#define RECORDING_TELEM		2
+#define RECORDING_ALL		3
+
+
+#define RABBIT 0
+#define AUTOPILOT 1
+#define UNKNOWN 2
+#define STARTVIDEO 3
+#define ENDVIDEO 4
+
 namespace Simulator
 {
 	ref class SimHandler
@@ -19,11 +33,7 @@ namespace Simulator
 		Object ^ theComms;
 
 		SimHandler(VideoSimulator ^ vidSim, OpenGLForm::COpenGL ^ opunGL);
-		~SimHandler()
-		{
-			delete(fileO);
-			fileO = NULL;
-		}
+		~SimHandler();
 		//True = Comport's calls will result in telemetry data being recorded.
 		//False = calls will result in return.
 
@@ -44,7 +54,7 @@ namespace Simulator
 		 * Calls OpenGL's savevideo()
 		 * and initializes fileStream for telemetry.
 		 */
-		bool beginRecording(String ^ filename);
+		int beginRecording(String ^ filename);
 			//if recordVideo call OpenGL
 			//if recordTelem call beginTelemetryfileO->
 	
@@ -60,7 +70,7 @@ namespace Simulator
 		 */
 				//UNIMPLEMENTED
 		//void feedVideofileO->
-
+		void tryToStartVideo(Object ^ arg);
 		void writeTelemetry( System::TimeSpan time,  int type, int length, array<System::Byte>^ byteArray);
 		/*
 		 * IF recordTelemetry
@@ -82,7 +92,7 @@ namespace Simulator
 
 		Simulator::VideoSimulator ^ theVideoSimulator;
 		OpenGLForm::COpenGL ^ openGLView;
-		
+		Thread ^ videoAttemptThread;
 		Thread ^ videoWriteThread;
 		/**
 		 * Should flush & close the stream writing to telemetry file.
