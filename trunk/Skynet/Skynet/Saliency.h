@@ -8,6 +8,8 @@ using namespace System::Threading;
 using namespace System;
 using namespace System::Windows::Forms;
 
+#define MIN_SIZE	0.8
+#define MAX_SIZE	3.5
 
 namespace Vision
 {
@@ -29,16 +31,19 @@ namespace Vision
 	ref class Saliency
 	{
 	public:
-		Saliency(); 	// constructor
+		Saliency( Object ^ watcher ); 	// constructor
 		~Saliency();	// destructor
 
 		void setValues(int w, int h, Object ^ newDelegate);		// set initial values
 		bool canAcceptFrame() { return !currentlyAnalyzing;}	// call to see if ready to accept new frame
 		void analyzeFrame(float * buffer, FrameData ^ theData);						// pass in new frame to analyze
 		float * postSaliency;		// results of saliency (black and white)
-		cv::Mat EulerAngles(bool transpose, cv::Mat Orig_Vector, float Roll, float Pitch, float Yaw);
-		void getGPS(float plane_latitude, float plane_longitude, float plane_altitude, float plane_roll, float plane_pitch, float plane_heading, float gimbal_roll, float gimbal_pitch, float gimbal_yaw, 
-				float target_x, float target_y, float zoom, float & Target_Latitude, float & Target_Longitude, float & Target_Height);
+
+
+		double distanceBetweenGPS(double lat1, double lon1, double lat2, double lon2);
+		cv::Mat EulerAngles(bool transpose, cv::Mat Orig_Vector, double Roll, double Pitch, double Yaw);
+		void getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
+				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height);
 
 	protected:
 		bool currentlyAnalyzing;	// saliency is running
@@ -51,6 +56,7 @@ namespace Vision
 		float threshold;			// threshold for saliency
 		Object ^ parent;			// delegate to send info to
 		FrameData ^ currentFrameData;	// current saliency frame
+		Object ^ planeWatcher;
 		
 		
 		saliencyUpdateDelegate ^ saliencyDelegate;
@@ -66,10 +72,10 @@ namespace Vision
 
 		bool tempPause;
 		
+		bool validSize(double size);
 		
 		void saliencyThreadFunction(); // main run loop for saliency
 		void saveImagesThreadFunction();	// main run loop for saving images
-		bool isValidTarget(Database::RowData ^ data, box theBox); // determine whether a target is valid
 
 	};
 }

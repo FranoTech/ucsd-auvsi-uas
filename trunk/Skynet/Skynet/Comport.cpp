@@ -32,6 +32,9 @@
 // buffer size in bytes to read in to
 #define BUFFER_SIZE		512
 
+#define PACKET_LOSS		YELLOW_STATUS
+#define PACKET_RECEIVED	GREEN_STATUS
+
 using namespace Communications;
 using namespace System::Threading;
 
@@ -96,7 +99,7 @@ bool Comport::connect()
 			_serialPort->Open();
 			success = true;
 		}
-		catch( Exception ^ theException)
+		catch( Exception ^ )
 		{
 			System::Diagnostics::Trace::WriteLine("Exception ... could not connect");
 			success = false;
@@ -211,7 +214,7 @@ unsigned char Comport::encodeByte( unsigned char data )
 void Comport::readThread(void)
 {
 	System::Diagnostics::Trace::WriteLine("Comport::readThread() began");
-	bool lastResult = true;
+	int lastResult = GREEN_STATUS;
 	try {
 		while( true )
 		{
@@ -221,7 +224,9 @@ void Comport::readThread(void)
 				if (lastResult != readData()) {
 
 					// alert ui about change in status
-					lastResult = !lastResult;
+					if (lastResult == GREEN_STATUS) lastResult = YELLOW_STATUS;
+					else if (lastResult == YELLOW_STATUS) lastResult = GREEN_STATUS;
+
 					((ComportHandler ^)parent)->updateComportStatus(lastResult);
 
 				}
@@ -238,7 +243,7 @@ void Comport::readThread(void)
 	}
 }
 
-bool Comport::readData(void)
+int Comport::readData(void)
 {
 	const int NUM_ELEMENTS = 11;
 	int dataIn = -1;
@@ -261,7 +266,7 @@ bool Comport::readData(void)
 			{
 				_serialPort->DiscardInBuffer();
 				System::Diagnostics::Trace::WriteLine("Comprt::readData(): bad byte");
-				return false;
+				return PACKET_LOSS;
 			}
 			else if( tempByte == START_BYTE )
 			{
@@ -286,7 +291,7 @@ bool Comport::readData(void)
 			{
 				_serialPort->DiscardInBuffer();
 				System::Diagnostics::Trace::WriteLine("Comprt::readData(): bad byte");
-				return false;
+				return PACKET_LOSS;
 			}
 			else if( tempByte == END_BYTE )
 			{
@@ -308,7 +313,7 @@ bool Comport::readData(void)
 				{
 					_serialPort->DiscardInBuffer();
 					System::Diagnostics::Trace::WriteLine("Comprt::readData(): bad byte");
-					return false;
+					return PACKET_LOSS;
 				}
 				else
 					tempByte = Convert::ToByte( dataIn );
@@ -325,7 +330,7 @@ bool Comport::readData(void)
 
 		}
 		
-
+		//System::Diagnostics::Trace::WriteLine("Calc checksum");
 		__int16 checksum = calculateChecksum( buffer, bufLen - 3);
 
 		//System::Diagnostics::Trace::WriteLine("Checksum: " + String::Format("{0:X}", checksum));
@@ -345,7 +350,7 @@ bool Comport::readData(void)
 		
 			System::Diagnostics::Trace::WriteLine("Packet ^^. bufLen:" + bufLen + " buffer:" + bufferString);
 			
-			return true;
+			return PACKET_RECEIVED;
  		}
 
 		/*ComportDownstream * packet = new ComportDownstream();
@@ -400,8 +405,19 @@ bool Comport::readData(void)
 		//System::Diagnostics::Trace::WriteLine("bufLen: " + bufLen);
 		//System::Diagnostics::Trace::WriteLine("send to delegate");
 		// send data to delegate
-		comHandlerDelegate( outBuffer );
+		//System::Diagnostics::Trace::WriteLine("pass it up");
+		try {
+			comHandlerDelegate( outBuffer );
+		}
+		catch( ThreadAbortException ^ theException)
+		{
+			throw theException; // rethrow if its a threadAbortException
+		}
+		catch( Exception ^ e)
+		{
+			System::Diagnostics::Trace::WriteLine( "Exception in comHandlerDelegate: " + e);
 
+		}
 		//JK..WRITE HERE!!
 
 		//gcroot<ComportDownstream *> bla(packet);
@@ -410,13 +426,13 @@ bool Comport::readData(void)
 
 		// clear the rest of the buffer
 		_serialPort->DiscardInBuffer();
-		return true;
+		return PACKET_RECEIVED;
 	}
 	catch( ThreadAbortException ^ theException)
 	{
 		throw theException; // rethrow if its a threadAbortException
 	}
-	catch( TimeoutException ^ theException)
+	catch( TimeoutException ^ )
 	{
 		
 
@@ -431,7 +447,7 @@ bool Comport::readData(void)
 		System::Diagnostics::Trace::WriteLine("Catch in comport. bufLen:" + bufLen + " buffer:" + bufferString);*/
 		//comNoDataDelegate();
 	}
-	catch( Exception ^ theException )
+	catch( Exception ^  )
 	{
 		System::Diagnostics::Trace::WriteLine("WARNING: Unexpected catch in comport.");
 		String ^ bufferString = "0x" + Convert::ToString(buffer[0], 16);
@@ -440,6 +456,8 @@ bool Comport::readData(void)
 		}
 		System::Diagnostics::Trace::WriteLine("Catch in comport. bufLen:" + bufLen + " buffer:" + bufferString);
 	}
+
+	return PACKET_RECEIVED;
 }
 
 array<System::Byte> ^ Comport::stripAndChecksum(array<System::Byte> ^ inBuffer)

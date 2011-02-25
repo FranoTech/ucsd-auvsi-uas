@@ -10,6 +10,10 @@
 #define AUTOPILOT_CONNECTED		2
 #define BOTH_FAILED				0
 
+#define GREEN_STATUS	1
+#define YELLOW_STATUS	2
+#define RED_STATUS		3
+
 using namespace System::IO::Ports;
 using namespace System;
 using namespace System::Runtime::InteropServices;
@@ -20,8 +24,8 @@ namespace Communications
 
 	
 	delegate void rabbitUpdateDelegate( GimbalInfo * data );
-	delegate void planeGPSDelegate( TelemPacket248 * data );
-	delegate void planeTelemDelegate( TelemPacket249 * data );
+	delegate void planeGPSDelegate( PlaneGPSPacket ^ data );
+	delegate void planeTelemDelegate( PlaneTelemPacket ^ data );
 	delegate void tellGUIAboutConnection( array<Int32> ^ retArr );
 	delegate void guiConsoleDelegate( array<Object ^> ^ retArr );
 
@@ -33,7 +37,8 @@ namespace Communications
 		void connectAll();
 		void disconnectAll();
 
-		
+		//void stopConnectingToRabbit();
+		//void connectToRabbit();
 		void attemptConnectionOnPort( Object ^ port );
 
 		bool connectAutopilot();
@@ -42,16 +47,19 @@ namespace Communications
 		void disconnectAutopilot();
 		void disconnectRabbit();
 
+		void rabbitJustConnected();
+
 		// sending
 		void gotoLatLon(float lat, float lon);
+		void sendHelloToRabbit();
 
 		// receiving
 		void receiveRabbitPacket(GimbalInfo * packet);
-		void receivePlaneGPS(TelemPacket * packet);
-		void receivePlaneTelem(TelemPacket * packet);
+		void receivePlaneGPS(PlaneGPSPacket ^ packet);
+		void receivePlaneTelem(PlaneTelemPacket ^ packet);
 
 		void printToConsole( String ^ message, Color col );
-		void updateUIAboutCommsStatus(bool status, String ^ type);
+		void updateUIAboutCommsStatus(int status, String ^ type);
 
 		// instance variables
 		AutopilotComport ^ autopilot;
@@ -66,6 +74,8 @@ namespace Communications
 		planeGPSDelegate ^ planeGPS;
 		planeTelemDelegate ^ planeTelem;
 		guiConsoleDelegate ^ consoleDelegate;
+
+		Thread ^ rabbitConnectionThread;
 
 		String ^ autopilotPortname;
 		String ^ rabbitPortname;

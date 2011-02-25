@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 
 #include "AutopilotComport.h"
+#include "RabbitComport.h"
 #include "Comms.h"
 
 using namespace Communications;
@@ -50,10 +51,11 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 	//System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData()");
 
 	// handle data
-	PacketHeader *theHeader = new PacketHeader();
+	PacketHeader ^theHeader = gcnew PacketHeader();
 
 	// copy packet over
-	char * dataPtr = (char *)theHeader;
+	pin_ptr<__int32> data = &(theHeader->type);
+	char * dataPtr = (char *)data;
 	int packetIndex = 0;
 	for (int j = 0; j < 8; j++) {
 		dataPtr[j] = inBuffer[packetIndex];
@@ -92,6 +94,10 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				unsigned char packetType = getUCharFromBytes(newPacket, 3);  //the packet type being acknowledged.  XXX we don't do anything with it, but we can if we need to
 			}*/
 			//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): kestrelPacketType: " + kestrelPacketType);
+			if(kestrelPacketType == 5)
+			{
+				System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): kestrelPacketType: 5 We Has Serial E Passthrough");
+			}
 			/*if(kestrelPacketType == 29)  //mixed telemetry response
 			{
 				planeState->roll = (float)(getInt16FromBytes(newPacket, 5)) / 1000.0;
@@ -109,10 +115,10 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 30);
 				planeState->airspeed = (float)(getUInt16FromBytes(newPacket, 32)) / 20.0 - 10.0;
 				System::Diagnostics::Trace::WriteLine("TESTING: Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude);
-			} 
-			else*/ if(kestrelPacketType == 248)  //navigation packet
+			} */
+			else if(kestrelPacketType == 248)  //navigation packet
 			{
-				PlaneGPSPacket *planeState = new PlaneGPSPacket();
+				PlaneGPSPacket ^planeState = gcnew PlaneGPSPacket();
 				planeState->gpsVelocity = (float)(getUInt16FromBytes(newPacket, 5)) / 20.0 - 10.0;
 				planeState->gpsAltitude = (float)(getUInt16FromBytes(newPacket, 7)) / 6.0 - 1000.0;
 				planeState->gpsHeading = (float)(getUInt16FromBytes(newPacket, 9)) / 1000.0;
@@ -126,21 +132,35 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->timeToTarget = getFloatFromBytes(newPacket, 41);
 				planeState->distanceToTarget = getFloatFromBytes(newPacket, 45);
 				planeState->headingToTarget = (float)(getUInt16FromBytes(newPacket, 49)) / 1000.0;
-				planeState->UTCyear = getUCharFromBytes(newPacket, 58);
-				planeState->UTCmonth = getUCharFromBytes(newPacket, 59);
-				planeState->UTCday = getUCharFromBytes(newPacket, 60);
-				planeState->UTChour = getUCharFromBytes(newPacket, 61);
-				planeState->UTCmin = getUCharFromBytes(newPacket, 62);
-				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 63);
+				//planeState->UTCyear = getUCharFromBytes(newPacket, 58);
+				//planeState->UTCmonth = getUCharFromBytes(newPacket, 59);
+				//planeState->UTCday = getUCharFromBytes(newPacket, 60);
+				//planeState->UTChour = getUCharFromBytes(newPacket, 61);
+				//planeState->UTCmin = getUCharFromBytes(newPacket, 62);
+				//planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 63);
 				planeState->gpsHomePositionAltitude = (float)(getUInt16FromBytes(newPacket, 64) / 6.0 - 1000.0);
 
-				theDelegate->receivePlaneGPS(planeState);
+				System::DateTime targetTime = System::DateTime::Now.AddSeconds(-AUTOPILOT_LATENCY);
+				planeState->UTCyear = targetTime.Year;
+				planeState->UTCmonth = targetTime.Month;
+				planeState->UTCday = targetTime.Day;
+				planeState->UTChour = targetTime.Hour;
+				planeState->UTCmin = targetTime.Minute;
+				planeState->UTCmillisecond = targetTime.Second*1000 + targetTime.Millisecond;
 
-				System::Diagnostics::Trace::WriteLine("TESTING: Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude); 
+
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() min:" + (targetTime.Minute - planeState->UTCmin) + " sec:" + (targetTime.Second - planeState->UTCmillisecond/1000));
+
+				//System::Diagnostics::Trace::WriteLine("TESTING: vel:" + planeState->gpsVelocity + "  Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude); 
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() mill:" + planeState->UTCmillisecond + " min:" + planeState->UTCmin + " hr:" + planeState->UTChour);
+
+				
+				((Comms ^)theDelegate)->receivePlaneGPS(planeState);
+
 			}
 			else if(kestrelPacketType == 249) //telemetry packet
 			{
-				PlaneTelemPacket *planeState = new PlaneTelemPacket();
+				PlaneTelemPacket ^planeState = gcnew PlaneTelemPacket();
 				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 5)) / 6.0 - 1000.0;
 				planeState->velocity = (float)(getUInt16FromBytes(newPacket, 7)) / 20.0 - 10.0;
 				planeState->roll = (float)(getInt16FromBytes(newPacket, 9)) / 1000.0;
@@ -156,21 +176,36 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->desiredHeading = (float)(getUInt16FromBytes(newPacket, 32)) / 1000.0;
 				planeState->desiredTurnRate = (float)(getInt16FromBytes(newPacket, 34)) / 1000.0;
 				planeState->airbornTimer = getFloatFromBytes(newPacket, 45);
-				planeState->UTCyear = getUCharFromBytes(newPacket, 49);
-				planeState->UTCmonth = getUCharFromBytes(newPacket, 50);
-				planeState->UTCday = getUCharFromBytes(newPacket, 51);
-				planeState->UTChour = getUCharFromBytes(newPacket, 52);
-				planeState->UTCmin = getUCharFromBytes(newPacket, 75);
-				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 76);
+				//planeState->UTCyear = getUCharFromBytes(newPacket, 49);
+				//planeState->UTCmonth = getUCharFromBytes(newPacket, 50);
+				//planeState->UTCday = getUCharFromBytes(newPacket, 51);
+				//planeState->UTChour = getUCharFromBytes(newPacket, 52);
+				//planeState->UTCmin = getUCharFromBytes(newPacket, 75);
+				//planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 76);
 				planeState->rollRate = ((float)(getCharFromBytes(newPacket, 59)) - 128.0) / 80.0;
 				planeState->pitchRate = ((float)(getCharFromBytes(newPacket, 60)) - 128.0) / 80.0;
 				planeState->yawRate = ((float)(getCharFromBytes(newPacket, 61)) - 128.0) / 80.0;
 				planeState->altitudeMSL = (float)(getUInt16FromBytes(newPacket, 62)) / 6.0 - 1000.0;
 				planeState->desiredClimbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0;
 				planeState->climbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0;
+				
 
-				theDelegate->receivePlaneTelem(planeState);
-			}
+				System::DateTime targetTime = System::DateTime::Now.AddSeconds(-AUTOPILOT_LATENCY);
+				planeState->UTCyear = targetTime.Year;
+				planeState->UTCmonth = targetTime.Month;
+				planeState->UTCday = targetTime.Day;
+				planeState->UTChour = targetTime.Hour;
+				planeState->UTCmin = targetTime.Minute;
+				planeState->UTCmillisecond = targetTime.Second*1000 + targetTime.Millisecond;
+
+
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() roll:" + planeState->roll + " pitch:" + planeState->pitch + " heading:" + planeState->heading);
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() mill:" + planeState->UTCmillisecond + " min:" + planeState->UTCmin + " hr:" + planeState->UTChour);
+
+				((Comms ^)theDelegate)->receivePlaneTelem(planeState);
+			} 
+			//else 
+			//	System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() ignored type " + kestrelPacketType );
 		}
 
 	} else if(theHeader->type == 61) {  // get agent list response
@@ -186,15 +221,14 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 		unsigned char numAgents = getUCharFromBytes(inBuffer, 8);  //get the number of agents in the list.  We typically expect 1
 		if(numAgents > 0){
 			planeAddress = getInt16FromBytes(inBuffer, 9);  //get the agent address
-			System::Diagnostics::Trace::WriteLine("Set Autopilot Address to " + planeState->address);
+			System::Diagnostics::Trace::WriteLine("Set Autopilot Address to " + planeAddress);
 			//((Comms ^)theDelegate)->printToConsole("Set Autopilot Address to " + planeState->address, gcnew ColorRef( Color::Green ));
 		}
 
 
 
 	}
-	//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): finishing");
-		//thePort->decodeData(packetData);
+	// TODO: if rabbit packet, get rabbit data and do ((RabbitComport ^)rabbit)->analyzeData( rabbitData );
 }
 		
 /*
@@ -228,6 +262,11 @@ void AutopilotComport::gotoLatLon(float lat, float lon)
 	writeData( packet );  //upload waypoint from VC to Autopilot
 }
 
+void AutopilotComport::sendPassthroughPacket( array<System::Byte> ^ inBuffer )
+{
+	writeData( getVCPacket10(5, getCommPacket5Data(inBuffer)) );  //on liner - zing!
+}
+
 /*
  * asks VC to forward all packets
  */
@@ -253,6 +292,68 @@ void AutopilotComport::requestAgents()
 }
 
 /*
+ * Serial E Passthrough Data
+ */
+array<System::Byte> ^ AutopilotComport::getCommPacket5Data(array<System::Byte> ^ dataForRabbit)
+{
+	array<System::Byte> ^ packet = gcnew array<System::Byte>(1 + dataForRabbit->Length);
+
+	CommPacket5 ^ theStruct = gcnew CommPacket5();
+
+	// copy data into struct	
+	theStruct->numBytes = dataForRabbit->Length;
+	theStruct->arr = dataForRabbit;
+
+	// copy packet over
+	pin_ptr<unsigned char> data = &(theStruct->numBytes);
+	char * dataPtr = (char *)data;
+	for (int j = 0; j < packet->Length; j++) {
+		packet[j] = dataPtr[j];
+	}
+
+	return packet;
+}
+
+/*
+ * Passthrough non-guaranteed packet
+ */
+array<System::Byte> ^ AutopilotComport::getVCPacket10(unsigned char kestrelPacketType, array<System::Byte> ^ arr)
+{
+	int packetLength = 3 + arr->Length;
+	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength + 8);
+
+	PacketHeader ^theHeader = gcnew PacketHeader();
+	theHeader->type = 10;
+	theHeader->size = packetLength;
+
+	// copy packet over
+	pin_ptr<__int32> data = &(theHeader->type);
+	char * dataPtr = (char *)data;
+	int packetIndex = 0;
+	for (int j = 0; j < 8; j++) {
+		packet[packetIndex] = dataPtr[j];
+		packetIndex++;
+	}
+
+	AutopilotVCPacket10 ^ theStruct = gcnew AutopilotVCPacket10();
+
+	// copy data into struct
+	theStruct->destAddr = planeAddress;	
+	theStruct->kestrelPacketType = kestrelPacketType;
+	theStruct->arr = arr;
+
+	// copy packet over
+	data = &(theHeader->type);
+	dataPtr = (char *)data;
+	for (int j = 0; j < packetLength; j++) {
+		packet[packetIndex] = dataPtr[j];
+		packetIndex++;
+	}
+
+	return packet;
+}
+
+/*
  * Packet Forwarding Setup
  * packetID = the kestrel packet id to forward, 0 means all packets will be forwarded
  * onOff = set to 1 to turn on forwarding, 0 turns off forwarding
@@ -262,31 +363,33 @@ array<System::Byte> ^ AutopilotComport::getVCPacket20(unsigned char packetID, un
 	int packetLength = 2;
 	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength + 8);
 
-	PacketHeader *theHeader = new PacketHeader();
+	PacketHeader ^theHeader = gcnew PacketHeader();
 	theHeader->type = 20;
 	theHeader->size = packetLength;
 
 	// copy packet over
-	char * dataPtr = (char *)theHeader;
+	pin_ptr<__int32> data = &(theHeader->type);
+	char * dataPtr = (char *)data;
 	int packetIndex = 0;
 	for (int j = 0; j < 8; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
 	}
 
-	AutopilotVCPacket20 * theStruct = new AutopilotVCPacket20();
+	AutopilotVCPacket20 ^ theStruct = gcnew AutopilotVCPacket20();
 
 	// copy data into struct
 	theStruct->packetID = packetID;	
 	theStruct->onOff = onOff;	
 
 	// copy packet over
-	dataPtr = (char *)theStruct;
+	data = &(theHeader->type);
+	dataPtr = (char *)data;
 	for (int j = 0; j < packetLength; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
 	}
-	
+
 	return packet;
 }
 
@@ -298,30 +401,32 @@ array<System::Byte> ^ AutopilotComport::getVCPacket30()
 	int packetLength = 2;
 	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength + 8);
 
-	PacketHeader *theHeader = new PacketHeader();
+	PacketHeader ^theHeader = gcnew PacketHeader();
 	theHeader->type = 30;
 	theHeader->size = packetLength;
 
 	// copy packet over
-	char * dataPtr = (char *)theHeader;
+	pin_ptr<__int32> data = &(theHeader->type);
+	char * dataPtr = (char *)data;
 	int packetIndex = 0;
 	for (int j = 0; j < 8; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
 	}
 
-	AutopilotVCPacket30 * theStruct = new AutopilotVCPacket30();
+	AutopilotVCPacket30 ^ theStruct = gcnew AutopilotVCPacket30();
 
 	// copy data into struct
-	theStruct->destAddr = planeState->address;	
+	theStruct->destAddr = planeAddress;	
 
 	// copy packet over
-	dataPtr = (char *)theStruct;
+	data = &(theHeader->type);
+	dataPtr = (char *)data;
 	for (int j = 0; j < packetLength; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
 	}
-	
+
 	return packet;
 }
 
@@ -332,27 +437,28 @@ array<System::Byte> ^  AutopilotComport::getVCPacket32(unsigned char commandType
 											unsigned __int16 gotoIndex, unsigned __int16 time, float radius, float flareSpeed, float flareAltitude, 
 											float breakAltitude, float descentRate, float approachAltitude, float approachLongitude) 
 {
-	// 66 bytes total, including 64 bits of unused at the end
-	int packetLength = 66;
-	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength + 8);
+	// 66 bytes total, including 8 bytes of unused at the end
+	const int headerSize = 8;
+	int packetLength = 59;
+	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength + headerSize);
 
-
-	PacketHeader *theHeader = new PacketHeader();
+	PacketHeader ^theHeader = gcnew PacketHeader();
 	theHeader->type = 32;
 	theHeader->size = packetLength;
 
 	// copy packet over
-	char * dataPtr = (char *)theHeader;
+	pin_ptr<__int32> data = &(theHeader->type);
+	char * dataPtr = (char *)data;
 	int packetIndex = 0;
-	for (int j = 0; j < 8; j++) {
+	for (int j = 0; j < headerSize; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
 	}
 
-	AutopilotVCPacket32 * theStruct = new AutopilotVCPacket32();
+	AutopilotVCPacket32 ^ theStruct = gcnew AutopilotVCPacket32();
 
 	// copy data into struct
-	theStruct->destAddr			 = planeState->address;	
+	theStruct->destAddr			 = planeAddress;	
 	theStruct->commandType		 = commandType			;
 	theStruct->lat				 = lat					;
 	theStruct->lon				 = lon					;
@@ -367,19 +473,23 @@ array<System::Byte> ^  AutopilotComport::getVCPacket32(unsigned char commandType
 	theStruct->descentRate		 = descentRate			;
 	theStruct->approachAltitude	 = approachAltitude		;
 	theStruct->approachLongitude = approachLongitude	;
+	theStruct->unusedOne         = 0;
+	theStruct->unusedTwo         = 0;
 
 
 
 
 	// copy packet over
-	dataPtr = (char *)theStruct;
+	data = &(theHeader->type);
+	dataPtr = (char *)data;
 	for (int j = 0; j < packetLength; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
 	}
 
 	//thePort->writeEncodedData( packet );
-	
+
+
 	return packet;
 }
 
@@ -391,12 +501,13 @@ array<System::Byte> ^ AutopilotComport::getVCPacket61()
 	int packetLength = 0;
 	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength + 8);
 
-	PacketHeader *theHeader = new PacketHeader();
+	PacketHeader ^theHeader = gcnew PacketHeader();
 	theHeader->type = 61;
 	theHeader->size = packetLength;
 
 	// copy packet over
-	char * dataPtr = (char *)theHeader;
+	pin_ptr<__int32> data = &(theHeader->type);
+	char * dataPtr = (char *)data;
 	int packetIndex = 0;
 	for (int j = 0; j < 8; j++) {
 		packet[packetIndex] = dataPtr[j];
@@ -422,7 +533,7 @@ __int16 AutopilotComport::getInt16FromBytes(array<System::Byte> ^ arr, int start
 		pointerToVal ++;
 		//System::Diagnostics::Trace::WriteLine("AutopilotComport::getInt16FromBytes(): byte being converted: " + Convert::ToString(arr[i], 16));
 	}
-	
+
 	return retVal;
 }
 
@@ -437,7 +548,7 @@ unsigned __int16 AutopilotComport::getUInt16FromBytes(array<System::Byte> ^ arr,
 
 	unsigned __int16 retVal;
 	unsigned char * pointerToVal = (unsigned char *)(&retVal);
-	for(int i = startIndex + 1; i >= startIndex; i--){
+	for(int i = startIndex; i < startIndex + 2; i++){
 		* pointerToVal = arr[i];
 		pointerToVal ++;
 	}
@@ -456,7 +567,7 @@ __int32 AutopilotComport::getInt32FromBytes(array<System::Byte> ^ arr, int start
 
 	__int32 retVal;
 	unsigned char * pointerToVal = (unsigned char *)(&retVal);
-	for(int i = startIndex + 3; i >= startIndex; i--){
+	for(int i = startIndex; i < startIndex + 4; i++){
 		* pointerToVal = arr[i];
 		pointerToVal ++;
 	}
@@ -496,10 +607,10 @@ float AutopilotComport::getFloatFromBytes(array<System::Byte> ^ arr, int startIn
 	}
 
 	float retVal;
-	unsigned char * pointerToFloat = (unsigned char *)(&retVal);
-	for(int i = startIndex + 3; i >= startIndex; i--){
-		* pointerToFloat = arr[i];
-		pointerToFloat ++;
+	unsigned char * pointerToVal = (unsigned char *)(&retVal);
+	for(int i = startIndex; i < startIndex + 4; i++){
+		* pointerToVal = arr[i];
+		pointerToVal ++;
 	}
 	
 	return retVal;

@@ -20,6 +20,7 @@
 #include "SimHandler.h"
 #include "Comms.h"
 #include "PlaneWatcher.h"
+#include "AutopilotComport.h"
 
 #include <math.h>
 
@@ -248,6 +249,7 @@ private: System::Windows::Forms::Label^  label13;
 private: System::Windows::Forms::Label^  label14;
 private: System::Windows::Forms::Label^  label15;
 private: System::Windows::Forms::Label^  label16;
+private: System::Windows::Forms::Panel^  panel1;
 
 	private: System::Windows::Forms::Label^  label7;
 			 
@@ -289,14 +291,14 @@ private: System::Windows::Forms::Label^  label16;
 			osmarenderToolStripMenuItem->Checked = false;
 			cyclemapToolStripMenuItem->Checked = false;
 			// end set up Map
-
-			// Set up Saliency
+			
+			thePlaneWatcher = gcnew Communications::PlaneWatcher(this);
 
 			// Set up openGL						
-			// TODO: in order to have two openGL windows, you really only get one OpenGL scene and give each one a different viewport
+			// old todo: in order to have two openGL windows, you really only get one OpenGL scene and give each one a different viewport
 			wglMakeCurrent( NULL, NULL ); // this causees a delay which allows wglCreateContext to work properly
 			//openGLView2 = gcnew OpenGLForm::COpenGL( this->openGLPanel2, this->openGLPanel2->Width, this->openGLPanel2->Height );
-			openGLView = gcnew OpenGLForm::COpenGL( this->openGLPanel, this->openGLPanel->Width, this->openGLPanel->Height, this );
+			openGLView = gcnew OpenGLForm::COpenGL( this->openGLPanel, this->openGLPanel->Width, this->openGLPanel->Height, this, thePlaneWatcher );
 			
 			// Set up DeckLink
 			callback = new Decklink::Callback( openGLView );
@@ -366,6 +368,7 @@ private: System::Windows::Forms::Label^  label16;
 			isConnecting = false;
 
 			m_joystick->comm = theComms;
+			theSimHandler->theComms = theComms;
 
 			redImage = Image::FromFile( RED_IMAGE_PATH );
 			yellowImage = Image::FromFile( YELLOW_IMAGE_PATH );
@@ -378,11 +381,11 @@ private: System::Windows::Forms::Label^  label16;
 			pictureBox2->Image = dynamic_cast<Image^>(redImage);
 			pictureBox3->Image = dynamic_cast<Image^>(redImage);
 
-			thePlaneWatcher = gcnew Communications::PlaneWatcher(this);
 			
 			//theComms->connectAll();
 			//theComms->gotoLatLon(534.0f, 2878.0f);
 
+			consoleMessage("... Skynet online", Color::Orange);
 
 		}
 
@@ -574,6 +577,7 @@ private: System::Windows::Forms::Label^  label16;
 			this->label14 = (gcnew System::Windows::Forms::Label());
 			this->label15 = (gcnew System::Windows::Forms::Label());
 			this->label16 = (gcnew System::Windows::Forms::Label());
+			this->panel1 = (gcnew System::Windows::Forms::Panel());
 			this->menuStrip1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->BeginInit();
 			this->tabControl1->SuspendLayout();
@@ -591,6 +595,7 @@ private: System::Windows::Forms::Label^  label16;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox1))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox2))->BeginInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox3))->BeginInit();
+			this->panel1->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// menuStrip1
@@ -1547,68 +1552,88 @@ private: System::Windows::Forms::Label^  label16;
 			// label9
 			// 
 			this->label9->AutoSize = true;
-			this->label9->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+			this->label9->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(0)));
-			this->label9->Location = System::Drawing::Point(16, 787);
+			this->label9->ForeColor = System::Drawing::Color::Chartreuse;
+			this->label9->Location = System::Drawing::Point(4, 5);
 			this->label9->Name = L"label9";
-			this->label9->Size = System::Drawing::Size(182, 16);
+			this->label9->Size = System::Drawing::Size(151, 13);
 			this->label9->TabIndex = 27;
 			this->label9->Text = L"Green = Running / Connected";
 			// 
 			// label10
 			// 
 			this->label10->AutoSize = true;
-			this->label10->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+			this->label10->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(0)));
-			this->label10->Location = System::Drawing::Point(16, 809);
+			this->label10->ForeColor = System::Drawing::Color::Yellow;
+			this->label10->Location = System::Drawing::Point(4, 26);
 			this->label10->Name = L"label10";
-			this->label10->Size = System::Drawing::Size(135, 16);
+			this->label10->Size = System::Drawing::Size(109, 13);
 			this->label10->TabIndex = 28;
 			this->label10->Text = L"Yellow = Packet Loss";
 			// 
 			// label13
 			// 
 			this->label13->AutoSize = true;
-			this->label13->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+			this->label13->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(0)));
-			this->label13->Location = System::Drawing::Point(16, 833);
+			this->label13->ForeColor = System::Drawing::Color::DarkRed;
+			this->label13->Location = System::Drawing::Point(4, 49);
 			this->label13->Name = L"label13";
-			this->label13->Size = System::Drawing::Size(213, 16);
+			this->label13->Size = System::Drawing::Size(176, 13);
 			this->label13->TabIndex = 29;
 			this->label13->Text = L"Red = Not Running / Disconnected";
 			// 
 			// label14
 			// 
 			this->label14->AutoSize = true;
-			this->label14->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+			this->label14->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(0)));
-			this->label14->Location = System::Drawing::Point(16, 882);
+			this->label14->ForeColor = System::Drawing::SystemColors::ControlLightLight;
+			this->label14->Location = System::Drawing::Point(4, 96);
 			this->label14->Name = L"label14";
-			this->label14->Size = System::Drawing::Size(226, 16);
+			this->label14->Size = System::Drawing::Size(180, 13);
 			this->label14->TabIndex = 30;
 			this->label14->Text = L"Autopilot = Telemetry Data from UAV";
 			// 
 			// label15
 			// 
 			this->label15->AutoSize = true;
-			this->label15->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+			this->label15->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(0)));
-			this->label15->Location = System::Drawing::Point(16, 906);
+			this->label15->ForeColor = System::Drawing::SystemColors::ControlLightLight;
+			this->label15->Location = System::Drawing::Point(4, 119);
 			this->label15->Name = L"label15";
-			this->label15->Size = System::Drawing::Size(283, 16);
+			this->label15->Size = System::Drawing::Size(223, 13);
 			this->label15->TabIndex = 31;
 			this->label15->Text = L"Gimbal = Communications for Pointing Camera";
 			// 
 			// label16
 			// 
 			this->label16->AutoSize = true;
-			this->label16->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
+			this->label16->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point, 
 				static_cast<System::Byte>(0)));
-			this->label16->Location = System::Drawing::Point(16, 858);
+			this->label16->ForeColor = System::Drawing::SystemColors::ControlLightLight;
+			this->label16->Location = System::Drawing::Point(4, 72);
 			this->label16->Name = L"label16";
-			this->label16->Size = System::Drawing::Size(276, 16);
+			this->label16->Size = System::Drawing::Size(217, 13);
 			this->label16->TabIndex = 32;
 			this->label16->Text = L"Recording = Recording Telemetry and Video";
+			// 
+			// panel1
+			// 
+			this->panel1->BackColor = System::Drawing::Color::Black;
+			this->panel1->Controls->Add(this->label13);
+			this->panel1->Controls->Add(this->label9);
+			this->panel1->Controls->Add(this->label10);
+			this->panel1->Controls->Add(this->label16);
+			this->panel1->Controls->Add(this->label14);
+			this->panel1->Controls->Add(this->label15);
+			this->panel1->Location = System::Drawing::Point(12, 790);
+			this->panel1->Name = L"panel1";
+			this->panel1->Size = System::Drawing::Size(292, 140);
+			this->panel1->TabIndex = 33;
 			// 
 			// Form1
 			// 
@@ -1617,12 +1642,7 @@ private: System::Windows::Forms::Label^  label16;
 			this->AutoValidate = System::Windows::Forms::AutoValidate::EnableAllowFocusChange;
 			this->BackColor = System::Drawing::Color::DimGray;
 			this->ClientSize = System::Drawing::Size(1924, 946);
-			this->Controls->Add(this->label16);
-			this->Controls->Add(this->label15);
-			this->Controls->Add(this->label14);
-			this->Controls->Add(this->label13);
-			this->Controls->Add(this->label10);
-			this->Controls->Add(this->label9);
+			this->Controls->Add(this->panel1);
 			this->Controls->Add(this->pictureBox3);
 			this->Controls->Add(this->pictureBox2);
 			this->Controls->Add(this->pictureBox1);
@@ -1674,6 +1694,8 @@ private: System::Windows::Forms::Label^  label16;
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox1))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox2))->EndInit();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->pictureBox3))->EndInit();
+			this->panel1->ResumeLayout(false);
+			this->panel1->PerformLayout();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -1752,6 +1774,7 @@ public:  System::Void printToConsole( array<Object ^> ^ retArr )
 			//consoleMessage( (String ^)retArr[0] + ((Int32)retArr[1]), Color::Blue);
 			consoleMessage( (String ^)retArr[0], ((Color)retArr[1]));//((ColorRef ^)retArr[1])->theColor );
 		 }
+
 public:	 System::Void updateCommsStatus( array<Object ^> ^ retArr )
 		 {
 			 if (!isconnected)
@@ -1759,16 +1782,19 @@ public:	 System::Void updateCommsStatus( array<Object ^> ^ retArr )
 
 			 Image ^theImage;
 			 // get result (yellow vs green)
-			 if ((Boolean)retArr[1])
+			 if ((Int32)retArr[1] == GREEN_STATUS)
 				 theImage = greenImage;
-			 else 
+			 else if ((Int32)retArr[1] == YELLOW_STATUS)
 				 theImage = yellowImage;
+			 else 
+				 theImage = redImage;
 
 			 // get type (rabbit vs autopilot) and update image
 			 if (((String ^)retArr[0])->Equals("Autopilot"))
 				 pictureBox2->Image = theImage;
 			 else if (((String ^)retArr[0])->Equals("Rabbit"))
 				 pictureBox3->Image = theImage;
+
 
 		 }
 private: System::Void errorMessage( String ^ message )
@@ -2013,17 +2039,21 @@ private: void AddText( Stream^ fs, String^ value )
 		 
 public: System::Void reloadTable( ) {
 			
-			PlaneState *state = thePlaneWatcher->predictLocationAtTime(0.0);
+			
+			Communications::PlaneState ^ state = thePlaneWatcher->predictLocationAtTime(0.0);
 
-			this->metadataTable[1, G_ROLL]->Value = "" + thePlaneWatcher->gimbalRollInDegrees() + "*"; //azimuth;
-			this->metadataTable[1, G_PITCH]->Value = "" + thePlaneWatcher->gimbalPitchInDegrees() + "*"; //elevation;
+			this->metadataTable[1, G_ROLL]->Value = "" + state->gimbalInfo->roll + "*"; //azimuth;
+			this->metadataTable[1, G_PITCH]->Value = "" + state->gimbalInfo->pitch + "*"; //elevation;
 			this->metadataTable[1, A_ALT]->Value = "" + state->gpsData->gpsAltitude + ""; // altitude;
 			this->metadataTable[1, A_LAT]->Value = "" + state->gpsData->gpsLatitude + ""; // latitude;
 			this->metadataTable[1, A_LON]->Value = "" + state->gpsData->gpsLongitude + ""; // longitude;
 			this->metadataTable[1, A_HEAD]->Value = "" + state->telemData->heading + "*"; //heading;
 			this->metadataTable[1, A_ROLL]->Value = "" + state->telemData->roll + "*"; // roll;
 			this->metadataTable[1, A_PITCH]->Value = "" + state->telemData->pitch + "*"; //pitch;
-			this->metadataTable[1, V_ZOOM]->Value = "1.0"; // zoom;
+			this->metadataTable[1, V_ZOOM]->Value = "" + state->gimbalInfo->zoom; // zoom;
+			
+			//System::Diagnostics::Trace::WriteLine("Form1::reloadTable() lat:" + state->gpsData->gpsLatitude + " lon:" + state->gpsData->gpsLongitude + " roll:" + state->telemData->roll  + 
+			//								" pitch:" + state->telemData->pitch  + " heading:" + state->telemData->heading );
 
 			delete state;
 		}
@@ -2037,13 +2067,13 @@ public: System::Void updateGimbalInfo( Communications::GimbalInfo * data ) {
 
 		}
 
-public: System::Void updatePlaneGPSInfo( Communications::PlaneGPSPacket * data ) {
+public: System::Void updatePlaneGPSInfo( Communications::PlaneGPSPacket ^ data ) {
 			thePlaneWatcher->updatePlaneGPSInfo(data);
 
 			//TODO: update the table the user sees in el GUI
 }
 
-public: System::Void updatePlaneTelemInfo( Communications::PlaneTelemPacket * data ) {
+public: System::Void updatePlaneTelemInfo( Communications::PlaneTelemPacket ^ data ) {
 			thePlaneWatcher->updatePlaneTelemInfo(data);
 
 			//TODO: update the table the user sees in el GUI
@@ -2168,7 +2198,7 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 
 				else {
 					// recording began
-					consoleMessage( "Started recording video and telemetry", Color::Green );	
+					consoleMessage( "Started recording-telemetry", Color::Green );	
 					recording = true;
 					System::Diagnostics::Trace::WriteLine("started recording in Form1 " + path);
 			
@@ -2727,7 +2757,7 @@ private: System::Void Form1_KeyPress(System::Object^  sender, System::Windows::F
 
 		 }
 private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
-			array<System::Byte> ^ buffer = nullptr;
+			/*array<System::Byte> ^ buffer = nullptr;
 
 
 			// send zoom in packet
@@ -2742,7 +2772,10 @@ private: System::Void button1_Click(System::Object^  sender, System::EventArgs^ 
 			
 
 			if (buffer != nullptr)
-				;//theComport->writeRawData(buffer); // TODO: fix this
+				;//theComport->writeRawData(buffer); // TODO: fix this*/
+
+			 //theComms->gotoLatLon(0,0);
+			 theComms->sendHelloToRabbit();
 		 }
 private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
 				array<System::Byte> ^ buffer = nullptr;
@@ -2790,9 +2823,19 @@ public:	 System::Void handleConnectionResult(array<Int32> ^ retArr) {
 			int result = (int)retArr[0];
 			isConnecting = false;
 
+			/*if (result == RABBIT_CONNECTED) {
+					consoleMessage( "Connected to Rabbit", Color::Green );
+					pictureBox3->Image = dynamic_cast<Image^>(greenImage);
+			} else if (result == AUTOPILOT_CONNECTED) {
+					consoleMessage( "Failed to Connect to Rabbit", Color::Red );
+					consoleMessage( "Connected to Autopilot", Color::Green );
+					pictureBox2->Image = dynamic_cast<Image^>(greenImage);
+					pictureBox3->Image = dynamic_cast<Image^>(redImage);
+			}*/
+
 			if (result == BOTH_FAILED) {
 				// both failed to connect
-					consoleMessage( "Failed to Connect to Rabbit", Color::Red );
+					//consoleMessage( "Failed to Connect to Rabbit", Color::Red );
 					consoleMessage( "Failed to Connect to Autopilot", Color::Red );
 					pictureBox2->Image = dynamic_cast<Image^>(redImage);
 					pictureBox3->Image = dynamic_cast<Image^>(redImage);
@@ -2802,17 +2845,17 @@ public:	 System::Void handleConnectionResult(array<Int32> ^ retArr) {
 			else {
 				// recording began
 				if (result == BOTH_CONNECTED) {
-					consoleMessage( "Connected to Rabbit", Color::Green );
+				//	consoleMessage( "Connected to Rabbit", Color::Green );
 					consoleMessage( "Connected to Autopilot", Color::Green );
 					pictureBox2->Image = dynamic_cast<Image^>(greenImage);
 					pictureBox3->Image = dynamic_cast<Image^>(greenImage);
-				} else if (result == RABBIT_CONNECTED) {
+				}/* else if (result == RABBIT_CONNECTED) {
 					consoleMessage( "Connected to Rabbit", Color::Green );
 					consoleMessage( "Failed to Connect to Autopilot", Color::Red );
 					pictureBox2->Image = dynamic_cast<Image^>(redImage);
 					pictureBox3->Image = dynamic_cast<Image^>(greenImage);
-				} else if (result == AUTOPILOT_CONNECTED) {
-					consoleMessage( "Failed to Connect to Rabbit", Color::Red );
+				}*/ else if (result == AUTOPILOT_CONNECTED) {
+					//consoleMessage( "Failed to Connect to Rabbit", Color::Red );
 					consoleMessage( "Connected to Autopilot", Color::Green );
 					pictureBox2->Image = dynamic_cast<Image^>(greenImage);
 					pictureBox3->Image = dynamic_cast<Image^>(redImage);
@@ -2862,8 +2905,6 @@ private: System::Void connectButton_Click(System::Object^  sender, System::Event
 				comConnectThread->Name = "Comms Connect Thread";
 				comConnectThread->Start();
 
-
-				
 			}
 
 		 }

@@ -2,6 +2,7 @@
 #include "Form1.h"
 #include "Saliency.h"
 #include "SaveImage.h"
+#include "PlaneWatcher.h"
 
 
 // Saliency update frequency (in miliseconds)
@@ -16,7 +17,7 @@ using namespace Vision;
 
 // TODO: check for memory leaks
 
-Saliency::Saliency()
+Saliency::Saliency( Object ^ watcher )
 {
 	saliencyThread = gcnew Thread(gcnew ThreadStart(this, &Saliency::saliencyThreadFunction));
 	saliencyThread->Name = "Saliency Analysis Thread";
@@ -25,6 +26,8 @@ Saliency::Saliency()
 	saveImagesThread = gcnew Thread(gcnew ThreadStart(this, &Saliency::saveImagesThreadFunction));
 	saveImagesThread->Name = "Image Saving Thread";
 	saveImagesThread->Start();
+
+	planeWatcher = watcher;
 
 	newFrameReady = false;
 	width = 0;
@@ -35,62 +38,76 @@ Saliency::Saliency()
 	postSaliency = NULL;
 	tempPause = false;
 	
-	System::DateTime start = System::DateTime::Now;
-	System::Diagnostics::Trace::WriteLine("Saliency: Running Georeference:");
-	float plane_lat = 32, plane_lon = -117, plane_alt = 75, plane_roll = 0, plane_pitch = 0, plane_heading = 0, gimbal_roll = 0, gimbal_pitch = 0, gimbal_yaw = 0;
+	/*System::DateTime start = System::DateTime::Now;
+	
+	Communications::PlaneState * state = ((Communications::PlaneWatcher ^)planeWatcher)->predictLocationAtTime( 0 );
+	
+	double plane_lat = state->gpsData->gpsLatitude, plane_lon = state->gpsData->gpsLongitude, plane_alt = state->gpsData->gpsAltitude;
+	double plane_roll = state->telemData->roll, plane_pitch = state->telemData->pitch, plane_heading = state->telemData->heading;
+	float gimbal_roll = state->gimbalInfo->roll, gimbal_pitch = state->gimbalInfo->pitch, gimbal_yaw = 0;
+	
+	
+	System::Diagnostics::Trace::WriteLine("Saliency: Running Georeference: lat:" + plane_lat + " lon:" + plane_lon + " alt:" + plane_alt + " roll:" + plane_roll + " pitch:" + plane_pitch + " heading:" + plane_heading + " groll:" + gimbal_roll + " gpitch:" + gimbal_pitch + " gyaw:" + gimbal_yaw);
+	
 	float target_x = 0, target_y = 0, zoom = 1, t_lat = -1, t_lon = -1, t_alt = -1;
-	for (int i = 0; i < 100; i++)
-		getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat, t_lon, t_alt);
+	
+	float t_lat_1, t_lat_2, t_lon_1, t_lon_2;
 
+	getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
+	getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, 10, target_y, zoom, t_lat_2, t_lon_2, t_alt);
+
+	System::Diagnostics::Trace::WriteLine("Distance: " + distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2));
 			
-	System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " t: " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
+	System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " time (ms): " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
 
+	delete state;*/
 }
 
 void 
 Saliency::saliencyThreadFunction(void)
 {
-	FILE * fd;
-	fopen_s(&fd, "C:\\Users\\UCSD\\Pictures\\Saliency Sample\\errorLog.txt", "w");
-	fprintf(fd, "Error Log for saliency:\n");
-	fclose( fd );
+	
+	try {
+		FILE * fd;
+		fopen_s(&fd, "C:\\Users\\UCSD\\Pictures\\Saliency Sample\\errorLog.txt", "w");
+		fprintf(fd, "Error Log for saliency:\n");
+		fclose( fd );
 
-	Auvsi_Saliency * theSaliency = new Auvsi_Saliency();
-	/*const char * imagePath = "C:\\Users\\UCSD\\Pictures\\Saliency Sample\\heli.bmp";
-	theSaliency->loadImage( imagePath);
-	theSaliency->prepareFilters();
-	theSaliency->prepareForSaliency();
-	theSaliency->computeSaliency(0.6);*/
+		Auvsi_Saliency * theSaliency = new Auvsi_Saliency();
+		/*const char * imagePath = "C:\\Users\\UCSD\\Pictures\\Saliency Sample\\heli.bmp";
+		theSaliency->loadImage( imagePath);
+		theSaliency->prepareFilters();
+		theSaliency->prepareForSaliency();
+		theSaliency->computeSaliency(0.6);*/
 
-	int localW = 0, localH = 0;
-	FrameData ^ localData;
+		int localW = 0, localH = 0;
+		FrameData ^ localData;
 
-	while( true )
-	{
-		Thread::Sleep( UPDATE_FREQUENCY ); // dont run too fast, or we eat up cpu ... ;)
-		//continue;	// DONT RUN SALIENCY 
-		// check for new width, height
-		if (localW != width || localH != height) 
+		while( true )
 		{
-			localW = width;
-			localH = height;
-
-			// set new data in saliency, prepare shit
-			if (localW != 0 && localH != 0) 
+			Thread::Sleep( UPDATE_FREQUENCY ); // dont run too fast, or we eat up cpu ... ;)
+			//continue;	// DONT RUN SALIENCY 
+			// check for new width, height
+			if (localW != width || localH != height) 
 			{
-				//theSaliency->loadImage( "C:\\Users\\UCSD\\Pictures\\Saliency Sample\\heli.bmp" );
-				theSaliency->setInformation( localW, localH );
-				theSaliency->prepareFilters();
-				theSaliency->prepareForSaliency();
-				//theSaliency->computeSaliency(0.6);
+				localW = width;
+				localH = height;
+
+				// set new data in saliency, prepare shit
+				if (localW != 0 && localH != 0) 
+				{
+					//theSaliency->loadImage( "C:\\Users\\UCSD\\Pictures\\Saliency Sample\\heli.bmp" );
+					theSaliency->setInformation( localW, localH );
+					theSaliency->prepareFilters();
+					theSaliency->prepareForSaliency();
+					//theSaliency->computeSaliency(0.6);
+				}
 			}
-		}
 		
-		// check for new frame
-		if (newFrameReady) 
-		{
-			//System::Diagnostics::Trace::WriteLine( "New frame Ready");
-			try {
+			// check for new frame
+			if (newFrameReady) 
+			{
+				//System::Diagnostics::Trace::WriteLine( "New frame Ready");
 			
 				// set flags
 				currentlyAnalyzing = true;
@@ -139,15 +156,15 @@ Saliency::saliencyThreadFunction(void)
 			
 			}
 
-			catch ( Exception ^ theException) {
-				System::Diagnostics::Trace::WriteLine( "Exception in saliencyThread: " + theException);
-				
-			}
-
 			//TODO: fix memory leaks, free the buffer
 		}
 
 
+	}
+
+	catch ( Exception ^ theException) {
+		System::Diagnostics::Trace::WriteLine( "Exception in saliencyThread: " + theException);
+				
 	}
 }
 
@@ -180,37 +197,64 @@ Saliency::saveImagesThreadFunction()
 			//ImageUtil::SaveImage theImSaver( height, width, 4 );
 			//theImSaver.saveFrame(savingBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_original.bmp"));
 			
+			//System::DateTime start = System::DateTime::Now;
+	
+	
+	
+			//System::Diagnostics::Trace::WriteLine("Saliency: Running Georeference: lat:" + plane_lat + " lon:" + plane_lon + " alt:" + plane_alt + " roll:" + plane_roll + " pitch:" + plane_pitch + " heading:" + plane_heading + " groll:" + gimbal_roll + " gpitch:" + gimbal_pitch + " gyaw:" + gimbal_yaw);
+	
+	
+	
+			//System::Diagnostics::Trace::WriteLine("Distance: " + distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2));
+			
+			//System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " time (ms): " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
 
+	
+			Communications::PlaneState ^ state = ((Communications::PlaneWatcher ^)planeWatcher)->predictLocationAtTime( 0 );
+	
+			double plane_lat = state->gpsData->gpsLatitude, plane_lon = state->gpsData->gpsLongitude, plane_alt = state->gpsData->gpsAltitude;
+			double plane_roll = state->telemData->roll, plane_pitch = state->telemData->pitch, plane_heading = state->telemData->heading;
+			double gimbal_roll = state->gimbalInfo->roll, gimbal_pitch = state->gimbalInfo->pitch, gimbal_yaw = 0;
+	
+			double target_x = 0, target_y = 0, zoom = 1, t_lat = -1, t_lon = -1, t_alt = -1;
+	
+			double t_lat_1, t_lat_2, t_lon_1, t_lon_2;
 
+			double metersPerXPixel, metersPerYPixel;
 
+			target_x = 0; target_y = 100;
+			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
+			
+			target_x = 200; target_y = 100;
+			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_2, t_lon_2, t_alt);
+			metersPerXPixel = distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2) / 200.0f;
+			
+			target_x = 100; target_y = 0;
+			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
+			//System::Diagnostics::Trace::WriteLine("Saliency: lat1:" + t_lat_1 + " t_lon_1:" + t_lon_1 + " t_lat_2:" + t_lat_2 + " t_lon_2:" + t_lon_2);
+
+			target_x = 100; target_y = 200;
+			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_2, t_lon_2, t_alt);
+			metersPerYPixel = distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2) / 200.0f;
+			//System::Diagnostics::Trace::WriteLine("Saliency: lat1:" + (double)t_lat_1 + " t_lon_1:" + (double)t_lon_1 + " t_lat_2:" + (double)t_lat_2 + " t_lon_2:" + (double)t_lon_2);
+
+			//System::Diagnostics::Trace::WriteLine("Saliency: metersPerX:" + metersPerXPixel + " metersPerY:" + metersPerYPixel);
+			
 			// loop through each bounding box
 			for (int i = 0; i < numBoxes; i++) {
 				box currentBox = boundingBoxes[i]; // get bounding box
 
-				/*ImageUtil::SaveImage theImSaver( currentBox.height, currentBox.width, 4 );
+				// check for correct size ... if wrong size, skip this result
+				if (!(validSize(((double)currentBox.width)*metersPerXPixel) && validSize(((double)currentBox.height)*metersPerYPixel))) {
+					//System::Diagnostics::Trace::WriteLine("Saliency: size of target disregarded w:" + currentBox.width*metersPerXPixel + " h:" + currentBox.height*metersPerYPixel );
+					continue;
+				}
+				else
+					System::Diagnostics::Trace::WriteLine("Saliency: size of target included w:" + currentBox.width*metersPerXPixel + " h:" + currentBox.height*metersPerYPixel  );
+
 
 				// save image to file
-				float * tempBuffer = new float[currentBox.height * currentBox.width * 4];
-				int counter = 0;
-
-				// loop through horizontal values
-				for (int k = currentBox.x; k < currentBox.x + currentBox.width; k++) {
-
-					// loop through current column
-					for (int j = currentBox.y; j < currentBox.y + currentBox.height; j++) {
-
-						// rgb values
-						for (int l = 0; l < 3; l++) {
-							tempBuffer[counter] = savingBuffer[(j * width + k)*3 + l];
-							counter++;
-						}
-
-						// alpha value
-						tempBuffer[counter] = 0;
-						counter++;
-					}
-				}*/
-				//ImageUtil::SaveImage theImSaver( height, width/2, 4 );
+				
 				ImageUtil::SaveImage theImSaver( currentBox.height, currentBox.width, 4 );
 
 
@@ -268,29 +312,28 @@ Saliency::saveImagesThreadFunction()
 				// third database (confirmed targets):
 				//	all from second database except revision number
 
-				// only save if it is a valid target i.e. right physical size range
-				if (isValidTarget(data, currentBox)) 
-				{
-					//theImSaver.saveFrame(tempBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_" + i + ".bmp"));
+				
+				theImSaver.saveFrame(tempBuffer, ManagedToSTL(IMAGE_SAVE_BASE_PATH + frameCount + "_" + i + ".bmp"));
 
-					array<Object ^>^myArr = {data};
-					try {
+				array<Object ^>^myArr = {data};
+				try {
 					
-						((Skynet::Form1 ^ )parent)->Invoke( ((Skynet::Form1 ^ )parent)->saliencyAddTarget, myArr );
-					}
-
-					catch (Exception ^ theEx) {
-					
-						System::Diagnostics::Trace::WriteLine( "WARNING: Saliency exception: " + theEx);
-					}
-
+					((Skynet::Form1 ^ )parent)->Invoke( ((Skynet::Form1 ^ )parent)->saliencyAddTarget, myArr );
 				}
+
+				catch (Exception ^ theEx) {
+					
+					System::Diagnostics::Trace::WriteLine( "WARNING: Saliency exception: " + theEx);
+				}
+
+				
 
 
 				delete tempBuffer;
 
 			}
 
+			delete state;
 
 			savingData = false;
 		}
@@ -299,10 +342,9 @@ Saliency::saveImagesThreadFunction()
 
 }
 
-bool 
-Saliency::isValidTarget(Database::RowData ^ data, box theBox)
+bool Saliency::validSize(double size)
 {
-	return true; // TODO: change this later
+	return (size < MAX_SIZE) && (size > MIN_SIZE);
 
 }
 
@@ -372,36 +414,46 @@ Saliency::~Saliency()
 
 }
 
-// DEBUG testing
-	
 #define PI 3.14159265
 
-float cosd(float input)
+double cosd(double input)
 {
 	return cos(input*PI/180.0);
 }
 
-float sind(float input)
+double sind(double input)
 {
 	return sin(input*PI/180.0);
 }
 
-float atand(float input)
+double atand(double input)
 {
 	return atan(input)*180.0/PI;
 }
 
-cv::Mat Saliency::EulerAngles(bool transpose, cv::Mat Orig_Vector, float Roll, float Pitch, float Yaw)
+double Saliency::distanceBetweenGPS(double lat1, double lon1, double lat2, double lon2)
 {
-	float R = Roll;
-	float P = Pitch;
-	float Y = Yaw;
+	double radius = 6378000; // radius of earth!
+	double deltaLat = lat2 - lat1;
+	double deltaLon = lon2 - lon1;
+	double a = sind(deltaLat/2)*sind(deltaLat*2) + cosd(lat1)*cosd(lat2)*sind(deltaLon/2)*sind(deltaLon*2);
+	double c = 2*atan2(sqrt(a), sqrt((1-a)));
+	double d = radius*c;
+
+	return d;
+}
+
+cv::Mat Saliency::EulerAngles(bool transpose, cv::Mat Orig_Vector, double Roll, double Pitch, double Yaw)
+{
+	double R = Roll;
+	double P = Pitch;
+	double Y = Yaw;
 
 	 
-	float transarr[3][3] = {{cosd(P)*cosd(Y), cosd(P)*sind(Y), -sind(P)},
+	double transarr[3][3] = {{cosd(P)*cosd(Y), cosd(P)*sind(Y), -sind(P)},
 							{sind(R)*sind(P)*cosd(Y)-cosd(R)*sind(Y), sind(R)*sind(P)*sind(Y)+cosd(R)*cosd(Y), sind(R)*cosd(P)},  
 	{cosd(R)*sind(P)*cosd(Y)+sind(R)*sind(Y), cosd(R)*sind(P)*sind(Y)-sind(R)*cosd(Y), cosd(R)*cosd(P)}};
-	cv::Mat Transfer = cv::Mat(3, 3, CV_32FC1, transarr).inv();
+	cv::Mat Transfer = cv::Mat(3, 3, CV_64FC1, transarr).inv();
 
 	if (transpose)
 		Transfer = Transfer.t();
@@ -412,7 +464,7 @@ cv::Mat Saliency::EulerAngles(bool transpose, cv::Mat Orig_Vector, float Roll, f
 String ^ matToString(cv::Mat in)
 {
 	String ^ ret = "{";
-	typedef cv::Vec<float, 1> VT;
+	typedef cv::Vec<double, 1> VT;
 
 	for (int r = 0; r < in.rows; r++)
 	{
@@ -429,33 +481,33 @@ String ^ matToString(cv::Mat in)
 
 }
 
-void Saliency::getGPS(float plane_latitude, float plane_longitude, float plane_altitude, float plane_roll, float plane_pitch, float plane_heading, float gimbal_roll, float gimbal_pitch, float gimbal_yaw, 
-				float target_x, float target_y, float zoom, float & Target_Latitude, float & Target_Longitude, float & Target_Height)
+void Saliency::getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
+				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height)
 {
-	float x_fov = 46.0f;
-	float y_fov = 34.0f;
-	float x_pixels = 700;
-	float y_pixels = 420;
-	float zoom_factor = zoom;
-	float target_pixel_x = target_x;
-	float target_pixel_y = target_y;
+	double x_fov = 46.0f;
+	double y_fov = 34.0f;
+	double x_pixels = 720;
+	double y_pixels = 486;
+	double zoom_factor = zoom;
+	double target_pixel_x = target_x;
+	double target_pixel_y = target_y;
 
 
-	typedef cv::Vec<float, 1> VT;
-	float pix[3][1] = {{0}, {0}, {1}};
-	cv::Mat Pixel_CF_Vector(3, 1, CV_32FC1, pix );
+	typedef cv::Vec<double, 1> VT;
+	double pix[3][1] = {{0}, {0}, {1}};
+	cv::Mat Pixel_CF_Vector(3, 1, CV_64FC1, pix );
 
-	float ground_altitude = 0;
+	double ground_altitude = 0;
 
-	float a = 6378137;
-	float b = 6356752.3142;
+	double a = 6378137;
+	double b = 6356752.3142;
 
 	// PART A
-	float fovarr[3][1] = {{x_fov}, {y_fov}, {1}};
-	cv::Mat FOV(3, 1, CV_32FC1, fovarr );
+	double fovarr[3][1] = {{x_fov}, {y_fov}, {1}};
+	cv::Mat FOV(3, 1, CV_64FC1, fovarr );
 	
 
-	cv::Mat Scale(3, 3, CV_32FC1 );
+	cv::Mat Scale(3, 3, CV_64FC1 );
 	Scale.at<VT>(0, 0)[0] = 1/zoom_factor;
 	Scale.at<VT>(0, 1)[0] = 0;
 	Scale.at<VT>(0, 2)[0] = 0;
@@ -469,9 +521,9 @@ void Saliency::getGPS(float plane_latitude, float plane_longitude, float plane_a
 	cv::Mat FOV_zoom_accounted = Scale*FOV;
 
 	// PART B
-	float Pixel_Roll = (FOV_zoom_accounted.at<VT>(1, 0)[0])/2 * target_pixel_x / (x_pixels);
-	float Pixel_Pitch = (FOV_zoom_accounted.at<VT>(2, 0)[0])/2 * target_pixel_y / (y_pixels);
-	float Pixel_Yaw = 0;
+	double Pixel_Roll = (FOV_zoom_accounted.at<VT>(1, 0)[0])/2 * target_pixel_x / (x_pixels);
+	double Pixel_Pitch = (FOV_zoom_accounted.at<VT>(2, 0)[0])/2 * target_pixel_y / (y_pixels);
+	double Pixel_Yaw = 0;
 
 	//TODO: define EulerAngles function
 	cv::Mat CC_CF_Vector = EulerAngles(1, Pixel_CF_Vector, Pixel_Roll, Pixel_Pitch, Pixel_Yaw);
@@ -483,48 +535,48 @@ void Saliency::getGPS(float plane_latitude, float plane_longitude, float plane_a
 	cv::Mat Plane_CF_Vector = EulerAngles(1, GZ_CF_Vector, plane_roll, plane_pitch, plane_heading);
 
 	// PART E
-	float f = a/(a-b);
-	//float temp = ;
-	float e = sqrt( (1.0 / f ) * (2 - 1*(1 / f ))  );
-	float N = a/(sqrt((float)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude))));
+	double f = a/(a-b);
+	//double temp = ;
+	double e = sqrt( (1.0 / f ) * (2 - 1*(1 / f ))  );
+	double N = a/(sqrt((double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude))));
 
-	float X = (N+plane_altitude)*cosd(plane_latitude)*cosd(plane_longitude);
-	float Y = (N+plane_altitude)*cosd(plane_latitude)*sind(plane_longitude);
-	float Z = (N*(1-e*e)+plane_altitude)*sind(plane_latitude);
+	double X = (N+plane_altitude)*cosd(plane_latitude)*cosd(plane_longitude);
+	double Y = (N+plane_altitude)*cosd(plane_latitude)*sind(plane_longitude);
+	double Z = (N*(1-e*e)+plane_altitude)*sind(plane_latitude);
 
-	float m[3][1] = {{X}, {Y}, {Z}};
-	cv::Mat InitialXYZ = cv::Mat(3, 1, CV_32FC1, m);//.inv();
+	double m[3][1] = {{X}, {Y}, {Z}};
+	cv::Mat InitialXYZ = cv::Mat(3, 1, CV_64FC1, m);//.inv();
 	
 	/*System::Diagnostics::Trace::WriteLine("Part E initialxyz: " + matToString(InitialXYZ) + " f:" + f + " e:" + e + " N:" + N + " X:" + X + " Y:" + Y + " Z:" + Z);
 	System::Diagnostics::Trace::WriteLine("Part E a:" + a + " b:" + b + " plane_latitude:" + plane_latitude + " plane_longitude:" + plane_longitude);
 	System::Diagnostics::Trace::WriteLine("Part E a:" + sind(plane_latitude));
 	System::Diagnostics::Trace::WriteLine("Part E a:" + (e*e)*sind(plane_latitude)*sind(plane_latitude));
-	System::Diagnostics::Trace::WriteLine("Part E a:" + (float)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)));
-	System::Diagnostics::Trace::WriteLine("Part E a:" + (sqrt((float)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)))));*/
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)));
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (sqrt((double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)))));*/
 
 	// PART F
-	float n = 1;
+	double n = 1;
 	Target_Height = 0;
-
-	const float MAX_DISTANCE = 500; // all of this in meters
-	const float MIN_DISTANCE = 0;
-	const float HEIGHT_OF_FIELD = 3.3333333333;
-	const float MARGIN_OF_ERROR = 0.5;
-	float range = MAX_DISTANCE - MIN_DISTANCE;
+	
+	const double HEIGHT_OF_FIELD = 3.3333333333;
+	const double MAX_DISTANCE = 500; // all of this in meters
+	double MIN_DISTANCE = plane_altitude - HEIGHT_OF_FIELD;
+	const double MARGIN_OF_ERROR = 0.5;
+	double range = MAX_DISTANCE - MIN_DISTANCE;
 	n = range/2 + MIN_DISTANCE;
 	range /= 2;
 
-	float h, p, mlong, latchange, newlat, lat;
+	double h, p, mlong, latchange, newlat, lat;
 	int loopcounter = 0;
 	while (loopcounter < 100 && fabs(Target_Height - HEIGHT_OF_FIELD) > MARGIN_OF_ERROR)
 	{
 		cv::Mat NED = Plane_CF_Vector * n;
 
 
-		float transarr[3][3] = {{-sind(plane_latitude)*cosd(plane_longitude), -sind(plane_longitude), -cosd(plane_latitude)*cosd(plane_longitude)}, 
+		double transarr[3][3] = {{-sind(plane_latitude)*cosd(plane_longitude), -sind(plane_longitude), -cosd(plane_latitude)*cosd(plane_longitude)}, 
 								{-sind(plane_latitude)*sind(plane_longitude), -cosd(plane_longitude), -cosd(plane_latitude)*sind(plane_longitude)}, 
 								{cosd(plane_latitude), 0, -sind(plane_latitude)}};
-		cv::Mat Trans = cv::Mat(3, 3, CV_32FC1, transarr).inv();
+		cv::Mat Trans = cv::Mat(3, 3, CV_64FC1, transarr).inv();
 		cv::Mat XYZ = InitialXYZ + Trans*NED;
 
 		X = XYZ.at<VT>(0, 0)[0];
@@ -537,7 +589,7 @@ void Saliency::getGPS(float plane_latitude, float plane_longitude, float plane_a
 		latchange = 10;
 		newlat = 10;
 		int count = 0;
-		float sinfind;
+		double sinfind;
 		while (latchange > 0.0001)
 		{
 			sinfind = Z/(N*(1-e*e) + h);
@@ -575,5 +627,3 @@ void Saliency::getGPS(float plane_latitude, float plane_longitude, float plane_a
 	Target_Longitude = mlong;
 	Target_Height = h;
 }
-
-// DEBUG testing end

@@ -3,40 +3,47 @@
 #include "Comport.h"
 #include "ComportHandler.h"
 
+#define AUTOPILOT_LATENCY	0.125 // (ms)
+
 using namespace System;
 using namespace System::Runtime::InteropServices;
 
 namespace Communications
 {
 
-	struct PacketHeader
+	ref struct PacketHeader
 	{
 		__int32 type;
 		__int32 size;
 
 	};
 
-	
-	struct PlaneState
+	ref struct CommPacket5
 	{
-		PlaneState() { gpsData = new PlaneGPSPacket(); telemData = new PlaneTelemPacket(); }
-		~PlaneState() { delete gpsData; delete telemData; }
-		PlaneGPSPacket * gpsData;
-		PlaneTelemPacket * telemData;
+		unsigned char numBytes;
+		array<System::Byte> ^ arr;
 	};
 
-	struct AutopilotVCPacket20
+	ref struct AutopilotVCPacket10
+	{
+		__int16 destAddr;
+		unsigned char kestrelPacketType;
+		array<System::Byte> ^ arr;  //data
+	};
+	
+
+	ref struct AutopilotVCPacket20
 	{
 		unsigned char packetID;
 		unsigned char onOff;
 	};
 
-	struct AutopilotVCPacket30
+	ref struct AutopilotVCPacket30
 	{
 		__int16 destAddr;
 	};
 
-	struct AutopilotVCPacket32
+	ref struct AutopilotVCPacket32
 	{
 		__int16				destAddr			;
 		unsigned char		commandType			;
@@ -53,11 +60,11 @@ namespace Communications
 		float				descentRate			;
 		float				approachAltitude	;
 		float				approachLongitude	;
-		float				unusedone;
-		float				unusedtwo;
+		__int32				unusedOne;
+		float				unusedTwo;
 	};
 
-	struct PlaneGPSPacket
+	ref struct PlaneGPSPacket
 	{
 		float gpsVelocity;					//longitude of UAV in decimal degrees
 		float gpsAltitude;					//the gps computed altitude, in meters
@@ -84,7 +91,7 @@ namespace Communications
 		unsigned __int16 UTCmillisecond;	//UTC millisecond of minute (0 - 59,999)
 	};
 
-	struct PlaneTelemPacket
+	ref struct PlaneTelemPacket
 	{
 		float altitudeHAL;            //meters above launch
 		float velocity;               //meters per second
@@ -113,6 +120,14 @@ namespace Communications
 		unsigned char UTChour;				//UTC hour of dat (0 - 23)
 		unsigned char UTCmin;				//UTC minute of hour (0 - 59)
 		unsigned __int16 UTCmillisecond;	//UTC millisecond of minute (0 - 59,999)
+	};
+
+	ref struct PlaneState
+	{
+		PlaneState() { gpsData = gcnew PlaneGPSPacket(); telemData = gcnew PlaneTelemPacket(); gimbalInfo = new GimbalInfo(); }
+		PlaneGPSPacket ^	gpsData;
+		PlaneTelemPacket ^	telemData;
+		GimbalInfo *		gimbalInfo;	
 	};
 
 	/*
@@ -201,13 +216,22 @@ namespace Communications
 		void requestPacketForwarding();  //turn on packet forwarding from VC
 		virtual void afterBeginReading() override;
 		void requestAgents();
+		
+		void sendPassthroughPacket( array<System::Byte> ^ inBuffer );
+
+		
+		Object ^ rabbit;
 
 	private:
+
+		array<System::Byte> ^ getCommPacket5Data(array<System::Byte> ^ dataForRabbit);
+
+		array<System::Byte> ^ getVCPacket10(unsigned char kestrelPacketType, array<System::Byte> ^ arr);
 		array<System::Byte> ^ getVCPacket20(unsigned char packetID, unsigned char onOff);
+		array<System::Byte> ^ getVCPacket30();
 		array<System::Byte> ^ getVCPacket32(unsigned char commandType, float lat, float lon, float speed, float altitude, 
 											unsigned __int16 gotoIndex, unsigned __int16 time, float radius, float flareSpeed, float flareAltitude, 
 											float breakAltitude, float descentRate, float approachAltitude, float approachLongitude);
-		array<System::Byte> ^ getVCPacket30();
 		array<System::Byte> ^ getVCPacket61();
 
 		__int16 getInt16FromBytes(array<System::Byte> ^ arr, int startIndex);
@@ -217,6 +241,7 @@ namespace Communications
 		char getCharFromBytes(array<System::Byte> ^ arr, int startIndex);
 		float getFloatFromBytes(array<System::Byte> ^ arr, int startIndex);
 		__int16 planeAddress;  
+
 	};
 
 }

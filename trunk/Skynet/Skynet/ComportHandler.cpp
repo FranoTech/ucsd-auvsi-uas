@@ -53,7 +53,7 @@ void ComportHandler::disconnect()
 	//catch (Exception ^) {}
 }	
 
-void ComportHandler::updateComportStatus(bool status)
+void ComportHandler::updateComportStatus(int status)
 {
 	((Comms ^)theDelegate)->updateUIAboutCommsStatus(status, type);
 }
@@ -83,7 +83,7 @@ void ComportHandler::writeData( array<System::Byte> ^ inBuffer )
 
 void ComportHandler::receiveData( array<System::Byte> ^ inBuffer ) 
 {
-	System::Diagnostics::Trace::WriteLine("ComportHandler::receiveData()");
+	//System::Diagnostics::Trace::WriteLine("ComportHandler::receiveData()");
 	analyzeData( inBuffer );
 
 	// save data

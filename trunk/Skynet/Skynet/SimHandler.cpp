@@ -94,14 +94,14 @@ int SimHandler::beginRecording(String ^ filename)
 		videoWriteThread->Abort();
 	}
 
+	
+	breakNow = false;
+	videoAttemptThread = gcnew Thread(gcnew ParameterizedThreadStart(this, &SimHandler::tryToStartVideo));
+	videoAttemptThread->Name = "SimHandler tryToStartVideo Thread";
+	videoAttemptThread->Start(filename);
 
 
-	if (!openGLView->enableVideoRecording(filename)) {
-		breakNow = false;
-		videoAttemptThread = gcnew Thread(gcnew ParameterizedThreadStart(this, &SimHandler::tryToStartVideo));
-		videoAttemptThread->Name = "SimHandler tryToStartVideo Thread";
-		videoAttemptThread->Start(filename);
-
+	/*if (!openGLView->enableVideoRecording(filename)) {
 	}
 
 	else 
@@ -120,7 +120,7 @@ int SimHandler::beginRecording(String ^ filename)
 		System::Diagnostics::Trace::WriteLine("beginRecording in SimHandler");
 
 
-	}
+	}*/
 
 	return retStatus;
 }
@@ -156,10 +156,12 @@ void SimHandler::tryToStartVideo(Object ^ arg)
 
 
 			// sleep for one second
-			Thread::Sleep( 10000 );
+			Thread::Sleep( 1000 );
 
 		}
-	} catch (Exception ^) {}
+	} catch (Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("SimHandler::tryToStartVideo(): Catch: " + e);
+	}
 
 }
 
@@ -272,9 +274,10 @@ SimHandler::writeVideo() {
 
 void SimHandler::writeTelemetry( System::TimeSpan time,  int type, int length, array<System::Byte>^ byteArray )
 {
-	//System::Diagnostics::Trace::WriteLine("WRITE TELEMETRY "+pleaseRecord);
+	//System::Diagnostics::Trace::WriteLine("write telem");
 	if(pleaseRecord)
 	{
+		//System::Diagnostics::Trace::WriteLine("actually writing telem");
 		*fileO << time.TotalSeconds << ", ";
 		*fileO << type << ", ";
 		*fileO << length << ", ";
@@ -288,6 +291,7 @@ void SimHandler::writeTelemetry( System::TimeSpan time,  int type, int length, a
 		
 		fileO->flush();
 	}
+	//System::Diagnostics::Trace::WriteLine("done with telem");
 }
 	//get ofstream stuff from Comport
 

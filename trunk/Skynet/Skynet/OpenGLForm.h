@@ -15,7 +15,7 @@ namespace OpenGLForm
 	{
 	public:
 		int benchmark;
-		COpenGL(System::Windows::Forms::Panel ^ parentForm, GLsizei iWidth, GLsizei iHeight, Object ^ parent)
+		COpenGL(System::Windows::Forms::Panel ^ parentForm, GLsizei iWidth, GLsizei iHeight, Object ^ parent, Object ^ watcher)
 		{
 			CreateParams^ cp = gcnew CreateParams;
 			
@@ -54,7 +54,7 @@ namespace OpenGLForm
 			xLocation = 1.0f;
 
 			saveVideo = false;
-			theSaliency = gcnew Vision::Saliency();
+			theSaliency = gcnew Vision::Saliency( watcher );
 			theSaliency->setValues(0, 0, parent);
 
 			_parent = parent;

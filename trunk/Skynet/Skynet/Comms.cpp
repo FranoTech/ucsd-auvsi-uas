@@ -13,7 +13,8 @@ Comms::Comms(Object ^ telSimulator, Object ^ newDelegate) {
 	autopilotPortname = nullptr;
 	rabbitPortname = nullptr;
 	autopilot = gcnew AutopilotComport((TelemetrySimulator ^)telSimulator, this);
-	rabbit = gcnew RabbitComport((TelemetrySimulator ^)telSimulator, this);
+	rabbit = gcnew RabbitComport((TelemetrySimulator ^)telSimulator, this, autopilot);
+	autopilot->rabbit = rabbit;
 
 	theTelSimulator = (TelemetrySimulator ^)telSimulator;
 
@@ -43,7 +44,6 @@ void Comms::connectAll() {
 		connectThread->Name = "Comms Connection Thread for port " + thePortName;
 		connectThread->Start(thePortName);
 			
-
 		/*// set port name
 		//System::Diagnostics::Trace::WriteLine("Connecting to port " + portNames[i] );
 		thePort->setPortName(portNames[i]);
@@ -81,10 +81,8 @@ void Comms::connectAll() {
 			autopilotPortname = portNames[i];
 			System::Diagnostics::Trace::WriteLine("FOUND AUTOPILOT");
 		}*/
-
 	}
-
-	Thread::Sleep( 700 );
+	Thread::Sleep( 500 );
 
 	//autopilotPortname = "COM1";
 	//rabbitPortname = "COM1";
@@ -94,8 +92,8 @@ void Comms::connectAll() {
 	if (this->connectAutopilot())
 		retval += AUTOPILOT_CONNECTED;
 
-	if (this->connectRabbit())
-		retval += RABBIT_CONNECTED;
+//	if (this->connectRabbit())
+//		retval += RABBIT_CONNECTED;
 
 	
 	tellGUIAboutConnection ^ tellGUIDelegate = gcnew tellGUIAboutConnection(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::handleConnectionResult );
@@ -103,7 +101,15 @@ void Comms::connectAll() {
 	((Skynet::Form1 ^ )theDelegate)->Invoke( tellGUIDelegate, retArr );
 
 	printToConsole("Hello", Color::Orange);
+	
+
+	// attempt to connect to the rabbit
+	/*if (retVal > BOTH_FAILED) {
+		rabbit->connectToRabbit();
+	}*/
+
 }
+
 
 void Comms::attemptConnectionOnPort( Object ^ port )
 {
@@ -141,10 +147,12 @@ void Comms::attemptConnectionOnPort( Object ^ port )
 	// save port name if valid
 	if (responseType == 2) {
 		rabbitPortname = portName;
+		this->connectRabbit();
 
 	}
 	else if (responseType == 3) {
 		autopilotPortname = portName;
+		this->connectAutopilot();
 	}
 
 	
@@ -159,7 +167,50 @@ void Comms::disconnectAll() {
 
 }
 
+void testLatency( String ^ portName )
+{
+	// Crystal: test latency
+	System::DateTime start;
+	System::DateTime end;
+	double totalDiff = 0;
 
+	Comport ^ thePort = gcnew Comport(nullptr);
+	array<System::Byte> ^ helloPacket = {0x02, 0x33, 0x01 }; // TODO: tim, what packet should we use for this?
+
+	thePort->setPortName(portName);
+
+	// connect to port
+	thePort->connect();
+
+	for ( int i = 0; i < 1000; i++)
+	{
+		start = System::DateTime::Now;
+
+		// send "hello" packet
+	    thePort->writeEncodedData( helloPacket );
+
+	    // wait for response
+	    array<System::Byte> ^ response = thePort->readRawData( 500 );
+
+	    // test response
+	    int responseType = -1; // 3 for autopilot, 2 for rabbit
+	    if (response->Length >= 13) {
+		    
+		    if (response[0] == 0xFF && response[1] == 0x33 && response[5] == 0xFE) {
+				   responseType = response[2];
+		    }
+
+	    }
+
+		end = System::DateTime::Now;
+		System::TimeSpan diff = end.Subtract(start);
+		totalDiff += diff.TotalSeconds;
+	}
+	thePort->disconnect();
+	System::Diagnostics::Trace::WriteLine(" Total Time: " +  totalDiff);
+
+ 
+}
 
 
 bool Comms::connectAutopilot() {
@@ -170,7 +221,14 @@ bool Comms::connectAutopilot() {
 
 	System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
 
+	
+	testLatency(autopilotPortname);
+
+
+
 	success = autopilot->connect(autopilotPortname);
+
+	// try to connect to rabbit
 	if (success) {
 		autopilotConnected = true;
 		autopilot->beginReading("Autopilot");
@@ -181,19 +239,11 @@ bool Comms::connectAutopilot() {
 
 
 bool Comms::connectRabbit() {
-	bool success = false;
-	if (rabbitPortname == nullptr)
-		return false;
 
-	
-	System::Diagnostics::Trace::WriteLine("Connecting to RABBIT");
-	success = rabbit->connect(rabbitPortname);
-	if (success) {
-		rabbitConnected = true;
-		rabbit->beginReading("Rabbit");
-	}
-
-	return success;
+	// only connect if autopilot is connected
+	//if (autopilotConnected)
+	//	rabbit->connectToRabbit();
+	return true;
 }
 
 
@@ -209,18 +259,26 @@ void Comms::disconnectAutopilot() {
 
 
 void Comms::disconnectRabbit() {
-	if (rabbitConnected) {
-		rabbit->disconnect();
-		rabbitConnected = false;
-	}
+	//rabbit->stopConnecting();
+	rabbitConnected = false;
 }
 
+
+void Comms::rabbitJustConnected()
+{
+	printToConsole("Connected to Rabbit", Color::Green);
+	updateUIAboutCommsStatus( GREEN_STATUS, "Rabbit" );
+
+}
 
 void Comms::gotoLatLon(float lat, float lon) 
 {
 	autopilot->gotoLatLon(lat, lon);
 }
 
+void Comms::sendHelloToRabbit(){
+	rabbit->sendHello();
+}
 
 void Comms::printToConsole( String ^ message, Color col )
 {
@@ -234,11 +292,11 @@ void Comms::printToConsole( String ^ message, Color col )
 	
 }
 
-void Comms::updateUIAboutCommsStatus(bool status, String ^ type)
+void Comms::updateUIAboutCommsStatus(int status, String ^ type)
 {
 	guiConsoleDelegate ^ newconsoleDelegate = gcnew guiConsoleDelegate(((Skynet::Form1 ^)theDelegate), &Skynet::Form1::updateCommsStatus );
 
-	Boolean value = status;
+	Int32 value = status;
 	array<Object ^> ^ retArr = gcnew array< Object^ >{type, value};
 	
 	((Skynet::Form1 ^ )theDelegate)->Invoke( newconsoleDelegate, gcnew array<Object ^>{retArr});
@@ -249,14 +307,13 @@ void Comms::receiveRabbitPacket(GimbalInfo * packet)
 	rabbitDelegate(packet);
 }
 
-void Comms::receiveKestrelPacket248(TelemPacket248 * packet)
-{
 
+void Comms::receivePlaneGPS(PlaneGPSPacket ^ packet)
+{
+	planeGPS(packet);
 }
 
-void Comms::receiveKestrelPacket249(TelemPacket249 * packet)
+void Comms::receivePlaneTelem(PlaneTelemPacket ^ packet)
 {
-
+	planeTelem(packet);
 }
-
-

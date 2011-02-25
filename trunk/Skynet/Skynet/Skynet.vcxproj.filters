@@ -28,6 +28,12 @@
     <Filter Include="Header Files\Communications">
       <UniqueIdentifier>{2e48ff17-8f83-41f9-b113-9936aed4597a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\UI Forms">
+      <UniqueIdentifier>{c91a6743-62eb-4847-bdda-41ed629445fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Simulation">
+      <UniqueIdentifier>{9dbdefc8-2a47-4581-b3be-21774bb20aa2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="airplane_icon.ico">
@@ -225,13 +231,7 @@
     <ClInclude Include="Joystick.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MapControl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="OCR.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OpenGLForm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Resampler.h">
@@ -252,15 +252,6 @@
     <ClInclude Include="TargetDialog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VideoSimulator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="VideoReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SimHandler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Comms.h">
       <Filter>Header Files\Communications</Filter>
     </ClInclude>
@@ -276,17 +267,29 @@
     <ClInclude Include="ComportHandler.h">
       <Filter>Header Files\Communications</Filter>
     </ClInclude>
-    <ClInclude Include="TelemetrySimulator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ColorRef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PlaneWatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MasterHeader.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenGLForm.h">
+      <Filter>Header Files\UI Forms</Filter>
+    </ClInclude>
+    <ClInclude Include="MapControl.h">
+      <Filter>Header Files\UI Forms</Filter>
+    </ClInclude>
+    <ClInclude Include="SimHandler.h">
+      <Filter>Header Files\Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="TelemetrySimulator.h">
+      <Filter>Header Files\Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoSimulator.h">
+      <Filter>Header Files\Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoReader.h">
+      <Filter>Header Files\Simulation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

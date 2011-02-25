@@ -27,7 +27,7 @@ namespace Communications
 		virtual void analyzeData( array<System::Byte> ^ inBuffer );
 		void beginReading(String ^ comportType);
 		virtual void afterBeginReading();
-		void updateComportStatus(bool status);
+		void updateComportStatus(int status);
 
 	protected:
 		Object ^ theDelegate;
