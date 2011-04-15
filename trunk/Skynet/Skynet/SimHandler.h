@@ -1,11 +1,14 @@
 #pragma once
 
 #include "VideoSimulator.h"
+#include "DecklinkCallback.h"
 #include <fstream>
 #include <iostream>
 
 using namespace std;
 using namespace System;
+using namespace System::Threading;
+using namespace System::IO;
 using namespace System::Runtime::InteropServices;
 
 
@@ -22,6 +25,9 @@ using namespace System::Runtime::InteropServices;
 #define STARTVIDEO 3
 #define ENDVIDEO 4
 
+
+#define SPLIT_LENGTH 20
+
 namespace Simulator
 {
 	ref class SimHandler
@@ -32,76 +38,42 @@ namespace Simulator
 		Object ^ theTelSimulator; // telemetry
 		Object ^ theComms;
 
-		SimHandler(VideoSimulator ^ vidSim, OpenGLForm::COpenGL ^ opunGL);
+		SimHandler(VideoSimulator ^ vidSim, Decklink::Callback * callback, OpenGLForm::COpenGL ^ opunGL);
 		~SimHandler();
-		//True = Comport's calls will result in telemetry data being recorded.
-		//False = calls will result in return.
 
-		void setRecordTelemetryBool(bool shouldRecordT)
-		{
-			recordTelemetry = shouldRecordT;
-		}
-		void setRecordVideoBool(bool shouldRecordV)
-		{
-			recordVideo = shouldRecordV;
-		}
-		/*
-		 * bool runVideofileO->
-		 * bool runTelemetryfileO->
-		 */
+		void startPlayback(String ^ filename);
+		void resumePlayback();
+		void pausePlayback();
+		void endPlayback();
+		bool isPaused();
 
-		/**
-		 * Calls OpenGL's savevideo()
-		 * and initializes fileStream for telemetry.
-		 */
-		int beginRecording(String ^ filename);
-			//if recordVideo call OpenGL
-			//if recordTelem call beginTelemetryfileO->
-	
-		/**
-		 * Calls OpenGL's stopVideofileO->
-		 * Call endTelemetryfileO->
-		 */
+		void setRecordTelemetryBool(bool shouldRecordT) { recordTelemetry = shouldRecordT; }
+		void setRecordVideoBool(bool shouldRecordV) { recordVideo = shouldRecordV; }
+		int beginRecording();
+		void startPlayingVideo(String ^ filename);
 		void endRecording();
-		/**
-		 * Begins feeding video AS IF its coming from the plane.
-		 * Begins feeding telemetry data from file.
-		 *	Needs to be done at correct intervals using a thread.
-		 */
-				//UNIMPLEMENTED
-		//void feedVideofileO->
+		void splitVideo(Object^ stateInfo);
 		void tryToStartVideo(Object ^ arg);
 		void writeTelemetry( System::TimeSpan time,  int type, int length, array<System::Byte>^ byteArray);
-		/*
-		 * IF recordTelemetry
-			write to file;
-		   else
-			return;
-		 */
-		//get ofstream stuff from Comport
-
-		//void write(System::TimeSpan theOffset, int type, int length, array<System::Byte> ^ byteArray); // TODO: implement
 	private:
+		void stopVideo();
 		bool firstPacket;
-		ofstream * fileO;
-		ifstream * fileI;
+		StreamWriter ^ fileO;
+		StreamReader ^ fileI;
 		bool recordTelemetry;
 		bool recordVideo;
 		bool pleaseRecord;
 		bool breakNow;
+		Threading::Timer ^ splitTimer;
+		String ^ path;
 
 		Simulator::VideoSimulator ^ theVideoSimulator;
 		OpenGLForm::COpenGL ^ openGLView;
+		Decklink::Callback * callback;
 		Thread ^ videoAttemptThread;
 		Thread ^ videoWriteThread;
-		/**
-		 * Should flush & close the stream writing to telemetry file.
-		 */
+
 		void endTelemetry();
-		/**
-		 * Initializes Telemetry Stream and names it to video filename.
-		 * append .telemetry to filename resulting in filename.telemetry
-		 */
 		void beginTelemetry(String ^ filename);
 		void writeVideo(); // video writing run loop
 
@@ -120,7 +92,57 @@ namespace Simulator
 		   return retVal;
 		}
 	};
-	/**
+	
+}
+
+
+// coments...
+
+
+		/**
+		 * Should flush & close the stream writing to telemetry file.
+		 */
+		//True = Comport's calls will result in telemetry data being recorded.
+		//False = calls will result in return.
+
+		/*
+		 * bool runVideofileO->
+		 * bool runTelemetryfileO->
+		 */
+
+		/**
+		 * Calls OpenGL's savevideo()
+		 * and initializes fileStream for telemetry.
+		 */
+			//if recordVideo call OpenGL
+			//if recordTelem call beginTelemetryfileO->
+	
+		/**
+		 * Calls OpenGL's stopVideofileO->
+		 * Call endTelemetryfileO->
+		 */
+		/**
+		 * Begins feeding video AS IF its coming from the plane.
+		 * Begins feeding telemetry data from file.
+		 *	Needs to be done at correct intervals using a thread.
+		 */
+				//UNIMPLEMENTED
+		//void feedVideofileO->
+		/*
+		 * IF recordTelemetry
+			write to file;
+		   else
+			return;
+		 */
+		//get ofstream stuff from Comport
+
+		//void write(System::TimeSpan theOffset, int type, int length, array<System::Byte> ^ byteArray); // TODO: implement
+		/**
+		 * Initializes Telemetry Stream and names it to video filename.
+		 * append .telemetry to filename resulting in filename.telemetry
+		 */
+
+/**
 	 * UNIMPLEMENTED/FUTURE USE
 	 */
 	/**
@@ -132,4 +154,3 @@ namespace Simulator
 		//Unimplemented.
 		//void pauseVideofileO->
 		//void resumeVideofileO->
-}

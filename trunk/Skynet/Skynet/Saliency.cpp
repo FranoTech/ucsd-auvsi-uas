@@ -38,20 +38,20 @@ Saliency::Saliency( Object ^ watcher )
 	postSaliency = NULL;
 	tempPause = false;
 	
-	/*System::DateTime start = System::DateTime::Now;
+	System::DateTime start = System::DateTime::Now;
 	
-	Communications::PlaneState * state = ((Communications::PlaneWatcher ^)planeWatcher)->predictLocationAtTime( 0 );
+	Communications::PlaneState ^ state = ((Communications::PlaneWatcher ^)planeWatcher)->predictLocationAtTime( 0 );
 	
 	double plane_lat = state->gpsData->gpsLatitude, plane_lon = state->gpsData->gpsLongitude, plane_alt = state->gpsData->gpsAltitude;
 	double plane_roll = state->telemData->roll, plane_pitch = state->telemData->pitch, plane_heading = state->telemData->heading;
-	float gimbal_roll = state->gimbalInfo->roll, gimbal_pitch = state->gimbalInfo->pitch, gimbal_yaw = 0;
+	double gimbal_roll = state->gimbalInfo->roll, gimbal_pitch = state->gimbalInfo->pitch, gimbal_yaw = 0;
 	
 	
 	System::Diagnostics::Trace::WriteLine("Saliency: Running Georeference: lat:" + plane_lat + " lon:" + plane_lon + " alt:" + plane_alt + " roll:" + plane_roll + " pitch:" + plane_pitch + " heading:" + plane_heading + " groll:" + gimbal_roll + " gpitch:" + gimbal_pitch + " gyaw:" + gimbal_yaw);
 	
-	float target_x = 0, target_y = 0, zoom = 1, t_lat = -1, t_lon = -1, t_alt = -1;
+	double target_x = 0, target_y = 0, zoom = 1, t_lat = -1, t_lon = -1, t_alt = -1;
 	
-	float t_lat_1, t_lat_2, t_lon_1, t_lon_2;
+	double t_lat_1, t_lat_2, t_lon_1, t_lon_2;
 
 	getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
 	getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, 10, target_y, zoom, t_lat_2, t_lon_2, t_alt);
@@ -60,7 +60,6 @@ Saliency::Saliency( Object ^ watcher )
 			
 	System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " time (ms): " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
 
-	delete state;*/
 }
 
 void 
@@ -209,7 +208,7 @@ Saliency::saveImagesThreadFunction()
 			
 			//System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " time (ms): " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
 
-	
+
 			Communications::PlaneState ^ state = ((Communications::PlaneWatcher ^)planeWatcher)->predictLocationAtTime( 0 );
 	
 			double plane_lat = state->gpsData->gpsLatitude, plane_lon = state->gpsData->gpsLongitude, plane_alt = state->gpsData->gpsAltitude;
@@ -405,11 +404,15 @@ Saliency::analyzeFrame(float * buffer, FrameData ^ theData)
 
 Saliency::~Saliency()
 {
+	System::Diagnostics::Trace::WriteLine( "Saliency::~Saliency()");
 	// kill threads
-	if( saliencyThread )
-		saliencyThread->Abort();
+	if( saliencyThread != nullptr ) {
+		System::Diagnostics::Trace::WriteLine( "Killing Saliency thread");
 
-	if( saveImagesThread )
+		saliencyThread->Abort();
+	}
+
+	if( saveImagesThread != nullptr  )
 		saveImagesThread->Abort();
 
 }
@@ -608,7 +611,7 @@ void Saliency::getGPS(double plane_latitude, double plane_longitude, double plan
 
 
 		if (norm(NED) > MAX_DISTANCE) {
-			System::Diagnostics::Trace::WriteLine("FAILURE NO TARGET IN RANGE");
+			//System::Diagnostics::Trace::WriteLine("FAILURE NO TARGET IN RANGE");
 			return;
 		}
 

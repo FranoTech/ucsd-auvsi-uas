@@ -32,7 +32,7 @@ namespace Vision
 	{
 	public:
 		Saliency( Object ^ watcher ); 	// constructor
-		~Saliency();	// destructor
+		virtual ~Saliency();	// destructor
 
 		void setValues(int w, int h, Object ^ newDelegate);		// set initial values
 		bool canAcceptFrame() { return !currentlyAnalyzing;}	// call to see if ready to accept new frame

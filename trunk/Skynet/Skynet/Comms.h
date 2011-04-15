@@ -23,7 +23,7 @@ namespace Communications
 {
 
 	
-	delegate void rabbitUpdateDelegate( GimbalInfo * data );
+	delegate void rabbitUpdateDelegate( GimbalInfo ^ data );
 	delegate void planeGPSDelegate( PlaneGPSPacket ^ data );
 	delegate void planeTelemDelegate( PlaneTelemPacket ^ data );
 	delegate void tellGUIAboutConnection( array<Int32> ^ retArr );
@@ -52,9 +52,11 @@ namespace Communications
 		// sending
 		void gotoLatLon(float lat, float lon);
 		void sendHelloToRabbit();
+		void sendGimbalRollPitch(unsigned __int16 roll, unsigned __int16 pitch); 
+		void sendZoom(unsigned __int32 zoom);
 
 		// receiving
-		void receiveRabbitPacket(GimbalInfo * packet);
+		void receiveRabbitPacket(GimbalInfo ^ packet);
 		void receivePlaneGPS(PlaneGPSPacket ^ packet);
 		void receivePlaneTelem(PlaneTelemPacket ^ packet);
 

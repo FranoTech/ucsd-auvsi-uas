@@ -1,4 +1,6 @@
 #include "StdAfx.h"
+#include "MasterHeader.h"
+
 
 #define DIRECTINPUT_VERSION 0x0800
 #define _CRT_SECURE_NO_DEPRECATE
@@ -40,7 +42,7 @@
 #define BTN_R2 7
 #define BTN_SELECT 8
 #define BTN_START 9
-#define BTN_L3 10
+#define BTN_L3 10 // LEFT STICK
 #define BTN_R3 11
 
 
@@ -395,6 +397,8 @@ Joystick::FreeDirectInput()
     SAFE_RELEASE( g_pDI );
 }
 
+#define EXPONENTIAL_FACTOR		4.0
+
 HRESULT 
 Joystick::UpdateInputState( HWND hDlg )
 {
@@ -403,6 +407,10 @@ Joystick::UpdateInputState( HWND hDlg )
     DIJOYSTATE2 js;           // DInput Joystick state 
 	JOY_STATUS joyie;
 	bool change = false;			  // flag for any changes
+
+	unsigned __int16 newGimbalRoll = theWatcher->gimbalRoll;
+	unsigned __int16 newGimbalPitch = theWatcher->gimbalPitch;
+	int newZoomLevel = theWatcher->zoomLevel;
 
     if( NULL == g_pJoystick )
         return S_OK;
@@ -429,7 +437,8 @@ Joystick::UpdateInputState( HWND hDlg )
     if( FAILED( hr = g_pJoystick->GetDeviceState( sizeof( DIJOYSTATE2 ), &js ) ) )
         return hr; // The device should have been acquired during the Poll()
 	
-	Communications::ComportUpstream * packet = new Communications::ComportUpstream();
+	//Communications::ComportUpstream * packet = new Communications::ComportUpstream();
+
 
 	/*********************
 	 *	Non COM responses
@@ -447,25 +456,34 @@ Joystick::UpdateInputState( HWND hDlg )
 	if( tracker[BTN_X] == 1 )
 	{
 		//((Skynet::Form1 ^)parent)->saveImage();
-		((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->saveImageDelegate );
+		/* 
+			A first chance exception of type 'System.NullReferenceException' occurred in Skynet.exe
+			A first chance exception of type 'System.Reflection.TargetInvocationException' occurred in mscorlib.dll
+			A first chance exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
+			An unhandled exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
 
+			Additional information: Input string was not in a correct format.
+
+		*/
+		try {
+			((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->saveImageDelegate );
+		} catch( Exception ^ e) {}
 		
 	}
-
 
 	/******************
 	 *	COM responses (set change == TRUE to send packet)
 	 ******************/		
 	//Calculate JOY_STATUS things.
 	joyie.thresholds = 1;
-	int exponential = 1;
+	bool exponential = true;
 	double localX, localY;
 
 	//null and rest noise
 	if(js.lY > 200  || js.lX > 200 || js.lY < -200 || js.lX < -200){
 		manualMode = true;
 		manualModeCounter = 0;	
-		packet->update_type = 0x0A;
+		//packet->update_type = 0x0A;
 		
 		localX = js.lX;
 		localY = js.lY;
@@ -485,31 +503,37 @@ Joystick::UpdateInputState( HWND hDlg )
 		
 		if(exponential){
 			if(localX < 0) {
-				localX = -( pow(2.0, (-localX)));
+				localX = -( pow(EXPONENTIAL_FACTOR, (-localX))); // output = (EXPONENTIAL_FACTOR^input - 1)/(EXPONENTIAL_FACTOR - 1)
 				localX += 1;
+				localX /= EXPONENTIAL_FACTOR - 1;
 			}
 			else{			
-				localX =  pow(2.0, localX);
+				localX =  pow(EXPONENTIAL_FACTOR, localX);
 				localX -= 1;
+				localX /= EXPONENTIAL_FACTOR - 1;
 			}
 			if(localY < 0) {
-				localY = -( pow(2.0, (-localY)));
+				localY = -( pow(EXPONENTIAL_FACTOR, (-localY)));
 				localY += 1;
+				localY /= EXPONENTIAL_FACTOR - 1;
 			}
 			else{
-				localY = pow(2.0, localY);
+				localY = pow(EXPONENTIAL_FACTOR, localY);
 				localY -= 1;
+				localY /= EXPONENTIAL_FACTOR - 1;
 			}
 
-			localX = localX*50;
-			localY = localY*50;
+			
 		}
+		
+		//localX = localX*50;
+		//localY = localY*50;
 
 		//System::Diagnostics::Trace::WriteLine("X (localX) = " + localX + "\n");
 		//System::Diagnostics::Trace::WriteLine("Y (localY) = " + localY + "\n");
 
-	joyie.stickAngle = atan((float) (-js.lY)/js.lX)* 180.0 / JOYSTICK_PI;
-	//ANGLE CALCULATIONS
+		joyie.stickAngle = atan((float) (-js.lY)/js.lX)* 180.0 / JOYSTICK_PI;
+		//ANGLE CALCULATIONS
 		//1st quadrant conversion
 		if(js.lY <= 0 && js.lX > 0)
 		{
@@ -542,11 +566,10 @@ Joystick::UpdateInputState( HWND hDlg )
 	
 	//System::Diagnostics::Trace::WriteLine("X (localX) = " + localX + "\n");
 	//System::Diagnostics::Trace::WriteLine("Y (localY) = " + localY + "\n");
+	// localX and Y contain the stick coordinates between -1 and 1
+	newGimbalRoll += 40*localX;
+	newGimbalPitch += 40*localY;
 	
-	
-
-	packet->gps_lat_gimbal_x.i = (int)localX;
-	packet->gps_lon_gimbal_y.i = (int)localY;
 	
 	if( js.rgbButtons[BTN_SQUARE] & 0x80 )
 	{
@@ -560,7 +583,7 @@ Joystick::UpdateInputState( HWND hDlg )
 	if( tracker[BTN_SQUARE] == 1 )
 	{
 		change = true;
-		packet->update_type = 0x0E;
+		//packet->update_type = 0x0E;
 	}
 
 	if( js.rgbButtons[BTN_CIRCLE] & 0x80 )
@@ -575,7 +598,7 @@ Joystick::UpdateInputState( HWND hDlg )
 	if( tracker[BTN_CIRCLE] == 1 )
 	{
 		change = true;
-		packet->update_type = 0x0C;
+		//packet->update_type = 0x0C;
 	}
 
 
@@ -593,46 +616,13 @@ Joystick::UpdateInputState( HWND hDlg )
 	if(tracker[BTN_L1] == 1)
 	{
 		//send zoom packet
-		if(zoom_level != 1)
+		if(newZoomLevel > MIN_ZOOM_LEVEL)
 		{
-			zoom_level--;
+			newZoomLevel--;
 			change = true;
 			//packet->update_type = 0x0A;
 		}
-		switch( zoom_level )
-		{
-			case 1:
-				packet->camera_zoom = 0x00000000;
-				break;
-			case 2:
-				packet->camera_zoom = 0x00080000;
-				break;
-			case 3:
-				packet->camera_zoom = 0x01000000;
-				break;
-			case 4:
-				packet->camera_zoom = 0x01080000;
-				break;
-			case 5:
-				packet->camera_zoom = 0x02000000;
-				break;
-			case 6:
-				packet->camera_zoom = 0x02080000;
-				break;
-			case 7:
-				packet->camera_zoom = 0x03000000;
-				break;
-			case 8:
-				packet->camera_zoom = 0x03080000;
-				break;
-			case 9:
-				packet->camera_zoom = 0x04000000;
-				break;
-			default:
-				packet->camera_zoom = 0xAAAAAAAA; // no zoom update
-				break;
-		}
-		//comm->writeData(packet);
+		
 	}
 
 	//poll R1
@@ -649,86 +639,31 @@ Joystick::UpdateInputState( HWND hDlg )
 	if(tracker[BTN_R1] == 1)
 	{
 		//send zoom packet
-		if(zoom_level != 9)
+		if(newZoomLevel < MAX_ZOOM_LEVEL)
 		{
-			zoom_level++;
+			newZoomLevel++;
 			change = true;
 			//packet->update_type = 0x0A;
 		}
-		switch( zoom_level )
-		{
-			case 1:
-				packet->camera_zoom = 0x00000000;
-				break;
-			case 2:
-				packet->camera_zoom = 0x00080000;
-				break;
-			case 3:
-				packet->camera_zoom = 0x01000000;
-				break;
-			case 4:
-				packet->camera_zoom = 0x01080000;
-				break;
-			case 5:
-				packet->camera_zoom = 0x02000000;
-				break;
-			case 6:
-				packet->camera_zoom = 0x02080000;
-				break;
-			case 7:
-				packet->camera_zoom = 0x03000000;
-				break;
-			case 8:
-				packet->camera_zoom = 0x03080000;
-				break;
-			case 9:
-				packet->camera_zoom = 0x04000000;
-				break;
-			default:
-				packet->camera_zoom = 0xAAAAAAAA;  //no zoom update
-				break;
-		}
-		//comm->writeData(packet);
+		
 	}
 
-	if( change == false && manualMode )
+	if( js.rgbButtons[BTN_L3] & 0x80 )
 	{
-		manualMode = false;
-		change = true;
-		manualModeCounter = 7;
-	}
-	else if( change == false && manualModeCounter > 0 )
-	{
-		--manualModeCounter;
-		change = true;
-	}
-
-	// if anything has changed, send packet.
-	if(change == true)
-	{
-		//System::Diagnostics::Trace::WriteLine( /*"Stick Angle: " + joyie.stickAngle + */"; X distance: " + (int)localX + "; Y distance: " + (int)localY );
-		/*
-		packet->gps_lat_gimbal_x.i=0xAAAAAAAA;
-		packet->gps_lon_gimbal_y.i=0xAAAAAAAA;
-		packet->gps_alt.i=0xAAAAAAAA;
-		packet->camera_zoom=0xAAAAAAAA;
-		 ->update_type = 0xAA;
-		*/
-		if (lastPacket) {
-			delete lastPacket;
-			lastPacket = NULL;
-		}
-		lastPacket = packet;
-		//comm->writeData(packet); // TODO: fix this
-		// This packet is deleted by the comport
+		tracker[BTN_L3]++;
 	}
 	else
 	{
-		//comm->writeData(lastPacket); // TODO: fix this
-		//delete packet;
+		tracker[BTN_L3] = 0;
 	}
 
-	//Fill up text w/ buttons
+	if( tracker[BTN_L3] == 1 )
+	{
+		newGimbalRoll = 3000;
+		newGimbalPitch = 3000;
+	}
+
+	// Fill up text w/ buttons
     for( int i = 0; i < 128; i++ )
     {
         if( js.rgbButtons[i] & 0x80 )
@@ -739,6 +674,69 @@ Joystick::UpdateInputState( HWND hDlg )
             //StringCchCat( strText, 512, sz );
         }
     }
+
+	// send commands to Comms
+	if (newGimbalRoll != theWatcher->gimbalRoll || newGimbalPitch != theWatcher->gimbalPitch) {
+		if (newGimbalRoll > MAX_ROLL)
+			newGimbalRoll = MAX_ROLL;
+		if (newGimbalRoll < MIN_ROLL)
+			newGimbalRoll = MIN_ROLL;
+		theWatcher->gimbalRoll = newGimbalRoll;
+		
+		if (newGimbalPitch > MAX_PITCH)
+			newGimbalPitch = MAX_PITCH;
+		if (newGimbalPitch < MIN_PITCH)
+			newGimbalPitch = MIN_PITCH;
+		theWatcher->gimbalPitch = newGimbalPitch;
+
+		comm->sendGimbalRollPitch(newGimbalRoll, newGimbalPitch);
+
+	}
+
+	if (newZoomLevel != theWatcher->zoomLevel) {
+		if (newZoomLevel > MAX_ZOOM_LEVEL)
+			newZoomLevel = MAX_ZOOM_LEVEL;
+		if (newZoomLevel < MIN_ZOOM_LEVEL)
+			newZoomLevel = MIN_ZOOM_LEVEL;
+		theWatcher->zoomLevel = newZoomLevel;
+
+		unsigned __int32 zoom = 0;
+		switch( newZoomLevel )
+		{
+			case 1:
+				zoom = 0x00000000;
+				break;
+			case 2:
+				zoom = 0x00080000;
+				break;
+			case 3:
+				zoom = 0x01000000;
+				break;
+			case 4:
+				zoom = 0x01080000;
+				break;
+			case 5:
+				zoom = 0x02000000;
+				break;
+			case 6:
+				zoom = 0x02080000;
+				break;
+			case 7:
+				zoom = 0x03000000;
+				break;
+			case 8:
+				zoom = 0x03080000;
+				break;
+			case 9:
+				zoom = 0x04000000;
+				break;
+			default:
+				zoom = 0xAAAAAAAA; // no zoom update
+				break;
+		}
+		comm->sendZoom(zoom);
+	}
+
     return S_OK;
 }
 

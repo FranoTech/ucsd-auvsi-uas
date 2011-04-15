@@ -8,6 +8,8 @@ using namespace Communications;
 using namespace System;
 using namespace System::Drawing;
 
+#define PI 3.1415926
+
 void AutopilotComport::disconnect() 
 {
 	System::Diagnostics::Trace::WriteLine("disconnecting AutopilotComport::request termination of packet forwarding()");
@@ -48,7 +50,7 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 		System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): inbuffer too short");
 		return;
 	}
-	//System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData()");
+	//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData()");
 
 	// handle data
 	PacketHeader ^theHeader = gcnew PacketHeader();
@@ -67,7 +69,12 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 	
 	theHeader->type = getInt32FromBytes(inBuffer, 0);
 	theHeader->size = getInt32FromBytes(inBuffer, 4); */
-
+	String ^ bufferString = "";
+	for (int i = 0; i < inBuffer->Length; i++) {
+		bufferString = bufferString + " 0x" + Convert::ToString(inBuffer[i], 16);
+	}
+		
+	//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(). bufLen:" + inBuffer->Length + " buffer:" + bufferString);
 	//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() began: packetType: " + theHeader->type + " length: " + inBuffer->Length);
 	
 	if(theHeader->type == 10){  //pass through autopilot packet which we need to decode, passthrough non-guaranteed packet {
@@ -84,7 +91,7 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 
 		newPacket = thePort->stripAndChecksum(newPacket);
 
-		//System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData(): done decoding");
+		//System::Diagnostics::Trace::WriteLine("AutopilotComport::receiveData(): done decoding: " + newPacket);
 
 		if(newPacket != nullptr){  //if the decoded packet's xor worked out
 			unsigned char kestrelPacketType = getUCharFromBytes(newPacket, 0);  //the packet type, in kestrel terms rather than VC terms (ie, chapter 4 of kestrel comms guide)
@@ -96,7 +103,26 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 			//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): kestrelPacketType: " + kestrelPacketType);
 			if(kestrelPacketType == 5)
 			{
-				System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): kestrelPacketType: 5 We Has Serial E Passthrough");
+				int dataSize = newPacket[5];
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): RABBIT PACKET! 5 We Has Serial E Passthrough:" + dataSize);
+				// start at byte 5 of newPacket
+				// byte 5 = num bytes
+				// byte 6,7,8,9 = avionics time
+				// byte 10-n = raw packet data
+
+				array<System::Byte> ^ rabbitPacket = gcnew array<System::Byte>(dataSize);
+				int packetIndex = 10;
+				for (int i = 0; i < dataSize; i++)
+					rabbitPacket[i] = newPacket[packetIndex++];
+
+				((RabbitComport ^)rabbit)->analyzeData(rabbitPacket);
+
+				//int packetIndex = 10;
+				//String ^ bufferString = "0x" + Convert::ToString(newPacket[packetIndex++], 16);
+				//for (int i = 1; i < dataSize; i++) {
+				//	bufferString = bufferString + " 0x" + Convert::ToString(newPacket[packetIndex++], 16);
+				//}
+				//System::Diagnostics::Trace::WriteLine(bufferString + "\n... Done");
 			}
 			/*if(kestrelPacketType == 29)  //mixed telemetry response
 			{
@@ -121,7 +147,7 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				PlaneGPSPacket ^planeState = gcnew PlaneGPSPacket();
 				planeState->gpsVelocity = (float)(getUInt16FromBytes(newPacket, 5)) / 20.0 - 10.0;
 				planeState->gpsAltitude = (float)(getUInt16FromBytes(newPacket, 7)) / 6.0 - 1000.0;
-				planeState->gpsHeading = (float)(getUInt16FromBytes(newPacket, 9)) / 1000.0;
+				planeState->gpsHeading = ((float)(getUInt16FromBytes(newPacket, 9)) / 1000.0)*180.0/PI;
 				planeState->gpsLatitude = getFloatFromBytes(newPacket, 13);
 				planeState->gpsLongitude = getFloatFromBytes(newPacket, 19);
 				planeState->gpsHomePositionLatitude = getFloatFromBytes(newPacket, 23);
@@ -151,11 +177,19 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 
 				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() min:" + (targetTime.Minute - planeState->UTCmin) + " sec:" + (targetTime.Second - planeState->UTCmillisecond/1000));
 
-				//System::Diagnostics::Trace::WriteLine("TESTING: vel:" + planeState->gpsVelocity + "  Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude); 
+				//System::Diagnostics::Trace::WriteLine("TESTING: alt:" + planeState->gpsAltitude + " vel:" + planeState->gpsVelocity + "  Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude); 
 				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() mill:" + planeState->UTCmillisecond + " min:" + planeState->UTCmin + " hr:" + planeState->UTChour);
-
+				String ^ bufferString = "";
+				for (int i = 0; i < 64; i++) {
+					bufferString = bufferString + " 0x" + Convert::ToString(newPacket[i], 16);
+				}
+		
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::planeState(). bufLen:" + 64 + " buffer:" + bufferString);
+	
 				
 				((Comms ^)theDelegate)->receivePlaneGPS(planeState);
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): receivePlaneGPS");
+	
 
 			}
 			else if(kestrelPacketType == 249) //telemetry packet
@@ -165,7 +199,7 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->velocity = (float)(getUInt16FromBytes(newPacket, 7)) / 20.0 - 10.0;
 				planeState->roll = (float)(getInt16FromBytes(newPacket, 9)) / 1000.0;
 				planeState->pitch = (float)(getInt16FromBytes(newPacket, 11)) / 1000.0;
-				planeState->heading = (float)(getUInt16FromBytes(newPacket, 13)) / 1000.0;
+				planeState->heading = ((float)(getUInt16FromBytes(newPacket, 13)) / 1000.0)*180.0/PI;
 				planeState->turnRate = (float)(getInt16FromBytes(newPacket, 15)) / 1000.0;
 				planeState->batteryVoltage = (float)(getUCharFromBytes(newPacket, 20)) / 5.0;
 				planeState->gpsNumSats = getUCharFromBytes(newPacket, 23);
@@ -199,10 +233,11 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->UTCmillisecond = targetTime.Second*1000 + targetTime.Millisecond;
 
 
-				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() roll:" + planeState->roll + " pitch:" + planeState->pitch + " heading:" + planeState->heading);
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() altHAL:" + planeState->altitudeHAL + " roll:" + planeState->roll + " pitch:" + planeState->pitch + " heading:" + planeState->heading);
 				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() mill:" + planeState->UTCmillisecond + " min:" + planeState->UTCmin + " hr:" + planeState->UTChour);
 
 				((Comms ^)theDelegate)->receivePlaneTelem(planeState);
+				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): receivePlaneState");
 			} 
 			//else 
 			//	System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData() ignored type " + kestrelPacketType );
@@ -264,6 +299,9 @@ void AutopilotComport::gotoLatLon(float lat, float lon)
 
 void AutopilotComport::sendPassthroughPacket( array<System::Byte> ^ inBuffer )
 {
+	
+	//System::Diagnostics::Trace::WriteLine("AutopilotComport::sendPassthroughPacket()");
+
 	writeData( getVCPacket10(5, getCommPacket5Data(inBuffer)) );  //on liner - zing!
 }
 
@@ -305,10 +343,9 @@ array<System::Byte> ^ AutopilotComport::getCommPacket5Data(array<System::Byte> ^
 	theStruct->arr = dataForRabbit;
 
 	// copy packet over
-	pin_ptr<unsigned char> data = &(theStruct->numBytes);
-	char * dataPtr = (char *)data;
-	for (int j = 0; j < packet->Length; j++) {
-		packet[j] = dataPtr[j];
+	packet[0] = theStruct->numBytes;
+	for (int j = 0; j < theStruct->arr->Length; j++) {
+		packet[j + 1] = theStruct->arr[j];
 	}
 
 	return packet;
@@ -340,14 +377,18 @@ array<System::Byte> ^ AutopilotComport::getVCPacket10(unsigned char kestrelPacke
 	// copy data into struct
 	theStruct->destAddr = planeAddress;	
 	theStruct->kestrelPacketType = kestrelPacketType;
-	theStruct->arr = arr;
+	theStruct->arr = arr;  ///TODO: fix array copying
 
 	// copy packet over
-	data = &(theHeader->type);
-	dataPtr = (char *)data;
-	for (int j = 0; j < packetLength; j++) {
+	pin_ptr<__int16> data2 = &(theStruct->destAddr);
+	dataPtr = (char *)data2;
+	for (int j = 0; j < 3; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
+	}
+	for (int j = 0; j < theStruct->arr->Length; j++){
+		packet[packetIndex] = theStruct->arr[j];
+		packetIndex ++;
 	}
 
 	return packet;
@@ -383,8 +424,8 @@ array<System::Byte> ^ AutopilotComport::getVCPacket20(unsigned char packetID, un
 	theStruct->onOff = onOff;	
 
 	// copy packet over
-	data = &(theHeader->type);
-	dataPtr = (char *)data;
+	pin_ptr<unsigned char> data2 = &(theStruct->packetID);
+	dataPtr = (char *)data2;
 	for (int j = 0; j < packetLength; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
@@ -420,8 +461,8 @@ array<System::Byte> ^ AutopilotComport::getVCPacket30()
 	theStruct->destAddr = planeAddress;	
 
 	// copy packet over
-	data = &(theHeader->type);
-	dataPtr = (char *)data;
+	pin_ptr<__int16> data2 = &(theStruct->destAddr);
+	dataPtr = (char *)data2;
 	for (int j = 0; j < packetLength; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
@@ -480,15 +521,12 @@ array<System::Byte> ^  AutopilotComport::getVCPacket32(unsigned char commandType
 
 
 	// copy packet over
-	data = &(theHeader->type);
-	dataPtr = (char *)data;
+	pin_ptr<__int16> data2 = &(theStruct->destAddr);
+	dataPtr = (char *)data2;
 	for (int j = 0; j < packetLength; j++) {
 		packet[packetIndex] = dataPtr[j];
 		packetIndex++;
 	}
-
-	//thePort->writeEncodedData( packet );
-
 
 	return packet;
 }

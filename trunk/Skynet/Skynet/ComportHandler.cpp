@@ -61,6 +61,7 @@ void ComportHandler::updateComportStatus(int status)
 
 void ComportHandler::beginReading(String ^ comportType)
 {
+	System::Diagnostics::Trace::WriteLine("ComportHandler::beginReading() " + comportType);
 	type = comportType;
 	comReadThread = gcnew Thread(gcnew ThreadStart(thePort, &Comport::readThread));
 	comReadThread->Name =  comportType + " Comport Read Thread";

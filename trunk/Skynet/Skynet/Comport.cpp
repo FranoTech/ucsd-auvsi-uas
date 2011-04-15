@@ -50,14 +50,6 @@ ComportUpstream::ComportUpstream()
 	update_type = 0;
 }
 
-GimbalInfo::GimbalInfo()
-{
-	roll = 0;
-	pitch = 0;
-}
-
-
-
 Comport::Comport(Object ^ theParent)
 {
 	_serialPort = gcnew SerialPort();
@@ -290,7 +282,7 @@ int Comport::readData(void)
 			if( dataIn < 0 )
 			{
 				_serialPort->DiscardInBuffer();
-				System::Diagnostics::Trace::WriteLine("Comprt::readData(): bad byte");
+				System::Diagnostics::Trace::WriteLine("Comport::readData(): bad byte");
 				return PACKET_LOSS;
 			}
 			else if( tempByte == END_BYTE )
@@ -348,7 +340,7 @@ int Comport::readData(void)
 				bufferString = bufferString + " 0x" + Convert::ToString(buffer[i], 16);
 			}
 		
-			System::Diagnostics::Trace::WriteLine("Packet ^^. bufLen:" + bufLen + " buffer:" + bufferString);
+			System::Diagnostics::Trace::WriteLine("Packet ^^. bufLen:" + bufLen + " buffer:" + bufferString + ".\n");
 			
 			return PACKET_RECEIVED;
  		}
@@ -447,9 +439,13 @@ int Comport::readData(void)
 		System::Diagnostics::Trace::WriteLine("Catch in comport. bufLen:" + bufLen + " buffer:" + bufferString);*/
 		//comNoDataDelegate();
 	}
-	catch( Exception ^  )
+	catch( System::IO::IOException ^ e)
 	{
-		System::Diagnostics::Trace::WriteLine("WARNING: Unexpected catch in comport.");
+		System::Diagnostics::Trace::WriteLine("IOException in comport");
+	}
+	catch( Exception ^ e )
+	{
+		System::Diagnostics::Trace::WriteLine("WARNING: Unexpected catch in comport: " + e);
 		String ^ bufferString = "0x" + Convert::ToString(buffer[0], 16);
 		for (int i = 1; i < buffer->Length; i++) {
 			bufferString = bufferString + " 0x" + Convert::ToString(buffer[i], 16);
@@ -471,15 +467,15 @@ array<System::Byte> ^ Comport::stripAndChecksum(array<System::Byte> ^ inBuffer)
 
 	if (!( ((unsigned char *)&checksum)[1] == inBuffer[bufLen - 3] && ((unsigned char *)&checksum)[0] == inBuffer[bufLen - 2] ))
 	{
-		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. bufLen: " + (bufLen - 4));
-		System::Diagnostics::Trace::WriteLine("Comport::decodeData(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
-																							Convert::ToString(inBuffer[bufLen - 3], 16) + Convert::ToString(inBuffer[bufLen - 2], 16));
+		//System::Diagnostics::Trace::WriteLine("Comport::stripAndChecksum(): bad checksum. bufLen: " + (bufLen - 4));
+		//System::Diagnostics::Trace::WriteLine("Comport::stripAndChecksum(): bad checksum. mine: " + Convert::ToString(((unsigned char *)&checksum)[1], 16) + Convert::ToString(((unsigned char *)&checksum)[0], 16) + " his:" +
+		//																					Convert::ToString(inBuffer[bufLen - 3], 16) + Convert::ToString(inBuffer[bufLen - 2], 16));
 			
-		String ^ bufferString = "0x" + Convert::ToString(inBuffer[0], 16);
-		for (int i = 1; i < inBuffer->Length; i++) {
+		String ^ bufferString = "";
+		for (int i = 0; i < inBuffer->Length; i++) {
 			bufferString = bufferString + " 0x" + Convert::ToString(inBuffer[i], 16);
 		}
-		System::Diagnostics::Trace::WriteLine("Comport::decodeData():" + bufLen + " buffer:" + bufferString);
+		//System::Diagnostics::Trace::WriteLine("Comport::stripAndChecksum():" + bufLen + " buffer:" + bufferString);
 		return nullptr;
  	}
 

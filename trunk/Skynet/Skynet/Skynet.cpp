@@ -8,8 +8,6 @@ using namespace Skynet;
 [STAThreadAttribute]
 int main(array<System::String ^> ^args)
 {
-	//testing testfff;
-
 	// Enabling Windows XP visual effects before any controls are created
 	Application::EnableVisualStyles();
 	Application::SetCompatibleTextRenderingDefault(false); 

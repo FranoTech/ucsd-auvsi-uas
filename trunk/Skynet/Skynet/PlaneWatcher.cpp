@@ -1,14 +1,21 @@
 #include "StdAfx.h"
 #include "PlaneWatcher.h"
 #include "Form1.h"
+#include <msclr/lock.h>
 
 using namespace Communications;
+
+#define MAX_INT_32 2147483647
 
 PlaneWatcher::PlaneWatcher(Object ^ theParent)
 { 
 	parent = theParent; 
 
-    gimbalInfo = gcnew array<GimbalInfo *>(NUM_GIMBAL_DATA);  //create a new array with num entities
+	gimbalRoll = 3000;
+	gimbalPitch = 3000;
+	zoomLevel = 1;
+
+    gimbalInfo = gcnew array<GimbalInfo ^>(NUM_GIMBAL_DATA);  //create a new array with num entities
 	autopilotGPSInfo = gcnew array<PlaneGPSPacket ^>(NUM_GPS_DATA);
 	autopilotTelemInfo = gcnew array<PlaneTelemPacket ^>(NUM_TELEM_DATA);
 
@@ -17,7 +24,7 @@ PlaneWatcher::PlaneWatcher(Object ^ theParent)
 	autopilotTelemInfoIndex = 0;
 
 	for(int a = 0; a < NUM_GIMBAL_DATA; a++){
-		gimbalInfo[a] = 0;
+		gimbalInfo[a] = nullptr;
 	}
 
 	for(int a = 0; a < NUM_GPS_DATA; a++){
@@ -29,36 +36,52 @@ PlaneWatcher::PlaneWatcher(Object ^ theParent)
 	}
 }
 		
-void PlaneWatcher::updateGimbalInfo( GimbalInfo *data)
+using namespace msclr;
+
+void PlaneWatcher::updateGimbalInfo( GimbalInfo ^ data)
 {
+
+	//System::Diagnostics::Trace::WriteLine("PlaneWatcher::updateGimbalInfo()");
+
 	incrementGimbalInfoIndex();
 
-	delete gimbalInfo[gimbalInfoIndex];
+	lock l(gimbalInfo);
 
 	gimbalInfo[gimbalInfoIndex] = data;
+
+	l.release();
 	
 	((Skynet::Form1 ^)parent)->reloadTable();
 }
 
 void PlaneWatcher::updatePlaneGPSInfo( PlaneGPSPacket ^ data)
 {
+	//System::Diagnostics::Trace::WriteLine("PlaneWatcher::updatePlaneGPSInfo()");
+	
 	incrementGPSInfoIndex();
 
-	delete autopilotGPSInfo[autopilotGPSInfoIndex];
+	lock l(autopilotGPSInfo);
 
 	autopilotGPSInfo[autopilotGPSInfoIndex] = data;
+
+	l.release();
 
 	((Skynet::Form1 ^)parent)->reloadTable();
 }
 
 void PlaneWatcher::updatePlaneTelemInfo( PlaneTelemPacket ^ data)
 {
+
+	//System::Diagnostics::Trace::WriteLine("PlaneWatcher::updatePlaneTelemInfo()");
+
 	incrementTelemInfoIndex();
 
-	delete autopilotTelemInfo[autopilotTelemInfoIndex];
+	lock l(autopilotTelemInfo);
 
 	autopilotTelemInfo[autopilotTelemInfoIndex] = data;
 	
+	l.release();
+
 	((Skynet::Form1 ^)parent)->reloadTable();
 }
 
@@ -72,257 +95,301 @@ void PlaneWatcher::updatePlaneTelemInfo( PlaneTelemPacket ^ data)
 
 PlaneState ^ PlaneWatcher::predictLocationAtTime( float timeOffset )
 {
-	System::DateTime targetTime = System::DateTime::Now.AddSeconds(timeOffset);
-
-	__int32 target = targetTime.Millisecond + 1000*targetTime.Second + 60000*targetTime.Minute + 3600000*targetTime.Hour;  //time in __int32 which we want to compare to
-	
-	/*
-	 * cases: 
-	 * (1) empty list, set defaults
-	 * (2) list of size 1, do 1 point prediction
-	 * (3) before the most recent GPS location
-	 * (4) within the list of points
-	 * (5) after the oldest GPS location
-	 *
-	 * remember to discount any array pointer values of 0, as these have not been instantiated 
-	 */
-	
 	PlaneState ^ retval = gcnew PlaneState();
 
-	//we know that we can get prediction data for both GPS and telem
-	//do GPS prediction
-	
-	//////////////////// GPS info: lat, lon, alt /////////////////////////
+	try {
+		System::DateTime targetTime = System::DateTime::Now.AddSeconds(timeOffset);
 
-	//for now, just returning the two closest values
-	__int32 smallestDistance = 3600000;  //arbitrarily large
-	int smallestIndex = -1;
-	int numValidGPSPackets = 0;
-	for(int i = 0; i < NUM_GPS_DATA; i++) {
-		if(autopilotGPSInfo[i] != nullptr){
-			numValidGPSPackets ++;
-			__int32 dist = abs(target - getTimeUTC(autopilotGPSInfo[i]));
-			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::getClosestAutopilotState() dist:" + dist + " target:" + target);
-			if(dist < smallestDistance){
-				smallestDistance = dist;
-				smallestIndex = i;
+		__int32 target = targetTime.Millisecond + 1000*targetTime.Second + 60000*targetTime.Minute + 3600000*targetTime.Hour;  //time in __int32 which we want to compare to
+	
+		/*
+		 * cases: 
+		 * (1) empty list: set defaults
+		 * (2) list of size 1: do 1 point prediction
+		 * (3) before the most recent GPS location
+		 * (4) within the list of points
+		 * (5) after the oldest GPS location
+		 *
+		 * remember to discount any array pointer values of 0, as these have not been instantiated 
+		 */
+	
+	//	lock l(this); 
+
+		//we know that we can get prediction data for both GPS and telem
+		//do GPS prediction
+	
+		//////////////////// GPS info: lat, lon, alt /////////////////////////
+
+		//for now, just returning the two closest values
+		__int32 smallestDistance = 3600000;  //arbitrarily large
+		int smallestIndex = -1;
+		int numValidGPSPackets = 0;
+		PlaneGPSPacket ^ olderGPSPacket;
+		PlaneGPSPacket ^ bestGPSPacket;
+		PlaneGPSPacket ^ newerGPSPacket;
+		for(int i = 0; i < NUM_GPS_DATA; i++) {
+	  
+			lock l(autopilotGPSInfo); //lock it so as to avoid it changing while we access it
+
+			PlaneGPSPacket ^ tempOlderGPSPacket = autopilotGPSInfo[(i > 0 ? i - 1 : NUM_GPS_DATA - 1)];
+			PlaneGPSPacket ^ tempBestGPSPacket = autopilotGPSInfo[i];
+			PlaneGPSPacket ^ tempNewerGPSPacket = autopilotGPSInfo[(i > NUM_GPS_DATA - 1 ? i + 1 : 0)];
+
+			l.release();
+
+			if(autopilotGPSInfo[i] != nullptr){
+				numValidGPSPackets ++;
+				__int32 dist = abs(target - getTimeUTC(autopilotGPSInfo[i]));
+				//System::Diagnostics::Trace::WriteLine("PlaneWatcher::getClosestAutopilotState() dist:" + dist + " target:" + target);
+				if(dist < smallestDistance){
+					smallestDistance = dist;
+					smallestIndex = i;
+					olderGPSPacket = tempOlderGPSPacket;
+					bestGPSPacket = tempBestGPSPacket;
+					newerGPSPacket = tempNewerGPSPacket;
+				}
 			}
 		}
-	}
 
-	// if no packet found
-	if (smallestIndex == -1) 
+		// if no packet found
+		if (smallestIndex == -1) 
+		{
+			retval->gpsData->gpsVelocity = 20.0f;
+			retval->gpsData->gpsAltitude = 37;
+			retval->gpsData->gpsHeading = 0.0f;
+			retval->gpsData->gpsLatitude = 32.0f;
+			retval->gpsData->gpsLongitude = -117.0f;
+			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): No packets");
+		}
+
+		// if packet found, but only one
+		else if(numValidGPSPackets == 1)
+		{
+			retval->gpsData->gpsVelocity = bestGPSPacket->gpsVelocity;
+			retval->gpsData->gpsAltitude = bestGPSPacket->gpsAltitude;
+			retval->gpsData->gpsHeading = bestGPSPacket->gpsHeading;
+			retval->gpsData->gpsLatitude = bestGPSPacket->gpsLatitude;
+			retval->gpsData->gpsLongitude = bestGPSPacket->gpsLongitude;
+			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): One packet");
+		}
+
+		//if we have at least two packets to chose from
+		else
+		{ 
+			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): Lots of packets");
+
+			//if we have another packet, check to see which one is closer, the one before this or the one after
+
+			__int32 distAfter = (newerGPSPacket != nullptr ? abs(target - getTimeUTC(newerGPSPacket)) : MAX_INT_32);
+			__int32 distBefore = (olderGPSPacket != nullptr ? abs(target - getTimeUTC(olderGPSPacket)) : MAX_INT_32);
+
+			if(distAfter > distBefore)  //use the olderPacket
+			{  
+				newerGPSPacket = bestGPSPacket;
+			}
+			else  //use the newerPacket
+			{
+				olderGPSPacket = bestGPSPacket;
+			}
+
+			//now use the two packets and do a linear math thingy
+
+			__int32 olderTime =  getTimeUTC(olderGPSPacket);
+			__int32 newerTime =  getTimeUTC(newerGPSPacket);
+
+			retval->gpsData->gpsVelocity  = linearInterpolation(olderGPSPacket->gpsVelocity, newerGPSPacket->gpsVelocity, olderTime, newerTime, target);
+			retval->gpsData->gpsAltitude  = linearInterpolation(olderGPSPacket->gpsAltitude, newerGPSPacket->gpsAltitude, olderTime, newerTime, target);
+			retval->gpsData->gpsHeading   = linearInterpolation(olderGPSPacket->gpsHeading, newerGPSPacket->gpsHeading, olderTime, newerTime, target);
+			retval->gpsData->gpsLatitude  = linearInterpolation(olderGPSPacket->gpsLatitude, newerGPSPacket->gpsLatitude, olderTime, newerTime, target);
+			retval->gpsData->gpsLongitude = linearInterpolation(olderGPSPacket->gpsLongitude, newerGPSPacket->gpsLongitude, olderTime, newerTime, target);
+		}
+	
+		//////////////////// Telemetry: roll, pitch, heading, etc /////////////////////////
+		smallestDistance = 3600000;  //arbitrarily large
+		smallestIndex = -1;
+		int numValidTelemPackets = 0;
+		PlaneTelemPacket ^ olderTelemPacket;
+		PlaneTelemPacket ^ bestTelemPacket;
+		PlaneTelemPacket ^ newerTelemPacket;
+		for(int i = 0; i < NUM_TELEM_DATA; i++){
+
+			lock l(autopilotTelemInfo); //lock it so as to avoid it changing while we access it
+
+			PlaneTelemPacket ^ tempOlderTelemPacket = autopilotTelemInfo[(i > 0 ? i - 1 : NUM_TELEM_DATA - 1)];
+			PlaneTelemPacket ^ tempBestTelemPacket = autopilotTelemInfo[i];
+			PlaneTelemPacket ^ tempNewerTelemPacket = autopilotTelemInfo[(i > NUM_TELEM_DATA - 1 ? i + 1 : 0)];
+
+			l.release();  //release it back into the wild
+
+			if(autopilotTelemInfo[i] != nullptr){
+				numValidTelemPackets ++;
+				__int32 dist = abs(target - getTimeUTC(autopilotTelemInfo[i]));
+				if(dist < smallestDistance){
+					smallestDistance = dist;
+					smallestIndex = i;
+
+					olderTelemPacket = tempOlderTelemPacket;
+					bestTelemPacket  = tempBestTelemPacket;
+					newerTelemPacket = tempNewerTelemPacket;
+				}
+			}
+		}
+
+		// if no packet found
+		if (smallestIndex == -1) 
+		{
+			retval->telemData->roll = 0;
+			retval->telemData->pitch = 0;
+			retval->telemData->heading = 0;
+			retval->telemData->altitudeHAL = 0;
+		}
+
+		// if packet found, but only one
+		else if(numValidTelemPackets == 1)
+		{
+			retval->telemData->roll        = bestTelemPacket->roll;
+			retval->telemData->pitch       = bestTelemPacket->pitch;
+			retval->telemData->heading     = bestTelemPacket->heading;
+			retval->telemData->altitudeHAL = bestTelemPacket->altitudeHAL;
+		}
+
+		//if we have at least two packets to chose from
+		else
+		{ 
+			//if we have another packet, check to see which one is closer, the one before this or the one after
+
+			__int32 distAfter =  (newerTelemPacket != nullptr ? abs(target - getTimeUTC(newerTelemPacket)) : MAX_INT_32);
+			__int32 distBefore = (olderTelemPacket != nullptr ? abs(target - getTimeUTC(olderTelemPacket)) : MAX_INT_32);
+
+			if(distAfter > distBefore)  //use the olderPacket
+			{  
+				newerTelemPacket = bestTelemPacket;
+			}
+			else  //use the newerPacket
+			{
+				olderTelemPacket = bestTelemPacket;
+			}
+
+			//now use the two packets and do a linear math thingy
+
+			__int32 olderTime =  getTimeUTC(olderTelemPacket);
+			__int32 newerTime =  getTimeUTC(newerTelemPacket);
+
+			retval->telemData->roll        = linearInterpolation(olderTelemPacket->roll, newerTelemPacket->roll, olderTime, newerTime, target);
+			retval->telemData->pitch       = linearInterpolation(olderTelemPacket->pitch, newerTelemPacket->pitch, olderTime, newerTime, target);
+			retval->telemData->heading     = linearInterpolation(olderTelemPacket->heading, newerTelemPacket->heading, olderTime, newerTime, target);
+			retval->telemData->altitudeHAL = linearInterpolation(olderTelemPacket->altitudeHAL, newerTelemPacket->altitudeHAL, olderTime, newerTime, target);
+		}
+
+	
+		//////////////////// Gimbal Info /////////////////////////
+		smallestDistance = 3600000;  //arbitrarily large
+		smallestIndex = -1;
+		int numValidGimbalPackets = 0;
+		GimbalInfo ^ olderGimbalPacket;
+		GimbalInfo ^ bestGimbalPacket;
+		GimbalInfo ^ newerGimbalPacket;
+		for(int i = 0; i < NUM_TELEM_DATA; i++){
+
+			lock l(gimbalInfo); //lock it so as to avoid it changing while we access it
+
+			GimbalInfo ^ tempOlderGimbalPacket = gimbalInfo[(i > 0 ? i - 1 : NUM_GPS_DATA - 1)];
+			GimbalInfo ^ tempBestGimbalPacket  = gimbalInfo[i];
+			GimbalInfo ^ tempNewerGimbalPacket = gimbalInfo[(i > NUM_GPS_DATA - 1 ? i + 1 : 0)];
+
+			l.release(); //let it go free! :)
+
+			if(gimbalInfo[i] != nullptr){
+				numValidGimbalPackets ++;
+				__int32 dist = abs(target - getTimeUTC(gimbalInfo[i]));
+				if(dist < smallestDistance){
+					smallestDistance = dist;
+					smallestIndex = i;
+					olderGimbalPacket = tempOlderGimbalPacket;
+					bestGimbalPacket  = tempBestGimbalPacket;
+					newerGimbalPacket = tempNewerGimbalPacket;
+				}
+			}
+		}
+
+		// if no packet found
+		if (smallestIndex == -1) 
+		{
+			retval->gimbalInfo->zoom = 1;
+			retval->gimbalInfo->pitch = 0;
+			retval->gimbalInfo->roll = 0;
+			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): No rabbit packets");
+		}
+		// if packet found, but only one
+		else
+		{
+
+			retval->gimbalInfo->roll    = bestGimbalPacket->roll;
+			retval->gimbalInfo->pitch   = bestGimbalPacket->pitch;
+			retval->gimbalInfo->zoom	= bestGimbalPacket->zoom;
+			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): Rabbit one packet");
+
+		}
+		/*
+		//if we have at least two packets to chose from
+		else
+		{ 
+			//if we have another packet, check to see which one is closer, the one before this or the one after
+
+			__int32 distAfter =  (newerGimbalPacket != nullptr ? abs(target - getTimeUTC(newerGimbalPacket)) : MAX_INT_32);
+			__int32 distBefore = (olderGimbalPacket != nullptr ? abs(target - getTimeUTC(olderGimbalPacket)) : MAX_INT_32);
+
+			if(distAfter > distBefore)  //use the olderPacket
+			{  
+				newerGimbalPacket = bestGimbalPacket;
+			}
+			else  //use the newerPacket (change the older one)
+			{
+				olderGimbalPacket = bestGimbalPacket;
+			}
+
+			//now use the two packets and do a linear math thingy
+
+			__int32 olderTime =  getTimeUTC(olderGimbalPacket);
+			__int32 newerTime =  getTimeUTC(newerGimbalPacket);
+
+			retval->gimbalInfo->roll    = linearInterpolation(olderGimbalPacket->roll, newerGimbalPacket->roll, olderTime, newerTime, target); // TODO: nullreferenceexception HERE
+			retval->gimbalInfo->pitch   = linearInterpolation(olderGimbalPacket->pitch, newerGimbalPacket->pitch, olderTime, newerTime, target);
+			System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): Rabbit lots of packets");
+		}*/
+	}
+	catch(Exception ^ e) 
 	{
+		
+		retval->telemData->roll = 0;
+		retval->telemData->pitch = 0;
+		retval->telemData->heading = 0;
+		retval->telemData->altitudeHAL = 0;
+
 		retval->gpsData->gpsVelocity = 20.0f;
 		retval->gpsData->gpsAltitude = 37;
 		retval->gpsData->gpsHeading = 0.0f;
 		retval->gpsData->gpsLatitude = 32.0f;
 		retval->gpsData->gpsLongitude = -117.0f;
-	}
-
-	// if packet found, but only one
-	else if(numValidGPSPackets == 1)
-	{
-		retval->gpsData->gpsVelocity = autopilotGPSInfo[smallestIndex]->gpsVelocity;
-		retval->gpsData->gpsAltitude = autopilotGPSInfo[smallestIndex]->gpsAltitude;
-		retval->gpsData->gpsHeading = autopilotGPSInfo[smallestIndex]->gpsHeading;
-		retval->gpsData->gpsLatitude = autopilotGPSInfo[smallestIndex]->gpsLatitude;
-		retval->gpsData->gpsLongitude = autopilotGPSInfo[smallestIndex]->gpsLongitude;
-	}
-
-	//if we have at least two packets to chose from
-	else
-	{ 
-		//if we have another packet, check to see which one is closer, the one before this or the one after
-		int indexAfter = smallestIndex + 1;
-		if(indexAfter >= NUM_GPS_DATA){
-			indexAfter = 0;
-		}
-
-		int indexBefore = smallestIndex - 1;
-		if(indexBefore < 0){
-			indexBefore = NUM_GPS_DATA - 1;
-		}
-
-		__int32 distAfter = abs(target - getTimeUTC(autopilotGPSInfo[indexAfter]));
-		__int32 distBefore = abs(target - getTimeUTC(autopilotGPSInfo[indexBefore]));
-
-		PlaneGPSPacket ^ olderGPSPacket;
-	    PlaneGPSPacket ^ newerGPSPacket;
-
-		if(autopilotGPSInfo[indexAfter] == nullptr || distAfter > distBefore)  //use the olderPacket
-		{  
-			olderGPSPacket = autopilotGPSInfo[indexBefore];
-			newerGPSPacket = autopilotGPSInfo[smallestIndex];
-		}
-		else  //use the newerPacket
-		{
-			olderGPSPacket = autopilotGPSInfo[smallestIndex];
-			newerGPSPacket = autopilotGPSInfo[indexAfter];
-		}
-
-		//now use the two packets and do a linear math thingy
-
-		__int32 olderTime =  getTimeUTC(olderGPSPacket);
-		__int32 newerTime =  getTimeUTC(newerGPSPacket);
-
-		retval->gpsData->gpsVelocity  = linearInterpolation(olderGPSPacket->gpsVelocity, newerGPSPacket->gpsVelocity, olderTime, newerTime, target);
-		retval->gpsData->gpsAltitude  = linearInterpolation(olderGPSPacket->gpsAltitude, newerGPSPacket->gpsAltitude, olderTime, newerTime, target);
-		retval->gpsData->gpsHeading   = linearInterpolation(olderGPSPacket->gpsHeading, newerGPSPacket->gpsHeading, olderTime, newerTime, target);
-		retval->gpsData->gpsLatitude  = linearInterpolation(olderGPSPacket->gpsLatitude, newerGPSPacket->gpsLatitude, olderTime, newerTime, target);
-		retval->gpsData->gpsLongitude = linearInterpolation(olderGPSPacket->gpsLongitude, newerGPSPacket->gpsLongitude, olderTime, newerTime, target);
-	}
-	
-	//////////////////// Telemetry: roll, pitch, heading, etc /////////////////////////
-	smallestDistance = 3600000;  //arbitrarily large
-	smallestIndex = -1;
-	int numValidTelemPackets = 0;
-	for(int i = 0; i < NUM_TELEM_DATA; i++){
-		if(autopilotTelemInfo[i] != nullptr){
-			numValidTelemPackets ++;
-			__int32 dist = abs(target - getTimeUTC(autopilotTelemInfo[i]));
-			if(dist < smallestDistance){
-				smallestDistance = dist;
-				smallestIndex = i;
-			}
-		}
-	}
-
-	// if no packet found
-	if (smallestIndex == -1) 
-	{
-		retval->telemData->roll = 0;
-		retval->telemData->pitch = 0;
-		retval->telemData->heading = 0;
-	}
-
-	// if packet found, but only one
-	else if(numValidTelemPackets == 1)
-	{
-		retval->telemData->roll    = autopilotTelemInfo[smallestIndex]->roll;
-		retval->telemData->pitch   = autopilotTelemInfo[smallestIndex]->pitch;
-		retval->telemData->heading = autopilotTelemInfo[smallestIndex]->heading;
-	}
-
-	//if we have at least two packets to chose from
-	else
-	{ 
-		//if we have another packet, check to see which one is closer, the one before this or the one after
-		int indexAfter = smallestIndex + 1;
-		if(indexAfter >= NUM_TELEM_DATA){
-			indexAfter = 0;
-		}
-
-		int indexBefore = smallestIndex - 1;
-		if(indexBefore < 0){
-			indexBefore = NUM_TELEM_DATA - 1;
-		}
-
-		__int32 distAfter = abs(target - getTimeUTC(autopilotTelemInfo[indexAfter]));
-		__int32 distBefore = abs(target - getTimeUTC(autopilotTelemInfo[indexBefore]));
-
-		PlaneTelemPacket ^ olderGPSPacket;
-	    PlaneTelemPacket ^ newerGPSPacket;
-
-		if(autopilotTelemInfo[indexAfter] == nullptr || distAfter > distBefore)  //use the olderPacket
-		{  
-			olderGPSPacket = autopilotTelemInfo[indexBefore];
-			newerGPSPacket = autopilotTelemInfo[smallestIndex];
-		}
-		else  //use the newerPacket
-		{
-			olderGPSPacket = autopilotTelemInfo[smallestIndex];
-			newerGPSPacket = autopilotTelemInfo[indexAfter];
-		}
-
-		//now use the two packets and do a linear math thingy
-
-		__int32 olderTime =  getTimeUTC(olderGPSPacket);
-		__int32 newerTime =  getTimeUTC(newerGPSPacket);
-
-		retval->telemData->roll    = linearInterpolation(olderGPSPacket->roll, newerGPSPacket->roll, olderTime, newerTime, target);
-		retval->telemData->pitch   = linearInterpolation(olderGPSPacket->pitch, newerGPSPacket->pitch, olderTime, newerTime, target);
-		retval->telemData->heading = linearInterpolation(olderGPSPacket->heading, newerGPSPacket->heading, olderTime, newerTime, target);
-	}
-
-	
-	//////////////////// Gimbal Info /////////////////////////
-	smallestDistance = 3600000;  //arbitrarily large
-	smallestIndex = -1;
-	int numValidGimbalPackets = 0;
-	for(int i = 0; i < NUM_TELEM_DATA; i++){
-		if(gimbalInfo[i] != 0){
-			numValidGimbalPackets ++;
-			__int32 dist = abs(target - getTimeUTC(gimbalInfo[i]));
-			if(dist < smallestDistance){
-				smallestDistance = dist;
-				smallestIndex = i;
-			}
-		}
-	}
-
-	// if no packet found
-	if (smallestIndex == -1) 
-	{
+			
 		retval->gimbalInfo->zoom = 1;
 		retval->gimbalInfo->pitch = 0;
-	}
-
-	// if packet found, but only one
-	else if(numValidTelemPackets == 1)
-	{
-		retval->gimbalInfo->zoom = gimbalInfo[gimbalInfoIndex]->zoom;
-		retval->gimbalInfo->pitch = gimbalInfo[gimbalInfoIndex]->pitch;
-	}
-
-	//if we have at least two packets to chose from
-	else
-	{ 
-		//if we have another packet, check to see which one is closer, the one before this or the one after
-		int indexAfter = smallestIndex + 1;
-		if(indexAfter >= NUM_GPS_DATA){
-			indexAfter = 0;
-		}
-
-		int indexBefore = smallestIndex - 1;
-		if(indexBefore < 0){
-			indexBefore = NUM_GPS_DATA - 1;
-		}
-
-		__int32 distAfter = abs(target - getTimeUTC(gimbalInfo[indexAfter]));
-		__int32 distBefore = abs(target - getTimeUTC(gimbalInfo[indexBefore]));
-
-		GimbalInfo * olderGPSPacket;
-	    GimbalInfo * newerGPSPacket;
-
-		if(autopilotTelemInfo[indexAfter] == nullptr || distAfter > distBefore)  //use the olderPacket
-		{  
-			olderGPSPacket = gimbalInfo[indexBefore];
-			newerGPSPacket = gimbalInfo[smallestIndex];
-		}
-		else  //use the newerPacket
-		{
-			olderGPSPacket = gimbalInfo[smallestIndex];
-			newerGPSPacket = gimbalInfo[indexAfter];
-		}
-
-		//now use the two packets and do a linear math thingy
-
-		__int32 olderTime =  getTimeUTC(olderGPSPacket);
-		__int32 newerTime =  getTimeUTC(newerGPSPacket);
-
-		retval->gimbalInfo->roll    = linearInterpolation(olderGPSPacket->roll, newerGPSPacket->zoom, olderTime, newerTime, target);
-		retval->gimbalInfo->pitch   = linearInterpolation(olderGPSPacket->pitch, newerGPSPacket->pitch, olderTime, newerTime, target);
+		retval->gimbalInfo->roll = 0;
 	}
 
 	return retval;
+}
+
+float PlaneWatcher::rawToDegrees(unsigned __int16 input)
+{
+	return (((float)input) - 3000.0f)/20.0f;
 }
 
 float PlaneWatcher::gimbalRollInDegrees()
 {
 	// TODO: store time of GimbalInfo packets, and access it when needed. include in PlaneState.
 	
-	if (gimbalInfo[gimbalInfoIndex] == 0)
+	if (gimbalInfo[gimbalInfoIndex] == nullptr)
 		return 0;
 
 	return (((float)gimbalInfo[gimbalInfoIndex]->roll) - 3000.0f)/20.0f;
@@ -333,7 +400,7 @@ float PlaneWatcher::gimbalPitchInDegrees()
 {
 	// TODO: store time of GimbalInfo packets, and access it when needed. include in PlaneState.
 	
-	if (gimbalInfo[gimbalInfoIndex] == 0)
+	if (gimbalInfo[gimbalInfoIndex] == nullptr)
 		return 0;
 
 	return (((float)gimbalInfo[gimbalInfoIndex]->pitch) - 3000.0f)/20.0f;
@@ -395,7 +462,7 @@ __int32 PlaneWatcher::getTimeUTC(PlaneTelemPacket ^ state)
 	return time;
 }
 
-__int32 PlaneWatcher::getTimeUTC(GimbalInfo *state){
+__int32 PlaneWatcher::getTimeUTC(GimbalInfo ^state){
 	if (state == nullptr)
 		return 0;
 

@@ -50,6 +50,7 @@ namespace Database
 		String ^ getField( TableName table, int field, String ^ rowID );
 		bool connect(void);
 		bool disconnect(void);
+		void fillDatabase();
 		bool reset(void);
 		bool insertData( TableName table, RowData ^ data );
 		bool updateValue( TableName table, String ^ field, String ^ value, String ^ rowID );

@@ -1,5 +1,6 @@
 #pragma once
 #include "Comms.h"
+#include "PlaneWatcher.h"
 
 struct DIJOYCONFIG;
 struct XINPUT_DEVICE_NODE;
@@ -31,6 +32,7 @@ public:
 	HRESULT UpdateInputState( HWND hDlg );
 	HRESULT init(HWND hDlg);
 	Communications::Comms ^ comm;
+	Communications::PlaneWatcher ^ theWatcher;
 
 	void setZoom( int level );
 	int getZoom( void );

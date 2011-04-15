@@ -258,6 +258,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</CompileAsManaged>
     </ClCompile>
     <ClCompile Include="TargetDialog.cpp" />
+    <ClCompile Include="TelemetrySimulator.cpp" />
     <ClCompile Include="VideoReader.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
     </ClCompile>

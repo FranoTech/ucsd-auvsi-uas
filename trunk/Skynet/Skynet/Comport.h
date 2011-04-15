@@ -26,24 +26,6 @@ namespace Communications
 		char update_type;
 	};
 
-	struct GimbalInfo
-	{
-		GimbalInfo();
-
-		unsigned __int16 roll;
-		unsigned __int16 pitch;
-		__int8			 zoom;
-		//TODO: add zoom
-		
-
-		unsigned char UTCyear;				//years since 1900
-		unsigned char UTCmonth;				//UTC month (1 - 12)
-		unsigned char UTCday;				//UTC day of month (1 - 31)
-		unsigned char UTChour;				//UTC hour of dat (0 - 23)
-		unsigned char UTCmin;				//UTC minute of hour (0 - 59)
-		unsigned __int16 UTCmillisecond;	//UTC millisecond of minute (0 - 59,999)
-	};
-
 	struct ComportDownstream
 	{
 		__int32 time_offset;

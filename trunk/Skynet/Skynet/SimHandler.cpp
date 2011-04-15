@@ -4,6 +4,7 @@
 #include "StdAfx.h"
 #include "SimHandler.h"
 #include "TelemetrySimulator.h"
+#include <msclr/lock.h>
 
 
 #include "Comport.h"
@@ -21,6 +22,7 @@ using namespace System;
 using namespace System::Text;
 using namespace System::Windows::Forms;
 using namespace System::IO;
+using namespace msclr;
 
 
 // video write frame frequency (in milliseconds) (for 30 fps)
@@ -30,25 +32,62 @@ using namespace System::IO;
 #define FRAME_FREQUENCY		1000 / VIDEO_FRAMERATE
 
 
-SimHandler::SimHandler(VideoSimulator ^ vidSim, OpenGLForm::COpenGL ^ opunGL)
+SimHandler::SimHandler(VideoSimulator ^ vidSim, Decklink::Callback * cb, OpenGLForm::COpenGL ^ opunGL)
 {
 	recordTelemetry = false;
 	recordVideo = false;
 	theVideoSimulator = vidSim;
+	callback = cb;
 	openGLView = opunGL; //opUn is spelled as intended.
-	fileO = new ofstream();
-	fileI = NULL;
+	//fileO = new ofstream();
+	//fileI = NULL;
+	
+	splitTimer = nullptr;
 
 	theTelSimulator = gcnew TelemetrySimulator(this, nullptr, nullptr);
 }
 
 SimHandler::~SimHandler()
 {
-	delete(fileO);
-	fileO = NULL;
+	fileO = nullptr;
+}
+
+void SimHandler::startPlayback(String ^ filename)
+{
+	((TelemetrySimulator ^) theTelSimulator)->startTelSim(filename);
+}
+
+void SimHandler::pausePlayback()
+{
+	((TelemetrySimulator ^) theTelSimulator)->pausePlayback();
+	theVideoSimulator->pauseVideo();
+}
+
+void SimHandler::resumePlayback()
+{
+	theVideoSimulator->playVideo();
+	((TelemetrySimulator ^) theTelSimulator)->resumePlayback();
+}
+
+bool SimHandler::isPaused()
+{
+	return ((TelemetrySimulator ^) theTelSimulator)->isPaused();
+}
+
+void SimHandler::endPlayback()
+{
+	theVideoSimulator->stopVideo();
+	((TelemetrySimulator ^) theTelSimulator)->endRunLoop();
+}
 
 
 
+void SimHandler::startPlayingVideo(String ^ filename)
+{
+	theVideoSimulator->stopVideo();
+	theVideoSimulator->loadVideo( (const char*)(Marshal::StringToHGlobalAnsi(filename)).ToPointer());
+	theVideoSimulator->startVideo();
+	callback->dontShow();
 }
 
 	//True = Comport's calls will result in telemetry data being recorded.
@@ -71,15 +110,19 @@ SimHandler::~SimHandler()
 	 * Calls OpenGL's savevideo()
 	 * and initializes fileStream for telemetry.
 	 */
-int SimHandler::beginRecording(String ^ filename)
+int SimHandler::beginRecording()
 {
 	int retStatus = ALL_FAILED;
+
+	DateTime time = DateTime::Now;
+	//time = time.AddSeconds( -Convert::ToInt32( SPLIT_LENGTH ) );
+	path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-");
 
 	recordVideo = false;
 
 	firstPacket = true;
 	pleaseRecord = true;
-	beginTelemetry(filename);
+	beginTelemetry(path);
 	retStatus += RECORDING_TELEM;
 	
 
@@ -98,37 +141,18 @@ int SimHandler::beginRecording(String ^ filename)
 	breakNow = false;
 	videoAttemptThread = gcnew Thread(gcnew ParameterizedThreadStart(this, &SimHandler::tryToStartVideo));
 	videoAttemptThread->Name = "SimHandler tryToStartVideo Thread";
-	videoAttemptThread->Start(filename);
+	videoAttemptThread->Start(path);
 
-
-	/*if (!openGLView->enableVideoRecording(filename)) {
-	}
-
-	else 
-	{
-			
-		
-		// make thread that reads frame 30 times per second
-		breakNow = false;
-		videoWriteThread = gcnew Thread(gcnew ThreadStart(this, &SimHandler::writeVideo));
-		videoWriteThread->Name = "SimHandler Video Write Thread";
-		videoWriteThread->Start();
-
-		retStatus += RECORDING_VIDEO;
-		recordVideo = true;
-
-		System::Diagnostics::Trace::WriteLine("beginRecording in SimHandler");
-
-
-	}*/
+	// alert user that video started
+	((Comms ^)theComms)->printToConsole("Start Video", Color::Green);
+	System::Diagnostics::Trace::WriteLine("Video start written to Telemetry");
 
 	return retStatus;
 }
 
-
-
 void SimHandler::tryToStartVideo(Object ^ arg)
 {
+	breakNow = false;
 	try {
 		String^ filename = ((String^) arg)+".avi";
 		while (!breakNow)
@@ -142,13 +166,13 @@ void SimHandler::tryToStartVideo(Object ^ arg)
 
 				Encoding^ u8 = Encoding::UTF8;
 
-				// TODO: write to telemetry file that video started
+				// write to telemetry file that video started
 				array<Byte> ^ fileArray = u8->GetBytes(filename);
 				writeTelemetry(System::DateTime::Now.Subtract(((TelemetrySimulator^)theTelSimulator)->time), STARTVIDEO, fileArray->Length ,fileArray);
 
-				// TODO: alert user that video started
-				((Comms ^)theComms)->printToConsole("Started recording video", Color::Green);
-				System::Diagnostics::Trace::WriteLine("Video started written to Telemetry");
+				// begin timer
+				TimerCallback^ tcb = gcnew TimerCallback(this, &SimHandler::splitVideo);
+				splitTimer = gcnew Threading::Timer(tcb, nullptr, SPLIT_LENGTH*1000, SPLIT_LENGTH*1000);
 
 				recordVideo = true;
 				return;
@@ -165,22 +189,30 @@ void SimHandler::tryToStartVideo(Object ^ arg)
 
 }
 
-void SimHandler::endRecording()
+void SimHandler::stopVideo()
 {
-	if(recordVideo)
-	{
-			
-		if (videoWriteThread != nullptr) {
+	if (videoWriteThread != nullptr) {
 			// stop, then wait
 
 			breakNow = true;
 			Thread::Sleep( 30 ); // ms
 
 			videoWriteThread->Abort();
+	}
+
+	openGLView->disableVideoRecording();
+}
+
+void SimHandler::endRecording()
+{
+	if(recordVideo)
+	{
+		if (splitTimer != nullptr) {
+			splitTimer->~Timer();
+			splitTimer = nullptr;
 		}
 
-
-		openGLView->disableVideoRecording();
+		stopVideo();	
 
 		System::Diagnostics::Trace::WriteLine("endRecording in SimHandler");
 	}
@@ -272,24 +304,46 @@ SimHandler::writeVideo() {
 	}
 }
 
+void SimHandler::splitVideo(Object^ stateInfo)
+{
+	
+	stopVideo();
+
+	DateTime time = DateTime::Now;
+	//time = time.AddSeconds( -Convert::ToInt32( SPLIT_LENGTH ) );
+	String ^ filename = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-");
+
+	tryToStartVideo(filename);
+
+	// alert user that video started
+	((Comms ^)theComms)->printToConsole("Split Video", Color::Green);
+	System::Diagnostics::Trace::WriteLine("Video split written to Telemetry");
+
+}
+
 void SimHandler::writeTelemetry( System::TimeSpan time,  int type, int length, array<System::Byte>^ byteArray )
 {
 	//System::Diagnostics::Trace::WriteLine("write telem");
 	if(pleaseRecord)
 	{
 		//System::Diagnostics::Trace::WriteLine("actually writing telem");
-		*fileO << time.TotalSeconds << ", ";
-		*fileO << type << ", ";
-		*fileO << length << ", ";
+		lock l(this);
+		fileO->Write("" + (float) time.TotalSeconds);
+		fileO->Write(", ");
+		fileO->Write("" + (int)type);
+		fileO->Write(", ");
+		fileO->Write("" + (int)length); 
+		fileO->Write(", ");
 		int x;
 		for(x=0; x<length;x++)
 		{
-			*fileO << byteArray[x];
+			fileO->Write(byteArray[x]);
 			firstPacket = false;
 		}
-		*fileO << endl << endl;
+		fileO->WriteLine();
+		fileO->WriteLine();
 		
-		fileO->flush();
+		fileO->Flush();
 	}
 	//System::Diagnostics::Trace::WriteLine("done with telem");
 }
@@ -305,9 +359,9 @@ void SimHandler::writeTelemetry( System::TimeSpan time,  int type, int length, a
 	 */
 void SimHandler::endTelemetry()
 {
-	if (fileO && fileO->is_open())
+	if (fileO != nullptr)
 	{
-			fileO->close();
+			fileO->Close();
 	}
 	pleaseRecord=false;
 	recordTelemetry = false;
@@ -319,12 +373,12 @@ void SimHandler::endTelemetry()
 	*/
 void SimHandler::beginTelemetry(String ^ filename)
 {
-	if (fileO && fileO->is_open())
+	if (fileO != nullptr)
 	{
-		fileO->close();
+		fileO->Close();
 	}
-	
-	fileO->open(ManagedToSTL(filename+".telemetry.txt"));
+	FileStream^ fs = gcnew FileStream( filename+".telemetry.txt", FileMode::CreateNew);
+	fileO = gcnew StreamWriter( fs, Encoding::UTF8 );
 	((TelemetrySimulator ^) theTelSimulator)->beginRecording();
 	pleaseRecord=true;
 	recordTelemetry = true;

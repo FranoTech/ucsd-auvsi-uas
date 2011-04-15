@@ -35,8 +35,8 @@
 	const int A_HEAD		= 4;
 	const int A_ROLL		= 5;
 	const int A_PITCH		= 6;
-	const int G_PITCH		= 8;
-	const int G_ROLL		= 9;
+	const int G_ROLL		= 8;
+	const int G_PITCH		= 9;
 	const int V_ZOOM		= 11;
 	const int V_FORMAT		= 12;
 
@@ -114,7 +114,7 @@ namespace Skynet {
 		int splitLength; // in seconds
 		bool recording;
 		DateTime recordStart;
-		String ^ fileExtensionVideo;
+		//String ^ fileExtensionVideo;
 
 		//Database ID
 		int incrId;
@@ -229,7 +229,7 @@ private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_Processe
 private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_VerifiedColumn;
 private: System::Windows::Forms::ToolStripMenuItem^  simulatorToolStripMenuItem;
 private: System::Windows::Forms::ToolStripMenuItem^  choosePathToolStripMenuItem;
-private: System::Windows::Forms::ToolStripMenuItem^  startToolStripMenuItem;
+
 private: System::Windows::Forms::ToolStripMenuItem^  pauseToolStripMenuItem;
 private: System::Windows::Forms::ToolStripMenuItem^  stopToolStripMenuItem;
 private: System::Windows::Forms::OpenFileDialog^  simReadVidDialog;
@@ -261,7 +261,7 @@ private: System::Windows::Forms::Panel^  panel1;
 
 			// Debug 
 			
-			GeoReference::computeHomography( 0, 0, 400, 0, Math::PI/4, 0, 0, -1.5708, 1 );
+			//GeoReference::computeHomography( 0, 0, 400, 0, Math::PI/4, 0, 0, -1.5708, 1 );
 
 
 
@@ -308,11 +308,12 @@ private: System::Windows::Forms::Panel^  panel1;
 			// Comport Stuff
 			//theComport = gcnew Communications::Comport( this );
 			//comPortStripComboBox->Items->AddRange( theComport->getPortNames() );
-			theSimHandler = gcnew Simulator::SimHandler(theVideoSimulator, openGLView);
+			theSimHandler = gcnew Simulator::SimHandler(theVideoSimulator, callback, openGLView);
 
 			//set up Joystick
 			m_joystick = gcnew Joystick( this );
 			m_joystick->init( NULL );
+			m_joystick->theWatcher = thePlaneWatcher;
 
 			//set up database
 			db = gcnew Database::DatabaseConnection();
@@ -322,7 +323,7 @@ private: System::Windows::Forms::Panel^  panel1;
 			// Video options
 			vidOptFolderDialogOpen = false;
 			recording = false;
-			fileExtensionVideo = ".avi";
+			//fileExtensionVideo = ".avi";
 
 			// Image options
 			imageNumber = 0;
@@ -369,6 +370,7 @@ private: System::Windows::Forms::Panel^  panel1;
 
 			m_joystick->comm = theComms;
 			theSimHandler->theComms = theComms;
+			((TelemetrySimulator ^)theSimHandler->theTelSimulator)->theAutopilotComport = theComms->autopilot;
 
 			redImage = Image::FromFile( RED_IMAGE_PATH );
 			yellowImage = Image::FromFile( YELLOW_IMAGE_PATH );
@@ -389,7 +391,7 @@ private: System::Windows::Forms::Panel^  panel1;
 
 		}
 
-	protected:
+	public:
 		/// <summary>
 		/// Clean up any resources being used.
 		/// </summary>
@@ -484,7 +486,6 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->resetToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->simulatorToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->choosePathToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
-			this->startToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->pauseToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->stopToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->openGLTimer = (gcnew System::Windows::Forms::Timer(this->components));
@@ -753,8 +754,8 @@ private: System::Windows::Forms::Panel^  panel1;
 			// 
 			// simulatorToolStripMenuItem
 			// 
-			this->simulatorToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(4) {this->choosePathToolStripMenuItem, 
-				this->startToolStripMenuItem, this->pauseToolStripMenuItem, this->stopToolStripMenuItem});
+			this->simulatorToolStripMenuItem->DropDownItems->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(3) {this->choosePathToolStripMenuItem, 
+				this->pauseToolStripMenuItem, this->stopToolStripMenuItem});
 			this->simulatorToolStripMenuItem->Name = L"simulatorToolStripMenuItem";
 			this->simulatorToolStripMenuItem->Size = System::Drawing::Size(70, 20);
 			this->simulatorToolStripMenuItem->Text = L"Simulator";
@@ -762,28 +763,21 @@ private: System::Windows::Forms::Panel^  panel1;
 			// choosePathToolStripMenuItem
 			// 
 			this->choosePathToolStripMenuItem->Name = L"choosePathToolStripMenuItem";
-			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->choosePathToolStripMenuItem->Text = L"Choose Path";
 			this->choosePathToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::choosePathToolStripMenuItem_Click);
-			// 
-			// startToolStripMenuItem
-			// 
-			this->startToolStripMenuItem->Name = L"startToolStripMenuItem";
-			this->startToolStripMenuItem->Size = System::Drawing::Size(141, 22);
-			this->startToolStripMenuItem->Text = L"Start";
-			this->startToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::startToolStripMenuItem_Click);
 			// 
 			// pauseToolStripMenuItem
 			// 
 			this->pauseToolStripMenuItem->Name = L"pauseToolStripMenuItem";
-			this->pauseToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->pauseToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->pauseToolStripMenuItem->Text = L"Pause";
 			this->pauseToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::pauseToolStripMenuItem_Click);
 			// 
 			// stopToolStripMenuItem
 			// 
 			this->stopToolStripMenuItem->Name = L"stopToolStripMenuItem";
-			this->stopToolStripMenuItem->Size = System::Drawing::Size(141, 22);
+			this->stopToolStripMenuItem->Size = System::Drawing::Size(152, 22);
 			this->stopToolStripMenuItem->Text = L"Stop";
 			this->stopToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::stopToolStripMenuItem_Click);
 			// 
@@ -2042,24 +2036,27 @@ public: System::Void reloadTable( ) {
 			
 			Communications::PlaneState ^ state = thePlaneWatcher->predictLocationAtTime(0.0);
 
-			this->metadataTable[1, G_ROLL]->Value = "" + state->gimbalInfo->roll + "*"; //azimuth;
-			this->metadataTable[1, G_PITCH]->Value = "" + state->gimbalInfo->pitch + "*"; //elevation;
-			this->metadataTable[1, A_ALT]->Value = "" + state->gpsData->gpsAltitude + ""; // altitude;
-			this->metadataTable[1, A_LAT]->Value = "" + state->gpsData->gpsLatitude + ""; // latitude;
-			this->metadataTable[1, A_LON]->Value = "" + state->gpsData->gpsLongitude + ""; // longitude;
-			this->metadataTable[1, A_HEAD]->Value = "" + state->telemData->heading + "*"; //heading;
-			this->metadataTable[1, A_ROLL]->Value = "" + state->telemData->roll + "*"; // roll;
-			this->metadataTable[1, A_PITCH]->Value = "" + state->telemData->pitch + "*"; //pitch;
-			this->metadataTable[1, V_ZOOM]->Value = "" + state->gimbalInfo->zoom; // zoom;
+			this->metadataTable[1, G_ROLL]->Value = "" + thePlaneWatcher->rawToDegrees(state->gimbalInfo->roll) + "*"; //azimuth;
+			this->metadataTable[1, G_PITCH]->Value = "" + thePlaneWatcher->rawToDegrees(state->gimbalInfo->pitch) + "*"; //elevation;
+			this->metadataTable[1, A_ALT]->Value = "" + Single(state->gpsData->gpsAltitude).ToString("F") + " (m)"; // altitude;
+			this->metadataTable[1, A_LAT]->Value = "" + Single(state->gpsData->gpsLatitude).ToString("######.#######") + "*"; // latitude;
+			this->metadataTable[1, A_LON]->Value = "" + Single(state->gpsData->gpsLongitude).ToString("######.#######") + "*"; // longitude; // ######.####
+			this->metadataTable[1, A_HEAD]->Value = "" + Single(state->telemData->heading).ToString("F") + "*"; //heading;
+			this->metadataTable[1, A_ROLL]->Value = "" + Single(state->telemData->roll).ToString("F") + "*"; // roll;
+			this->metadataTable[1, A_PITCH]->Value = "" + Single(state->telemData->pitch).ToString("F") + "*"; //pitch;
+			this->metadataTable[1, V_ZOOM]->Value = "" + state->gimbalInfo->zoom + "x"; // zoom;
 			
 			//System::Diagnostics::Trace::WriteLine("Form1::reloadTable() lat:" + state->gpsData->gpsLatitude + " lon:" + state->gpsData->gpsLongitude + " roll:" + state->telemData->roll  + 
 			//								" pitch:" + state->telemData->pitch  + " heading:" + state->telemData->heading );
+			 mapView->SetAirplaneLocation( state->gpsData->gpsLatitude, 
+					 state->gpsData->gpsLongitude, 
+					 state->telemData->heading );
 
-			delete state;
+			//delete state;
 		}
 
-public: System::Void updateGimbalInfo( Communications::GimbalInfo * data ) {
-
+public: System::Void updateGimbalInfo( Communications::GimbalInfo ^ data ) {
+			//System::Diagnostics::Trace::WriteLine("Form1::updateGimbalInfo() BLAHBLAHBLAH");
 			// save data for later
 			thePlaneWatcher->updateGimbalInfo(data);
 
@@ -2187,10 +2184,10 @@ private: System::Void startRecordButton_Click(System::Object^  sender, System::E
 			
 				path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-");// + fileExtensionVideo;
 
-				recordStart = DateTime::Now;
+				//recordStart = DateTime::Now;
 				//openGLView->enableVideoRecording( path );
 				// START TELEMETRY HERE
-				if (!theSimHandler->beginRecording(path)) {
+				if (!theSimHandler->beginRecording()) {
 					// something went wrong
 					consoleMessage( "Failed to Start Recording", Color::Red );
 
@@ -2216,9 +2213,10 @@ private: System::Void stopRecordButton_Click(System::Object^  sender, System::Ev
 			// no longer used (moved to startRecording)
 		 }
 
-#define SPLIT_LENGTH 300 // this->splitLengthTextBox->Text
 
 private: System::Void videoSaveTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
+		
+		return;
 		if( !recording )
 			return;
 
@@ -2227,17 +2225,11 @@ private: System::Void videoSaveTimer_Tick(System::Object^  sender, System::Event
 
 		if( DateTime::Compare( recordStart, time ) < 0 )
 		{
-			recordStart = DateTime::Now;
-			String ^ path;//vidOptOutputDirText->Text + "\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
-			path = "D:\\Skynet Files\\video\\video_" + time.ToString("o")->Replace(":", "-") + fileExtensionVideo;
-
-
-			//String ^ path = vidOptOutputDirText->Text + "\\video_" + recordStart.ToString("o")->Replace(":", "-") + fileExtensionVideo;
+			//recordStart = DateTime::Now;
 			
-			//openGLView->enableVideoRecording( path );
-			theSimHandler->beginRecording(path);
+			theSimHandler->beginRecording();
 			consoleMessage( "Splitting video file", Color::Gray );	
-			System::Diagnostics::Trace::WriteLine("split recording in Form1 " + path);
+			System::Diagnostics::Trace::WriteLine("split recording in Form1 ");
 		}
 	}
 private: System::Void openGLPanel_Paint(System::Object^  sender, System::Windows::Forms::PaintEventArgs^  e) {
@@ -2486,13 +2478,17 @@ private: System::Void exportDataToolStripMenuItem_Click(System::Object^  sender,
 
 
 		 }
-private: System::Void mapUpdateTimer_Tick(System::Object^  sender, System::EventArgs^  e) {			 
+private: System::Void mapUpdateTimer_Tick(System::Object^  sender, System::EventArgs^  e) {	
+
+			 // REMOVED
+
+			 return;
+
 			 // Update Map position of airplane
 			 if( isReadingData )
 			 {
-				 mapView->SetAirplaneLocation( Convert::ToDouble(this->metadataTable[1, A_LAT]->Value), 
-					 Convert::ToDouble(this->metadataTable[1, A_LON]->Value), 
-					 Convert::ToDouble(this->metadataTable[1, A_HEAD]->Value) );
+				
+				System::Diagnostics::Trace::WriteLine("Set new airplane location: " + Convert::ToDouble(this->metadataTable[1, A_LAT]->Value) + ", " + Convert::ToDouble(this->metadataTable[1, A_LON]->Value));
 				 
 				/* array<float> ^ homography = GeoReference::computeHomography( Convert::ToDouble(this->metadataTable[1, A_LAT]->Value),
 					 Convert::ToDouble(this->metadataTable[1, A_LON]->Value),
@@ -2665,45 +2661,39 @@ private: System::Void choosePathToolStripMenuItem_Click(System::Object^  sender,
 			if ( result == ::DialogResult::OK )
 			{
 				temp = simReadVidDialog->FileName;
+				
+				theSimHandler->startPlayback(temp);
 
 				//vidOptOutputDirText->Text = temp;
 				System::Diagnostics::Trace::WriteLine( "Simulator input path changed to: " + temp);
 			}
 
 			// if user presses cancel, then DONT START VIDEO!
-			else {
-				return;
-			}
-
-
-			// then setup the video simulator
-			theVideoSimulator->loadVideo( (const char*)(Marshal::StringToHGlobalAnsi(temp)).ToPointer());
-			theVideoSimulator->startVideo();
-			callback->dontShow();
 		 }
 private: System::Void startToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
-			 theVideoSimulator->startVideo();
-			 callback->dontShow();
+			 //theVideoSimulator->startVideo();
+			 //callback->dontShow();
+
+			 //THIS IS NEVER CALLED
 		 }
 private: System::Void pauseToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 			 
-			 if (theVideoSimulator->isPaused()) {
+			 if (theSimHandler->isPaused()) {
 
-				theVideoSimulator->playVideo();
+				theSimHandler->resumePlayback();
 				pauseToolStripMenuItem->Text = "Pause";
 
 				//System::Diagnostics::Trace::WriteLine( "PAUSing AHHHHHH" );
 
 			 } else {
 				pauseToolStripMenuItem->Text = "Play";
-				theVideoSimulator->pauseVideo();
+				theSimHandler->pausePlayback();
 
 			 }
 
 		 }
 private: System::Void stopToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
-			 theVideoSimulator->stopVideo();
-			 callback->doShow();
+			 theSimHandler->endPlayback();
 		 }
 private: System::Void Form1_KeyDown(System::Object^  sender, System::Windows::Forms::KeyEventArgs^  e) {
 			

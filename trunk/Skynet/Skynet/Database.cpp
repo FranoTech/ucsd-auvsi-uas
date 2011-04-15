@@ -31,11 +31,19 @@ RowData::RowData(void)
 	}
 }
 
+#define DATABASE_NAME	"AUVSI_flightdata" //"AUVSI_metadata"
+
 DatabaseConnection::DatabaseConnection(void)
 {
-	_database = gcnew OdbcConnection("Driver={PostGreSQL 64-Bit ODBC Drivers};Server=localhost;Database=AUVSI_metadata;UID=postgres;PWD=triton");
-	_command = gcnew OdbcCommand();	
-	_database->Open();
+	try {
+		_database = gcnew OdbcConnection("Driver={PostGreSQL 64-Bit ODBC Drivers};Server=localhost;Database=" + DATABASE_NAME + ";UID=postgres;PWD=triton");
+		_command = gcnew OdbcCommand();	
+		_database->Open();
+	}
+
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::DatabaseConnection(): Could not make database - " + e);
+	}
 	//OdbcCommand ^ command = gcnew OdbcCommand("SELECT * FROM candidate", _database);
 	//_command->Connection = _database;
 	//_command->CommandText = "INSERT INTO candidate (id, target_lat, target_lon, letter) VALUES (5, 987.5, 987.5, 'B')";
@@ -45,8 +53,38 @@ DatabaseConnection::DatabaseConnection(void)
 
 
 	//reader->Close();
-
+	fillDatabase();
 	
+}
+
+void DatabaseConnection::fillDatabase() 
+{
+	reset();
+
+	for (int i = 0; i < 4; i++) {
+		bool retVal = false;
+		_command->Connection = _database;
+			//inserting the array makes it mad.  FOR ARRAY USE '{0.0,1.1,2.2}'
+		_command->CommandText = "INSERT INTO computeroutput (id, image, shape, shapecolor, letter, lettercolor, timestamp, centerx, centery, directionx, directiony) VALUES (" +
+				i + ", '" + "2102403204320434036460350465" + "', " + "'square'" + ", " + "'blue'" + ", " +
+				"'a'" + ", " + "'red'" + ", " + i*10.0 + ", " + 5 + ", " + 5 + ", " +
+				100 + ", " + 100 + ")";
+	
+		//System::Diagnostics::Trace::WriteLine(_command->CommandText);
+	
+		try
+		{
+			OdbcDataReader ^ reader = _command->ExecuteReader();
+			reader->Close();
+			retVal = true;
+		}
+		catch( Exception ^ e)
+		{
+			System::Diagnostics::Trace::WriteLine("ERROR writing data: " + e);
+
+		}
+	}
+
 }
 
 DatabaseConnection::~DatabaseConnection(void)

@@ -18,14 +18,15 @@ namespace Communications
 	ref class RabbitComport : public ComportHandler {
 	public:
 		RabbitComport(TelemetrySimulator ^ telSimulator, Object ^ newDelegate, Object ^ newAutopilotComport) : ComportHandler(telSimulator, newDelegate, "Rabbit") 
-		{	autopilotComport = newAutopilotComport; connectionThread = nullptr; rabbitState = RABBIT_DISCONNECTED; };
+		{	autopilotComport = newAutopilotComport; connectionThread = nullptr; rabbitState = RABBIT_DISCONNECTED; rabbitState = false; };
 
 		//void connectToRabbit();
 		//void stopConnecting( bool connected );
 
 		virtual void analyzeData( array<System::Byte> ^ inBuffer ) override; 
 		virtual void afterBeginReading() override;
-		void sendGimbalCommand( __int16 roll, __int16 pitch );
+		virtual void disconnect() override;
+		void sendGimbalCommand( unsigned __int16 roll, unsigned __int16 pitch );
 		void sendCameraZoom( unsigned __int32 zoom );
 		void sendHello();
 		bool rabbitState;
@@ -35,6 +36,9 @@ namespace Communications
 		//void attemptToConnect();
 
 		unsigned __int32 zoomLevel;
+		unsigned __int16 lastRoll;
+		unsigned __int16 lastPitch;
+
 		Object ^ autopilotComport;
 		Thread ^ connectionThread;
 	};

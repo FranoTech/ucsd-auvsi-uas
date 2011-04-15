@@ -71,6 +71,7 @@ VideoSimulator::startVideo( void )
 
 	videoReadThread->Start();
 
+	System::Diagnostics::Trace::WriteLine("VideoSimulator::startVideo()");
 
 }
 
@@ -113,7 +114,8 @@ VideoSimulator::readThread( void )
 
 		// main video reading loop
 		while (true) {
-
+			
+			//System::Diagnostics::Trace::WriteLine("VideoSimulator::readThread() looping");
 
 			try {
 
@@ -146,7 +148,18 @@ VideoSimulator::readThread( void )
 
 				// read frame, convert frame to "float *", and send to reciever
 				
-				float * frame = this->convertBuffer( theReader->retrieve() );
+				float * frame = this->convertBuffer( theReader->retrieve() ); // TODO: fix crash (check for end of video??)
+				/*
+
+				A first chance exception of type 'System.AccessViolationException' occurred in Skynet.exe
+				An unhandled exception of type 'System.AccessViolationException' occurred in Skynet.exe
+
+				Additional information: Attempted to read or write protected memory. This is often an indication that other memory is corrupt.
+
+
+
+
+				*/
 		
 				if (frame != 0 ) {
 					receiver->UpdateBuffer( frame );

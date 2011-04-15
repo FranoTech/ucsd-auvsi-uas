@@ -12,6 +12,8 @@ namespace Simulator
 	ref class TelemetrySimulator{
 	public:
 		System::DateTime time;
+		Object ^ theRabbitComport;
+		Object ^ theAutopilotComport;
 
 		TelemetrySimulator(SimHandler ^ simHandler, Object ^ rabbitComport, Object ^ autopilotComport)
 		{
@@ -20,6 +22,17 @@ namespace Simulator
 			theSimHandler = simHandler;
 			record = false;
 		}
+
+		/* Run loop that gets telem file and analyzes it */
+		
+		void startTelSim(String ^ filename);
+		void endRunLoop();
+		bool isPaused() { return paused; }
+		void resumePlayback();
+		void pausePlayback();
+
+
+
 
 		void setRabbit(Object ^ rabbitComport) { theRabbitComport = rabbitComport; }
 
@@ -46,9 +59,12 @@ namespace Simulator
 		}
 	protected:
 	private:
+		bool paused;
+		String ^ pathname;
+		bool breakLoop;
+		void simRunLoop();
+		Thread ^ simRunLoopThread;
 		bool record;
-		Object ^ theRabbitComport;
-		Object ^ theAutopilotComport;
 		SimHandler ^ theSimHandler;
 	};
 }

@@ -60,6 +60,20 @@ namespace OpenGLForm
 			_parent = parent;
 			newFrame = false;
 		}
+		
+		virtual ~COpenGL(System::Void)
+		{
+			System::Diagnostics::Trace::WriteLine( "~COpenGL(System::Void()");
+			theSaliency = nullptr;
+
+			if( buffer != nullptr )
+				delete buffer;
+
+			if( imSaver != nullptr )
+				delete imSaver;
+
+			this->DestroyHandle();
+		}
 
 		System::Void UpdateBuffer( float * input )
 		{
@@ -236,16 +250,6 @@ namespace OpenGLForm
 		Object ^ _parent;
 
 	protected:
-		~COpenGL(System::Void)
-		{
-			if( buffer != nullptr )
-				delete buffer;
-
-			if( imSaver != nullptr )
-				delete imSaver;
-
-			this->DestroyHandle();
-		}
 
 		std::string ManagedToSTL(String ^ s) 
 		{

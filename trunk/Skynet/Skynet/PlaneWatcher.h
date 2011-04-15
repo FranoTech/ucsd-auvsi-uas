@@ -21,17 +21,21 @@ namespace Communications
 
 		void updatePlaneGPSInfo(PlaneGPSPacket ^ data);
 		void updatePlaneTelemInfo(PlaneTelemPacket ^ data);
-		void updateGimbalInfo( GimbalInfo * data);
+		void updateGimbalInfo( GimbalInfo ^ data);
 
 		float gimbalRollInDegrees();
 		float gimbalPitchInDegrees();
-
+		float rawToDegrees(unsigned __int16 input);
 		PlaneState ^ predictLocationAtTime( float timeOffset );
 
+		unsigned __int16 gimbalRoll;
+		unsigned __int16 gimbalPitch;
+		//unsigned __int32 zoom;
+		int zoomLevel;
 	private:
 		Object ^ parent;
 
-		array<GimbalInfo *> ^ gimbalInfo;
+		array<GimbalInfo ^> ^ gimbalInfo;
 		array<PlaneGPSPacket ^> ^ autopilotGPSInfo;
 		array<PlaneTelemPacket ^> ^ autopilotTelemInfo;
 		int gimbalInfoIndex;
@@ -44,7 +48,7 @@ namespace Communications
 
 		__int32 getTimeUTC(PlaneGPSPacket ^ state);
 		__int32 getTimeUTC(PlaneTelemPacket ^ state);
-		__int32 getTimeUTC(GimbalInfo *state);
+		__int32 getTimeUTC(GimbalInfo ^state);
 
 		float linearInterpolation(float A, float B, __int32 timeA, __int32 timeB, __int32 timeActual);
 	};

@@ -42,7 +42,7 @@ namespace Skynet {
 		YOuterXInnerLeftToRight
 	};
 
-	ref struct Target : IEquatable<Target ^>
+	ref struct Target : IEquatable<Target ^> // Target * theTarget;
 	{
 		Target( double lat, double lon, int id )
 		{
@@ -463,20 +463,26 @@ namespace Skynet {
 			InitializeComponent();
 
 			// Default values
-			_zoom = 6;
+			_zoom = 15;
 			// Webster field: 38.145425, -76.427765
 			_centerLongitude = -76.453841;
 			_centerLatitude = 38.145425;
-			_airplaneLatitude = _centerLatitude;
-			_airplaneLongitude = _centerLongitude;
+			//_airplaneLatitude = _centerLatitude;
+			//_airplaneLongitude = _centerLongitude;
+			_airplaneLatitude = 38.14412;
+			_airplaneLongitude = -76.42849;
 			_airplaneHeading = -135;
+
+			//_airplaneNewLatitude = _airplaneLatitude;
+			//_airplaneNewLongitude = _airplaneLongitude;
+
 			_tileProvider = Mapnik;
 			_downloadOrder = ClosestToCenterFirst;
 			_cacheDirectory = "D:\\Skynet Files\\Map Cache";
 			_downloadTiles = false;
 			_allowPreviousZoomStretch = true;
 			_allowNextZoomSqueeze = true;
-			_airplaneIcon = Image::FromFile( "C:\\Users\\UCSD\\Documents\\Visual Studio 2010\\Projects\\Skynet\\Skynet\\airplane_icon.png" );
+			_airplaneIcon = Image::FromFile( "C:\\Users\\UCSD\\Documents\\Visual Studio 2010\\Projects\\Skynet\\Skynet\\Falco_small.png" );
 			_targetIcon = Image::FromFile( "C:\\Users\\UCSD\\Documents\\Visual Studio 2010\\Projects\\Skynet\\Skynet\\thumbtack_icon.png" );
 			_redrawDelegate = gcnew Delegates::voidToVoid( this, &MapControl::redraw );
 			_uiLock = false;
@@ -543,8 +549,10 @@ namespace Skynet {
 			//if( dX - dMaxTile < 0 )
 			//	dX -= dMaxTile;
 
-			double centerX = Longitude2TileX(_centerLongitude, _zoom);
-			double centerY = Latitude2TileY(_centerLatitude, _zoom);
+			//double centerX = Longitude2TileX(_centerLongitude, _zoom);
+			//double centerY = Latitude2TileY(_centerLatitude, _zoom);
+			double centerX = dX;
+			double centerY = dY;
 
 			x = (int)(( dX - centerX ) * 256.0 + width/2.0);
 			y = (int)(( dY - centerY ) * 256.0 + height/2.0);
@@ -776,7 +784,12 @@ namespace Skynet {
 			bool bChange = false;
 
 			if( _airplaneLatitude != latitude || _airplaneLongitude != longitude || _airplaneHeading != heading )
+			{
 				bChange = true;
+				//_airplaneNewLatitude = latitude;
+				//_airplaneNewLongitude = longitude;
+				// DrawPath();
+			}
 
 			_airplaneLatitude = latitude;
 			_airplaneLongitude = longitude;
@@ -1401,7 +1414,7 @@ namespace Skynet {
 
 			try
 			{
-				DrawMap( g );		
+				DrawMap( g );	
 				DrawSearchArea( g );
 				DrawTargets( g );
 				DrawCameraLocation( g );
@@ -1427,6 +1440,7 @@ namespace Skynet {
 					return;
 			}
 			
+
 			Brush ^ theBrush = gcnew SolidBrush( Color::FromArgb( 128, Color::DarkRed) );
 			g->FillPolygon( theBrush, _cameraPoints );
 		}
@@ -1529,9 +1543,11 @@ namespace Skynet {
 			int width = this->Size.Width;
 
 			//First thing we need to do is get the X and Y values for the center point of the map
-			double dStartX = Longitude2TileX(_centerLongitude, _zoom);
+			//double dStartX = Longitude2TileX(_centerLongitude, _zoom);
+			double dStartX = Longitude2TileX(_airplaneLongitude, _zoom);
 			int nStartX = static_cast<int>(dStartX);
-			double dStartY = Latitude2TileY(_centerLatitude, _zoom);
+			//double dStartY = Latitude2TileY(_centerLatitude, _zoom);
+			double dStartY = Latitude2TileY(_airplaneLatitude, _zoom);
 			int nStartY = static_cast<int>(dStartY);
 
 			//Next we need to find the X and Y values which occur just before the top left position of the client area
@@ -1767,6 +1783,13 @@ namespace Skynet {
 
 			return retVal;
 		}
+
+		/*void DrawPath( Graphics ^ g )
+		{
+			Pen ^ penRed = gcnew Pen( Color::Red, 1.0f );
+			g->DrawLine( penRed, _airplaneLatitude, _airplaneLogitude, _airplaneNewLatitude, _airplaneNewLongitude );
+		}
+		*/
 
 		void onMouseWheel( Object^ sender, System::Windows::Forms::MouseEventArgs^ e )
 		{

@@ -122,13 +122,32 @@ namespace Communications
 		unsigned __int16 UTCmillisecond;	//UTC millisecond of minute (0 - 59,999)
 	};
 
+	
+	ref struct GimbalInfo
+	{
+		GimbalInfo(){ roll = 0; pitch = 0; zoom = 0; }
+
+		unsigned __int16 roll;
+		unsigned __int16 pitch;
+		__int8			 zoom;
+		
+
+		unsigned char UTCyear;				//years since 1900
+		unsigned char UTCmonth;				//UTC month (1 - 12)
+		unsigned char UTCday;				//UTC day of month (1 - 31)
+		unsigned char UTChour;				//UTC hour of dat (0 - 23)
+		unsigned char UTCmin;				//UTC minute of hour (0 - 59)
+		unsigned __int16 UTCmillisecond;	//UTC millisecond of minute (0 - 59,999)
+	};
+
 	ref struct PlaneState
 	{
-		PlaneState() { gpsData = gcnew PlaneGPSPacket(); telemData = gcnew PlaneTelemPacket(); gimbalInfo = new GimbalInfo(); }
-		PlaneGPSPacket ^	gpsData;
-		PlaneTelemPacket ^	telemData;
-		GimbalInfo *		gimbalInfo;	
+		PlaneState() { gpsData = gcnew PlaneGPSPacket(); telemData = gcnew PlaneTelemPacket(); gimbalInfo = gcnew GimbalInfo(); }
+		PlaneGPSPacket		^ gpsData;
+		PlaneTelemPacket 	^ telemData;
+		GimbalInfo			^ gimbalInfo;	
 	};
+
 
 	/*
 	 * All of the values associated with an autopilot (194 bytes inc header)

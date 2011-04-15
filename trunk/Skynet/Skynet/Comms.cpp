@@ -82,7 +82,7 @@ void Comms::connectAll() {
 			System::Diagnostics::Trace::WriteLine("FOUND AUTOPILOT");
 		}*/
 	}
-	Thread::Sleep( 500 );
+	Thread::Sleep( 850 );
 
 	//autopilotPortname = "COM1";
 	//rabbitPortname = "COM1";
@@ -100,7 +100,7 @@ void Comms::connectAll() {
 	array<Int32> ^ retArr = {(Int32)retval};
 	((Skynet::Form1 ^ )theDelegate)->Invoke( tellGUIDelegate, retArr );
 
-	printToConsole("Hello", Color::Orange);
+	//printToConsole("I'm sorry, I'm afraid I can't let you do that.", Color::Orange);
 	
 
 	// attempt to connect to the rabbit
@@ -147,12 +147,12 @@ void Comms::attemptConnectionOnPort( Object ^ port )
 	// save port name if valid
 	if (responseType == 2) {
 		rabbitPortname = portName;
-		this->connectRabbit();
+		//this->connectRabbit();
 
 	}
 	else if (responseType == 3) {
 		autopilotPortname = portName;
-		this->connectAutopilot();
+		//this->connectAutopilot();
 	}
 
 	
@@ -222,7 +222,7 @@ bool Comms::connectAutopilot() {
 	System::Diagnostics::Trace::WriteLine("Connecting to AUTOPILOT");
 
 	
-	testLatency(autopilotPortname);
+	//testLatency(autopilotPortname);
 
 
 
@@ -278,6 +278,18 @@ void Comms::gotoLatLon(float lat, float lon)
 
 void Comms::sendHelloToRabbit(){
 	rabbit->sendHello();
+	System::Diagnostics::Trace::WriteLine("Comms::sendHelloToRabbit()");
+}
+
+void Comms::sendGimbalRollPitch(unsigned __int16 roll, unsigned __int16 pitch)
+{
+	rabbit->sendGimbalCommand(roll, pitch);
+
+}
+
+void Comms::sendZoom(unsigned __int32 zoom)
+{
+	rabbit->sendCameraZoom(zoom);
 }
 
 void Comms::printToConsole( String ^ message, Color col )
@@ -302,7 +314,7 @@ void Comms::updateUIAboutCommsStatus(int status, String ^ type)
 	((Skynet::Form1 ^ )theDelegate)->Invoke( newconsoleDelegate, gcnew array<Object ^>{retArr});
 }
 
-void Comms::receiveRabbitPacket(GimbalInfo * packet) 
+void Comms::receiveRabbitPacket(GimbalInfo ^ packet) 
 {	
 	rabbitDelegate(packet);
 }
@@ -311,6 +323,7 @@ void Comms::receiveRabbitPacket(GimbalInfo * packet)
 void Comms::receivePlaneGPS(PlaneGPSPacket ^ packet)
 {
 	planeGPS(packet);
+	//System::Diagnostics::Trace::WriteLine("received PlaneGPSPacket in Comms");
 }
 
 void Comms::receivePlaneTelem(PlaneTelemPacket ^ packet)
