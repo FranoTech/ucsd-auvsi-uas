@@ -64,7 +64,7 @@ namespace Communications
 		float				unusedTwo;
 	};
 
-	ref struct PlaneGPSPacket
+	public ref struct PlaneGPSPacket
 	{
 		float gpsVelocity;					//longitude of UAV in decimal degrees
 		float gpsAltitude;					//the gps computed altitude, in meters
@@ -91,7 +91,7 @@ namespace Communications
 		unsigned __int16 UTCmillisecond;	//UTC millisecond of minute (0 - 59,999)
 	};
 
-	ref struct PlaneTelemPacket
+	public ref struct PlaneTelemPacket
 	{
 		float altitudeHAL;            //meters above launch
 		float velocity;               //meters per second
@@ -123,7 +123,7 @@ namespace Communications
 	};
 
 	
-	ref struct GimbalInfo
+	public ref struct GimbalInfo
 	{
 		GimbalInfo(){ roll = 0; pitch = 0; zoom = 0; }
 
@@ -140,7 +140,7 @@ namespace Communications
 		unsigned __int16 UTCmillisecond;	//UTC millisecond of minute (0 - 59,999)
 	};
 
-	ref struct PlaneState
+	public ref struct PlaneState
 	{
 		PlaneState() { gpsData = gcnew PlaneGPSPacket(); telemData = gcnew PlaneTelemPacket(); gimbalInfo = gcnew GimbalInfo(); }
 		PlaneGPSPacket		^ gpsData;
@@ -221,7 +221,7 @@ namespace Communications
 	};
 	*/
 
-	ref class AutopilotComport : public ComportHandler {
+	public ref class AutopilotComport : public ComportHandler {
 	public:
 		AutopilotComport(TelemetrySimulator ^ telSimulator, Object ^ newDelegate) : ComportHandler(telSimulator, newDelegate, "Autopilot") {
 			planeAddress = 0;  //initialize it to zero
