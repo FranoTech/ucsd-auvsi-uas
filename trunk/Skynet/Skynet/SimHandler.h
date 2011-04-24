@@ -26,11 +26,11 @@ using namespace System::Runtime::InteropServices;
 #define ENDVIDEO 4
 
 
-#define SPLIT_LENGTH 20
+#define SPLIT_LENGTH 600
 
 namespace Simulator
 {
-	ref class SimHandler
+	public ref class SimHandler
 	{
 	public:
 		int numframes;

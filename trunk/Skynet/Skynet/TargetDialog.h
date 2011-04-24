@@ -370,10 +370,11 @@ private: System::Void imageBox_MouseDown(System::Object^  sender, System::Window
 				 _mouseDown = e->Location;
 			 else if( _markLat )
 			 {
-				 double latReturn, lonReturn;
-#ifndef OPENCV_DISABLED
-				 GeoReference::applyHomography( _homography, e->Location.X, e->Location.Y, _latMap, _lonMap, latReturn, lonReturn );
-#endif
+				 double latReturn = 0.0f, lonReturn = 0.0f;
+
+				 // need to fix georeferencing
+				 //GeoReference::applyHomography( _homography, e->Location.X, e->Location.Y, _latMap, _lonMap, latReturn, lonReturn );
+
 
 				 _latitude = latReturn;
 				 _longitude = lonReturn;

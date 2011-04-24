@@ -13,7 +13,7 @@ using namespace System::Windows::Forms;
 
 namespace Vision
 {
-	ref struct FrameData
+	public ref struct FrameData
 	{
 		double latitude;
 		double longitude;
@@ -28,7 +28,7 @@ namespace Vision
 	
 	delegate void saliencyUpdateDelegate( Database::RowData ^ data );
 
-	ref class Saliency
+	public ref class Saliency
 	{
 	public:
 		Saliency( Object ^ watcher ); 	// constructor
@@ -59,7 +59,6 @@ namespace Vision
 		Object ^ planeWatcher;
 		
 		
-		saliencyUpdateDelegate ^ saliencyDelegate;
 		int frameCount;
 
 		// for saving images thread
@@ -77,5 +76,7 @@ namespace Vision
 		void saliencyThreadFunction(); // main run loop for saliency
 		void saveImagesThreadFunction();	// main run loop for saving images
 
+	private:
+		saliencyUpdateDelegate ^ saliencyDelegate;
 	};
 }

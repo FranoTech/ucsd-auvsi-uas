@@ -15,10 +15,10 @@ namespace Communications
 	//	gimbal data: __int16 roll, __int16 pitch
 	//	camera data: unsigned __int32 zoomLevel
 
-	ref class RabbitComport : public ComportHandler {
+	public ref class RabbitComport : public ComportHandler {
 	public:
 		RabbitComport(TelemetrySimulator ^ telSimulator, Object ^ newDelegate, Object ^ newAutopilotComport) : ComportHandler(telSimulator, newDelegate, "Rabbit") 
-		{	autopilotComport = newAutopilotComport; connectionThread = nullptr; rabbitState = RABBIT_DISCONNECTED; rabbitState = false; };
+		{	autopilotComport = newAutopilotComport; connectionThread = nullptr; rabbitState = RABBIT_DISCONNECTED; rabbitState = false; lastRoll = 3000; lastPitch = 3000; };
 
 		//void connectToRabbit();
 		//void stopConnecting( bool connected );

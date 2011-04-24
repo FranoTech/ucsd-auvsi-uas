@@ -254,14 +254,14 @@ Saliency::saveImagesThreadFunction()
 
 				// save image to file
 				
-				ImageUtil::SaveImage theImSaver( currentBox.height, currentBox.width, 4 );
+				ImageUtil::SaveImage theImSaver( (int)currentBox.height, (int)currentBox.width, (int)4 );
 
 
-				float * tempBuffer = new float[currentBox.height * currentBox.width * 4];
+				float * tempBuffer = new float[(size_t)(currentBox.height * currentBox.width * 4)];
 				int counter = 0;
 
-				for (int y =  currentBox.y; y < currentBox.y + currentBox.height && y < height; y++) {
-					for (int x =  currentBox.x; x < currentBox.x + currentBox.width && x < width; x++) {
+				for (int y =  (int)currentBox.y; y < (int)(currentBox.y + currentBox.height) && y < height; y++) {
+					for (int x =  (int)currentBox.x; x < (int)(currentBox.x + currentBox.width) && x < (int)width; x++) {
 
 						for (int c = 0; c < 4; c++) {
 							tempBuffer[counter] = savingBuffer[(y * width + x)*4 + c];
@@ -281,17 +281,17 @@ Saliency::saveImagesThreadFunction()
 				data->path = (IMAGE_SAVE_BASE_PATH + frameCount + "_" + i + ".bmp")->Replace("\\", "\\\\");
 				data->target_latitude = 0;			// Latitude of point selected as target
 				data->target_longitude = 0;			// Longitude of point selected as target
-				data->target_X = currentBox.x + currentBox.width / 2;					// pixel X of target
-				data->target_Y = currentBox.y + currentBox.height / 2;					// pixel Y of target
-				data->heading = savingFrameData->heading;	// heading of target
+				data->target_X = (int)(currentBox.x + currentBox.width / 2);					// pixel X of target
+				data->target_Y = (int)(currentBox.y + currentBox.height / 2);					// pixel Y of target
+				data->heading = (float)savingFrameData->heading;	// heading of target
 				data->letter = "A";				
 				data->shape = "Circle";					
 				data->fg_color = "White";				// foreground color
 				data->bg_color = "Yellow";				// background color
 				data->processed = FALSE;				// whether this has been processed by OpenCV
 				//data->verified = FALSE;				// human verified
-				data->center_latitude = savingFrameData->latitude;			// Latitude of center pixel
-				data->center_longitude = savingFrameData->longitude;			// Longitude of center pixel
+				data->center_latitude = (float)savingFrameData->latitude;			// Latitude of center pixel
+				data->center_longitude = (float)savingFrameData->longitude;			// Longitude of center pixel
 				data->mapping_latitude = 0;			// pixel to meter translation for latitude
 				data->mapping_longitude = 0;		// pixel to meter translation for longitude
 				data->homography = savingFrameData->homography;

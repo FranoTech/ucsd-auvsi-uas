@@ -34,6 +34,12 @@
     <Filter Include="Header Files\Simulation">
       <UniqueIdentifier>{9dbdefc8-2a47-4581-b3be-21774bb20aa2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\UI Forms">
+      <UniqueIdentifier>{216ae6a7-fd89-48c2-a00a-76398991f182}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Simulation">
+      <UniqueIdentifier>{c53f3436-9837-4f36-b9cc-1c7dafcb2008}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="airplane_icon.ico">
@@ -103,9 +109,6 @@
     <ClCompile Include="Joystick.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MapControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="OCR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -121,19 +124,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TargetDialog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GeoReference.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VideoSimulator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VideoReader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SimHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Comport.cpp">
@@ -154,8 +145,26 @@
     <ClCompile Include="PlaneWatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TelemetrySimulator.cpp">
+    <ClCompile Include="SkynetController.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TargetDialog.cpp">
+      <Filter>Source Files\UI Forms</Filter>
+    </ClCompile>
+    <ClCompile Include="MapControl.cpp">
+      <Filter>Source Files\UI Forms</Filter>
+    </ClCompile>
+    <ClCompile Include="SimHandler.cpp">
+      <Filter>Source Files\Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="TelemetrySimulator.cpp">
+      <Filter>Source Files\Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoReader.cpp">
+      <Filter>Source Files\Simulation</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoSimulator.cpp">
+      <Filter>Source Files\Simulation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -293,6 +302,15 @@
     </ClInclude>
     <ClInclude Include="VideoReader.h">
       <Filter>Header Files\Simulation</Filter>
+    </ClInclude>
+    <ClInclude Include="SkynetController.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HUDControl.h">
+      <Filter>Header Files\UI Forms</Filter>
+    </ClInclude>
+    <ClInclude Include="TelemetryStructures.h">
+      <Filter>Header Files\Communications</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

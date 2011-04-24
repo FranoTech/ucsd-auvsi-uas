@@ -49,7 +49,7 @@ namespace Communications
 	delegate void comportHandlerUpdateDelegate( array<System::Byte> ^ inBuffer );
 	delegate void comportNoDataDelegate( void );
 
-	ref class Comport
+	public ref class Comport
 	{
 	public:
 		Comport(Object ^ parent);
@@ -84,6 +84,10 @@ namespace Communications
 		unsigned char encodeByte( unsigned char data );
 		inline bool isSpecialByte( unsigned char data );
 		__int16 calculateChecksum( array<System::Byte> ^data, int packetSize );
+		
+		comportHandlerUpdateDelegate ^ comHandlerDelegate;
+		//comportUpdateDelegate ^ comDelegate;
+		comportNoDataDelegate ^ comNoDataDelegate;
 
 	protected:
 		SerialPort ^ _serialPort;
@@ -91,8 +95,5 @@ namespace Communications
 		array<String ^> ^ portNames;
 		Object ^ parent;
 		
-		comportHandlerUpdateDelegate ^ comHandlerDelegate;
-		//comportUpdateDelegate ^ comDelegate;
-		comportNoDataDelegate ^ comNoDataDelegate;
 	};
 }

@@ -1,9 +1,12 @@
 #include "StdAfx.h"
 #include "Database.h"
 
+#include "AutopilotComport.h"
+
 using namespace System;
 using namespace System::Data::Odbc;
 using namespace Database;
+using namespace Communications;
 
 RowData::RowData(void)
 {
@@ -55,6 +58,64 @@ DatabaseConnection::DatabaseConnection(void)
 	//reader->Close();
 	fillDatabase();
 	
+}
+
+
+void DatabaseConnection::saveNewCandidate(float * data, int width, int height, int numChannels, int originX, int originY, PlaneState ^ stateOfPlane)
+{
+	const int bytesPerFloat = 4;
+	OdbcDataReader ^ testReader = nullptr;
+	OdbcConnection ^ testConnection = nullptr;
+	OdbcCommand ^ testCommand = gcnew OdbcCommand();
+	//String ^ retString;
+
+	
+	System::Diagnostics::Trace::WriteLine("Inserting into database");
+	
+	// open connection
+	try {
+		testConnection = gcnew OdbcConnection("Driver={PostGreSQL 64-Bit ODBC Drivers};Server=localhost;Database=" + "TestByteData" + ";UID=postgres;PWD=triton");
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("Connecting to test database failed :( " + e);
+		return;
+	}
+	testCommand->Connection = testConnection;
+
+
+	// form command
+	int time = System::DateTime::Now.Second;
+
+	String ^ commandText = "INSERT INTO TestByteData (id, imagedata) VALUES (" + time + ", E'";
+	
+	char * rawData;
+	for (int i = 0; i < (width*height*numChannels*bytesPerFloat); i++)
+		commandText += "\\" + rawData[i];
+	commandText += "')";
+
+	testCommand->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine(_command->CommandText);
+	
+	// execute command
+	try
+	{
+		OdbcDataReader ^ reader = _command->ExecuteReader();
+		reader->HasRows;
+		System::Diagnostics::Trace::WriteLine(reader->HasRows);
+		reader->Close();
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("Executing command failed :( " + e);
+	}
+
+	// close connection
+	try {
+		testConnection->Close();
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("Closing test database failed :( " + e);
+		return;
+	}
 }
 
 void DatabaseConnection::fillDatabase() 
@@ -185,7 +246,7 @@ DatabaseConnection::getHomography( TableName table, String ^ rowID )
 	split = homographyAsString->Split( splitValues );
 	for( int i = 0; i < 9; ++i )
 	{
-		retVal[i] = Convert::ToDouble( split[i] );
+		retVal[i] = (float)Convert::ToDouble( split[i] );
 		//System::Diagnostics::Trace::WriteLine(split[i]);
 	}
 

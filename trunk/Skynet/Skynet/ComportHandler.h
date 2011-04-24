@@ -14,7 +14,7 @@ namespace Communications
 {
 
 
-	ref class ComportHandler {
+	public ref class ComportHandler {
 	public:
 		ComportHandler(TelemetrySimulator ^ telSimulator, Object ^ newDelegate, String ^ comType);
 

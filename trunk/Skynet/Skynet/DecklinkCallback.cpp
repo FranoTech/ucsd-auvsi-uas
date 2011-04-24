@@ -168,9 +168,9 @@ DecklinkCallback::VideoInputFrameArrived( IDeckLinkVideoInputFrame *videoFrame, 
 				col2++;
 			}		
 
-			int r = 1.164*(Y-16) + 1.596*(Cr-128);
-			int g = 1.164*(Y-16) - 0.813*(Cr-128) - 0.391*(Cb-128);
-			int b = 1.164*(Y-16) + 2.018*(Cb-128);
+			int r = (int)(1.164*(Y-16) + 1.596*(Cr-128));
+			int g = (int)(1.164*(Y-16) - 0.813*(Cr-128) - 0.391*(Cb-128));
+			int b = (int)(1.164*(Y-16) + 2.018*(Cb-128));
 
 			r = (r < 0) ? 0 : (r > 255) ? 255 : r;
 			g = (g < 0) ? 0 : (g > 255) ? 255 : g;

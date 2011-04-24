@@ -9,7 +9,7 @@ using namespace System::Runtime::InteropServices;
 
 namespace Simulator
 {
-	ref class TelemetrySimulator{
+	public ref class TelemetrySimulator{
 	public:
 		System::DateTime time;
 		Object ^ theRabbitComport;

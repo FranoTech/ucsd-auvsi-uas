@@ -29,7 +29,7 @@ namespace Communications
 	delegate void tellGUIAboutConnection( array<Int32> ^ retArr );
 	delegate void guiConsoleDelegate( array<Object ^> ^ retArr );
 
-	ref class Comms {
+	public ref class Comms {
 	public:
 		Comms(Object ^ telSimulator, Object ^ newDelegate);
 

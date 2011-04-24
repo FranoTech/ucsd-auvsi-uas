@@ -7,8 +7,9 @@
 using namespace Communications;
 using namespace System;
 using namespace System::Drawing;
+using namespace System::IO;
 
-#define PI 3.1415926
+#define PI 3.1415926f
 
 void AutopilotComport::disconnect() 
 {
@@ -126,11 +127,11 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 			}
 			/*if(kestrelPacketType == 29)  //mixed telemetry response
 			{
-				planeState->roll = (float)(getInt16FromBytes(newPacket, 5)) / 1000.0;
-				planeState->pitch = (float)(getInt16FromBytes(newPacket, 7)) / 1000.0;
-				planeState->heading = (float)(getUInt16FromBytes(newPacket, 9)) / 1000.0;
-				planeState->groundTrack = (float)(getUInt16FromBytes(newPacket, 11)) / 1000.0;
-				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 13)) / 6.0 - 1000.0;
+				planeState->roll = (float)(getInt16FromBytes(newPacket, 5)) / 1000.0f;
+				planeState->pitch = (float)(getInt16FromBytes(newPacket, 7)) / 1000.0f;
+				planeState->heading = (float)(getUInt16FromBytes(newPacket, 9)) / 1000.0f;
+				planeState->groundTrack = (float)(getUInt16FromBytes(newPacket, 11)) / 1000.0f;
+				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 13)) / 6.0f - 1000.0f;
 				planeState->gpsLatitude = getFloatFromBytes(newPacket, 15);
 				planeState->gpsLongitude = getFloatFromBytes(newPacket, 19);
 				planeState->UTCyear = getUCharFromBytes(newPacket, 25);
@@ -139,15 +140,15 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->UTChour = getUCharFromBytes(newPacket, 28);
 				planeState->UTCmin = getUCharFromBytes(newPacket, 29);
 				planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 30);
-				planeState->airspeed = (float)(getUInt16FromBytes(newPacket, 32)) / 20.0 - 10.0;
+				planeState->airspeed = (float)(getUInt16FromBytes(newPacket, 32)) / 20.0f - 10.0f;
 				System::Diagnostics::Trace::WriteLine("TESTING: Latitude " + planeState->gpsLatitude + "  Longitude: " + planeState->gpsLongitude);
 			} */
 			else if(kestrelPacketType == 248)  //navigation packet
 			{
 				PlaneGPSPacket ^planeState = gcnew PlaneGPSPacket();
-				planeState->gpsVelocity = (float)(getUInt16FromBytes(newPacket, 5)) / 20.0 - 10.0;
-				planeState->gpsAltitude = (float)(getUInt16FromBytes(newPacket, 7)) / 6.0 - 1000.0;
-				planeState->gpsHeading = ((float)(getUInt16FromBytes(newPacket, 9)) / 1000.0)*180.0/PI;
+				planeState->gpsVelocity = (float)(getUInt16FromBytes(newPacket, 5)) / 20.0f - 10.0f;
+				planeState->gpsAltitude = (float)(getUInt16FromBytes(newPacket, 7)) / 6.0f - 1000.0f;
+				planeState->gpsHeading = ((float)(getUInt16FromBytes(newPacket, 9)) / 1000.0f)*180.0f/PI;
 				planeState->gpsLatitude = getFloatFromBytes(newPacket, 13);
 				planeState->gpsLongitude = getFloatFromBytes(newPacket, 19);
 				planeState->gpsHomePositionLatitude = getFloatFromBytes(newPacket, 23);
@@ -157,14 +158,14 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->desiredLongitude = getFloatFromBytes(newPacket, 37);
 				planeState->timeToTarget = getFloatFromBytes(newPacket, 41);
 				planeState->distanceToTarget = getFloatFromBytes(newPacket, 45);
-				planeState->headingToTarget = (float)(getUInt16FromBytes(newPacket, 49)) / 1000.0;
+				planeState->headingToTarget = (float)(getUInt16FromBytes(newPacket, 49)) / 1000.0f;
 				//planeState->UTCyear = getUCharFromBytes(newPacket, 58);
 				//planeState->UTCmonth = getUCharFromBytes(newPacket, 59);
 				//planeState->UTCday = getUCharFromBytes(newPacket, 60);
 				//planeState->UTChour = getUCharFromBytes(newPacket, 61);
 				//planeState->UTCmin = getUCharFromBytes(newPacket, 62);
 				//planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 63);
-				planeState->gpsHomePositionAltitude = (float)(getUInt16FromBytes(newPacket, 64) / 6.0 - 1000.0);
+				planeState->gpsHomePositionAltitude = (float)(getUInt16FromBytes(newPacket, 64) / 6.0f - 1000.0f);
 
 				System::DateTime targetTime = System::DateTime::Now.AddSeconds(-AUTOPILOT_LATENCY);
 				planeState->UTCyear = targetTime.Year;
@@ -189,26 +190,25 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				
 				((Comms ^)theDelegate)->receivePlaneGPS(planeState);
 				//System::Diagnostics::Trace::WriteLine("AutopilotComport::analyzeData(): receivePlaneGPS");
-	
 
 			}
 			else if(kestrelPacketType == 249) //telemetry packet
 			{
 				PlaneTelemPacket ^planeState = gcnew PlaneTelemPacket();
-				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 5)) / 6.0 - 1000.0;
-				planeState->velocity = (float)(getUInt16FromBytes(newPacket, 7)) / 20.0 - 10.0;
-				planeState->roll = (float)(getInt16FromBytes(newPacket, 9)) / 1000.0;
-				planeState->pitch = (float)(getInt16FromBytes(newPacket, 11)) / 1000.0;
-				planeState->heading = ((float)(getUInt16FromBytes(newPacket, 13)) / 1000.0)*180.0/PI;
-				planeState->turnRate = (float)(getInt16FromBytes(newPacket, 15)) / 1000.0;
-				planeState->batteryVoltage = (float)(getUCharFromBytes(newPacket, 20)) / 5.0;
+				planeState->altitudeHAL = (float)(getUInt16FromBytes(newPacket, 5)) / 6.0f - 1000.0f;
+				planeState->velocity = (float)(getUInt16FromBytes(newPacket, 7)) / 20.0f - 10.0f;
+				planeState->roll = (float)(getInt16FromBytes(newPacket, 9)) / 1000.0f;
+				planeState->pitch = (float)(getInt16FromBytes(newPacket, 11)) / 1000.0f;
+				planeState->heading = ((float)(getUInt16FromBytes(newPacket, 13)) / 1000.0f)*180.0f/PI;
+				planeState->turnRate = (float)(getInt16FromBytes(newPacket, 15)) / 1000.0f;
+				planeState->batteryVoltage = (float)(getUCharFromBytes(newPacket, 20)) / 5.0f;
 				planeState->gpsNumSats = getUCharFromBytes(newPacket, 23);
-				planeState->desiredAltitude = (float)(getUInt16FromBytes(newPacket, 25)) / 6.0 - 1000.0;
-				planeState->desiredVelocity = (float)(getUCharFromBytes(newPacket, 27)) / 2.0 - 10.0;
-				planeState->desiredRoll = (float)(getInt16FromBytes(newPacket, 28)) / 1000.0;
-				planeState->desiredPitch = (float)(getInt16FromBytes(newPacket, 30)) / 1000.0;
-				planeState->desiredHeading = (float)(getUInt16FromBytes(newPacket, 32)) / 1000.0;
-				planeState->desiredTurnRate = (float)(getInt16FromBytes(newPacket, 34)) / 1000.0;
+				planeState->desiredAltitude = (float)(getUInt16FromBytes(newPacket, 25)) / 6.0f - 1000.0f;
+				planeState->desiredVelocity = (float)(getUCharFromBytes(newPacket, 27)) / 2.0f - 10.0f;
+				planeState->desiredRoll = (float)(getInt16FromBytes(newPacket, 28)) / 1000.0f;
+				planeState->desiredPitch = (float)(getInt16FromBytes(newPacket, 30)) / 1000.0f;
+				planeState->desiredHeading = (float)(getUInt16FromBytes(newPacket, 32)) / 1000.0f;
+				planeState->desiredTurnRate = (float)(getInt16FromBytes(newPacket, 34)) / 1000.0f;
 				planeState->airbornTimer = getFloatFromBytes(newPacket, 45);
 				//planeState->UTCyear = getUCharFromBytes(newPacket, 49);
 				//planeState->UTCmonth = getUCharFromBytes(newPacket, 50);
@@ -216,12 +216,12 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				//planeState->UTChour = getUCharFromBytes(newPacket, 52);
 				//planeState->UTCmin = getUCharFromBytes(newPacket, 75);
 				//planeState->UTCmillisecond = getUInt16FromBytes(newPacket, 76);
-				planeState->rollRate = ((float)(getCharFromBytes(newPacket, 59)) - 128.0) / 80.0;
-				planeState->pitchRate = ((float)(getCharFromBytes(newPacket, 60)) - 128.0) / 80.0;
-				planeState->yawRate = ((float)(getCharFromBytes(newPacket, 61)) - 128.0) / 80.0;
-				planeState->altitudeMSL = (float)(getUInt16FromBytes(newPacket, 62)) / 6.0 - 1000.0;
-				planeState->desiredClimbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0;
-				planeState->climbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0;
+				planeState->rollRate = ((float)(getCharFromBytes(newPacket, 59)) - 128.0f) / 80.0f;
+				planeState->pitchRate = ((float)(getCharFromBytes(newPacket, 60)) - 128.0f) / 80.0f;
+				planeState->yawRate = ((float)(getCharFromBytes(newPacket, 61)) - 128.0f) / 80.0f;
+				planeState->altitudeMSL = (float)(getUInt16FromBytes(newPacket, 62)) / 6.0f - 1000.0f;
+				planeState->desiredClimbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0f;
+				planeState->climbRate = (float)(getInt16FromBytes(newPacket, 79)) / 300.0f;
 				
 
 				System::DateTime targetTime = System::DateTime::Now.AddSeconds(-AUTOPILOT_LATENCY);

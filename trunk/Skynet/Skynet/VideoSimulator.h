@@ -14,7 +14,7 @@ using namespace Threading;
 
 namespace Simulator
 {
-	ref class VideoSimulator
+	public ref class VideoSimulator
 	{
 	public:
 		VideoSimulator( OpenGLForm::COpenGL ^ parent );

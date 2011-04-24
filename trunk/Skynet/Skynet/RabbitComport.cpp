@@ -188,13 +188,14 @@ void RabbitComport::analyzeData( array<System::Byte> ^ inBuffer )
 		lastPitch = packet->pitch;
 
 		// calculate packet time (ideally, set this on rabbit and send down with packet, but we will assume a 125ms delay)
-		System::DateTime packetTime = System::DateTime::Now.AddMilliseconds(RABBIT_DELAY);
+		System::DateTime packetTime = System::DateTime::Now.AddMilliseconds(-RABBIT_DELAY);
 		packet->UTCyear = packetTime.Year;
 		packet->UTCmonth = packetTime.Month;
 		packet->UTCday = packetTime.Day;
 		packet->UTChour = packetTime.Hour;
 		packet->UTCmin = packetTime.Minute;
 		packet->UTCmillisecond = packetTime.Second*1000 + packetTime.Millisecond;
+		System::Diagnostics::Trace::WriteLine("packet type 0. roll: " + packet->roll + " pitch: " + packet->pitch);
 		
 		((Comms ^)theDelegate)->receiveRabbitPacket(packet);
 		
@@ -253,7 +254,7 @@ void RabbitComport::analyzeData( array<System::Byte> ^ inBuffer )
 		packet->pitch = lastPitch;
 		
 		// calculate packet time (ideally, set this on rabbit and send down with packet, but we will assume a 125ms delay)
-		System::DateTime packetTime = System::DateTime::Now.AddMilliseconds(RABBIT_DELAY);
+		System::DateTime packetTime = System::DateTime::Now.AddMilliseconds(-RABBIT_DELAY);
 		packet->UTCyear = packetTime.Year;
 		packet->UTCmonth = packetTime.Month;
 		packet->UTCday = packetTime.Day;
@@ -267,9 +268,15 @@ void RabbitComport::analyzeData( array<System::Byte> ^ inBuffer )
 			bufferString = bufferString + " 0x" + Convert::ToString(inBuffer[i], 16);
 		}
 		
-		System::Diagnostics::Trace::WriteLine("RabbitComport::analyzeData(). bufLen:" + inBuffer->Length + " buffer:" + bufferString);
+		//System::Diagnostics::Trace::WriteLine("RabbitComport::analyzeData(). bufLen:" + inBuffer->Length + " buffer:" + bufferString);
 		System::Diagnostics::Trace::WriteLine("packet type 1. roll: " + packet->roll + " pitch: " + packet->pitch);
 		((Comms ^)theDelegate)->receiveRabbitPacket(packet);
+	}
+	
+	else if (packetType == HELLO_PACKET)
+	{
+		((Comms ^)theDelegate)->sendGimbalRollPitch(3000, 3000);
+		((Comms ^)theDelegate)->sendZoom(0);
 	}
 
 }

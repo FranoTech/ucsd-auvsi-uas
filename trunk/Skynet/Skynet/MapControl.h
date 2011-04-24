@@ -811,12 +811,12 @@ namespace Skynet {
 
 		void SetCameraLookLocation( array<float> ^ homography, double airplane_lat, double airplane_lon )
 		{
-			double targetLat, targetLon;		
-			bool bChange = false;
-			int x, y;
+			//double targetLat, targetLon;		
+			//bool bChange = false;
+			//int x, y;
 			
-#ifndef OPENCV_DISABLED
-			// Apply homography to four image corners
+			// THIS REMOVED BECAUSE WE USE GOOGLE EARTH NOW. ALSO, THIS HOMOGRAPHY USES A DIFFERENT GIMBAL
+			/*// Apply homography to four image corners
 			GeoReference::applyHomography( homography, 0, 0, airplane_lat, airplane_lon, targetLat, targetLon );
 			GetXYPosition( targetLon, targetLat, x, y );
 			if( _cameraPoints[0].X != x || _cameraPoints[0].Y != y )
@@ -840,13 +840,13 @@ namespace Skynet {
 			if( _cameraPoints[0].X != x || _cameraPoints[0].Y != y )
 				bChange = true;
 			_cameraPoints[3].X = x; _cameraPoints[3].Y = y;
-#endif
+
 
 			//Force a redraw if required
 			if (bChange && FindForm())
 			{
 				//this->Invoke( this->_redrawDelegate );
-			}
+			}*/
 		}
 
 		bool SetCenterLongitude( double dCenterLongitude )
@@ -1779,7 +1779,7 @@ namespace Skynet {
 			//Draw the text for the scale bar
 			SolidBrush ^ fontBrush = gcnew SolidBrush( Color::Black );
 			System::Drawing::Font^ drawFont = gcnew System::Drawing::Font( "Arial", 8.0f );
-			g->DrawString( sText, drawFont, fontBrush, PointF( 37, height - 40 ) );
+			g->DrawString( sText, drawFont, fontBrush, PointF( 37.0f, height - 40.0f ) );
 
 			return retVal;
 		}
@@ -1892,7 +1892,7 @@ namespace Skynet {
 		}
 
 	public:
-		Delegates::voidToVoid ^ _redrawDelegate;
+		//Delegates::voidToVoid ^ _redrawDelegate;
 	private:
 		/// <summary>
 		/// Required designer variable.
@@ -1932,6 +1932,7 @@ namespace Skynet {
 		array<PointF> ^ _opAreaPoints;
 		array<PointF> ^ _searchAreaPoints;
 		array<PointF> ^ _waypointsPoints;
+		Delegates::voidToVoid ^ _redrawDelegate; // THIS USED TO BE PRIVATE
 
 #pragma region Windows Form Designer generated code
 		/// <summary>

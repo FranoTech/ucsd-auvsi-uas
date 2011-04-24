@@ -82,7 +82,7 @@ SaveImage::saveFrame( float * buffer, std::string path, std::string pathbase, fl
 
 
 	cv::Mat warped, rotated;
-	cv::Mat rotation = cv::getRotationMatrix2D( cv::Point2f( image.cols/2, image.rows/2 ), heading, 1.0 );
+	cv::Mat rotation = cv::getRotationMatrix2D( cv::Point2f( image.cols/2.0f, image.rows/2.0f ), heading, 1.0 );
 	
 	cv::Mat homo(3, 3, CV_32FC1 );
 	homo.at<VT>( 0, 0 )[0] = homography[0];

@@ -442,6 +442,7 @@ int Comport::readData(void)
 	catch( System::IO::IOException ^ e)
 	{
 		System::Diagnostics::Trace::WriteLine("IOException in comport");
+		e = nullptr;
 	}
 	catch( Exception ^ e )
 	{

@@ -2,6 +2,9 @@
 #include "Comms.h"
 #include "PlaneWatcher.h"
 
+
+using namespace System::Timers;
+
 struct DIJOYCONFIG;
 struct XINPUT_DEVICE_NODE;
 
@@ -24,11 +27,14 @@ struct JOY_STATUS
 
 };
 
-ref class Joystick
+public ref class Joystick
 {
 public:
 	Joystick( Object ^ theParent );
 	virtual ~Joystick(void);
+
+	void setDelegate(Object ^ newDelegate) { theDelegate = newDelegate; }
+
 	HRESULT UpdateInputState( HWND hDlg );
 	HRESULT init(HWND hDlg);
 	Communications::Comms ^ comm;
@@ -36,6 +42,7 @@ public:
 
 	void setZoom( int level );
 	int getZoom( void );
+	void sendZoom( Object^ source, ElapsedEventArgs^ e );
 protected:
 	HRESULT SetupForIsXInputDevice();
 
@@ -52,4 +59,9 @@ protected:
 	__int32 zoomLevel;
 
 	Object ^ parent;
+
+	Timers::Timer ^ zoomTimer;
+	int zoomDirection;
+
+	Object ^ theDelegate;
 };

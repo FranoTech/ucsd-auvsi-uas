@@ -21,7 +21,7 @@ namespace GeoReference
 		double eccentricitySquared;  
 	};
 
-	void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
+	/*void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
 			 double &UTMNorthing, double &UTMEasting, char* UTMZone);
 
 	void UTMtoLL(int ReferenceEllipsoid, const double UTMNorthing, const double UTMEasting, const char* UTMZone,
@@ -73,6 +73,6 @@ namespace GeoReference
 
 	// Using NTSC camera - pixel aspect ratio is 11:10
 	// Using Sony FCB EX 11D, focal length linear from 4.2mm (zoom level 1)
-	// to 42.0mm (zoom level 10)
+	// to 42.0mm (zoom level 10)*/
 };
 

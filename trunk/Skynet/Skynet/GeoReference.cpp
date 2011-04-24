@@ -42,7 +42,7 @@ void getGPS(float lat, float lon, float alt, float plane_roll, float plane_pitch
 {
 	float x_fov = 46.0f;
 	float y_fov = 34.0f;
-	float x_pixels = 700;
+	float x_pixels = 700;8
 	float y_pixels = 420;
 	float zoom_factor = zoom;
 
@@ -170,6 +170,21 @@ void getGPS(float lat, float lon, float alt, float plane_roll, float plane_pitch
 	Target_Height = h;
 }*/
 
+
+
+
+
+
+
+
+
+
+
+
+
+// THE FOLLOWING CODE HAS BEEN REMOVED BECAUSE WE SWITCHED TO A DIFFERENT GIMBAL. WHILE THIS IS BEAUTIFUL, IT IS IRRELEVANT TO US.
+
+/*
 void 
 GeoReference::LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
 			 double &UTMNorthing, double &UTMEasting, char* UTMZone)
@@ -213,7 +228,7 @@ GeoReference::LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Lon
 	LongOriginRad = LongOrigin * deg2rad;
 
 	//compute the UTM Zone from the latitude and longitude
-	sprintf(UTMZone, "%d%c", ZoneNumber, UTMLetterDesignator(Lat));
+	sprintf_s(UTMZone, "%d%c", ZoneNumber, UTMLetterDesignator(Lat));
 
 	eccPrimeSquared = (eccSquared)/(1-eccSquared);
 
@@ -359,17 +374,17 @@ GeoReference::eulerMatrix( double psi, double theta, double phi )
 	typedef cv::Vec<float, 1> VT;
 	cv::Mat retVal(3, 3, CV_32FC1 );
 	// row, col
-	retVal.at<VT>( 0, 0 ) = VT( cos( psi ) * cos( theta ) );
-	retVal.at<VT>( 0, 1 ) = VT( cos( psi ) * sin( theta ) * sin( phi ) - sin( psi ) * cos( phi ) );
-	retVal.at<VT>( 0, 2 ) = VT( cos( psi ) * sin( theta ) * cos( phi ) + sin( psi ) * sin( phi ) );
+	retVal.at<VT>( 0, 0 ) = VT( (float)(cos( psi ) * cos( theta ) ));
+	retVal.at<VT>( 0, 1 ) = VT( (float)(cos( psi ) * sin( theta ) * sin( phi ) - sin( psi ) * cos( phi ) ));
+	retVal.at<VT>( 0, 2 ) = VT( (float)(cos( psi ) * sin( theta ) * cos( phi ) + sin( psi ) * sin( phi ) ));
 
-	retVal.at<VT>( 1, 0 ) = VT( sin( psi ) * cos( theta ) );
-	retVal.at<VT>( 1, 1 ) = VT( sin( psi ) * sin( theta ) * sin( phi ) + cos( psi ) * cos( phi ) );
-	retVal.at<VT>( 1, 2 ) = VT( sin( psi ) * sin( theta ) * cos( phi ) - cos( psi ) * sin( phi ) );
+	retVal.at<VT>( 1, 0 ) = VT( (float)(sin( psi ) * cos( theta ) ));
+	retVal.at<VT>( 1, 1 ) = VT( (float)(sin( psi ) * sin( theta ) * sin( phi ) + cos( psi ) * cos( phi ) ));
+	retVal.at<VT>( 1, 2 ) = VT( (float)(sin( psi ) * sin( theta ) * cos( phi ) - cos( psi ) * sin( phi ) ));
 
-	retVal.at<VT>( 2, 0 ) = VT( -sin( theta ) );
-	retVal.at<VT>( 2, 1 ) = VT( cos( theta ) * sin( phi ) );
-	retVal.at<VT>( 2, 2 ) = VT( cos( theta ) * cos( phi ) );
+	retVal.at<VT>( 2, 0 ) = VT( (float)(-sin( theta ) ));
+	retVal.at<VT>( 2, 1 ) = VT( (float)(cos( theta ) * sin( phi ) ));
+	retVal.at<VT>( 2, 2 ) = VT( (float)(cos( theta ) * cos( phi ) ));
 
 	return retVal;
 }
@@ -401,11 +416,11 @@ GeoReference::imagePoints( void )
 	// pixel coords = 0, 485
 
 	// x, y
-	retVal.at<VT>( 0, 0 ) = VT( 0, 0 );
-	retVal.at<VT>( 1, 0 ) = VT( 719, 0 );
-	retVal.at<VT>( 2, 0 ) = VT( 719, 485 );
-	retVal.at<VT>( 3, 0 ) = VT( 0, 485 );
-	retVal.at<VT>( 4, 0 ) = VT( 359, 242 );
+	retVal.at<VT>( 0, 0 ) = VT( 0.0f, 0.0f );
+	retVal.at<VT>( 1, 0 ) = VT( 719.0f, 0.0f );
+	retVal.at<VT>( 2, 0 ) = VT( 719.0f, 485.0f );
+	retVal.at<VT>( 3, 0 ) = VT( 0.0f, 485.0f );
+	retVal.at<VT>( 4, 0 ) = VT( 359.0f, 242.0f );
 
 	return retVal;
 }
@@ -453,8 +468,8 @@ GeoReference::applyHomography( array<float> ^ homography, int pixelX, int pixelY
 	homo.at<VT>( 2, 2 )[0] = homography[8];
 
 	earthPoint = homo * imagePoint;
-	earthPoint.at<VT>( 0, 0 )[0] = divideZero( earthPoint.at<VT>( 0, 0 )[0], earthPoint.at<VT>( 2, 0 )[0] );
-	earthPoint.at<VT>( 1, 0 )[0] = divideZero( earthPoint.at<VT>( 1, 0 )[0], earthPoint.at<VT>( 2, 0 )[0] );
+	earthPoint.at<VT>( 0, 0 )[0] = (float)divideZero( earthPoint.at<VT>( 0, 0 )[0], earthPoint.at<VT>( 2, 0 )[0] );
+	earthPoint.at<VT>( 1, 0 )[0] = (float)divideZero( earthPoint.at<VT>( 1, 0 )[0], earthPoint.at<VT>( 2, 0 )[0] );
 
 	double northing, easting;
 	char UTMZone[4];
@@ -535,7 +550,7 @@ cv::Mat homography( cv::Mat x, cv::Mat y )
 	retVal.at<VT>(2, 2)[0] = temp.at<VT>(8, 0)[0];
 	
 	return retVal.t();
-}
+}*/
 
 /**
  * This function will take the four image corner vectors and intersect them with the ground to find their GPS locations
@@ -550,7 +565,7 @@ cv::Mat homography( cv::Mat x, cv::Mat y )
  * These homographies should be calculated per full image and can be applied to any sub image to get its gps coordinates and
  * to rectify it.
  *
- */
+ *//*
 array<float> ^ 
 GeoReference::computeHomography( const double airplane_lat, const double airplane_lon, const double altitude, 
 	const double airplane_roll, const double airplane_pitch, const double airplane_heading,
@@ -559,8 +574,8 @@ GeoReference::computeHomography( const double airplane_lat, const double airplan
 	typedef cv::Vec<float, 1> VT;
 	typedef cv::Vec<float, 2> VT_POINTS;
 	array<float> ^ retVal = gcnew array<float>(9);
-	const float f_base_horiz = 46.0 / 2.0 * Math::PI / 180.0;
-	const float f_base_vert  = 34.1 / 2.0 * Math::PI / 180.0;
+	const float f_base_horiz = 46.0f / 2.0f * Math::PI / 180.0f;
+	const float f_base_vert  = 34.1f / 2.0f * Math::PI / 180.0f;
 
 	// current location
 	double northing, easting;
@@ -590,7 +605,7 @@ GeoReference::computeHomography( const double airplane_lat, const double airplan
 	cameraVector = r_airplane_to_northEastDown * r_gimbal_to_airplane * r_camera_to_gimbal * defaultVector();
 	deltaNorthDown = divideZero( cameraVector.at<VT>(0, 0)[0], cameraVector.at<VT>(2, 0)[0] ) * altitude;
 	deltaEastDown = divideZero( cameraVector.at<VT>(1, 0)[0],  cameraVector.at<VT>(2, 0)[0] ) * altitude;
-	earthPoints.at<VT_POINTS>(4, 0) = VT_POINTS( deltaNorthDown + northing, deltaEastDown + easting );
+	earthPoints.at<VT_POINTS>(4, 0) = VT_POINTS( (flaot)(deltaNorthDown + northing), (float)(deltaEastDown + easting) );
 
 	// Upper left corner 
 	// pixel coords = 0, 0
@@ -601,7 +616,7 @@ GeoReference::computeHomography( const double airplane_lat, const double airplan
 	deltaNorthDown = divideZero( cameraVector.at<VT>(0, 0)[0], cameraVector.at<VT>(2, 0)[0] ) * altitude;
 	deltaEastDown = divideZero( cameraVector.at<VT>(1, 0)[0],  cameraVector.at<VT>(2, 0)[0] ) * altitude;
 
-	earthPoints.at<VT_POINTS>(0, 0) = VT_POINTS( deltaNorthDown + northing, deltaEastDown + easting );
+	earthPoints.at<VT_POINTS>(0, 0) = VT_POINTS( (float)(deltaNorthDown + northing), (float)(deltaEastDown + easting) );
 
 	// Upper right corner
 	// pixel coords = 719, 0
@@ -646,7 +661,7 @@ GeoReference::computeHomography( const double airplane_lat, const double airplan
 
 	return retVal;
 }
-
+*/
 /*
  * Reference usage of this code:
 void main()

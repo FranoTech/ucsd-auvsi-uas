@@ -3,9 +3,11 @@
 #include <string>
 #include "SaveImage.h"
 #include "Saliency.h"
+#include <msclr/lock.h>
 
 using namespace System;
 using namespace System::Windows::Forms;
+using namespace msclr;
 
 static GLuint texture[1];
 
@@ -93,9 +95,10 @@ namespace OpenGLForm
 			theSaliency->analyzeFrame(input, theData);
 			if (showSaliency)
 				memcpy(saliencyBuffer, theSaliency->postSaliency, frameW * frameH * sizeof(float));
-			else
+			else {
+				lock l(this);
 				memcpy(buffer, input, frameW * frameH * sizeof(float) * 4 / 2);	
-
+			}
 			
 			newFrame = true;
 		}
@@ -224,15 +227,17 @@ namespace OpenGLForm
 		}
 
 
+	public:		
+		float * buffer;
+		GLsizei frameW, frameH;
+
 	private:
 		HDC m_hDC;
 		HGLRC m_hglrc;
 		GLfloat	rtri;				// Angle for the triangle
 		GLfloat	rquad;				// Angle for the quad
 
-		float * buffer;
 		float * saliencyBuffer;
-		GLsizei frameW, frameH;
 		int bufferW, bufferH;
 		GLfloat textureW, textureH;
 		GLfloat cubeW, cubeH;

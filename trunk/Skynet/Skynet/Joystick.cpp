@@ -1,35 +1,7 @@
 #include "StdAfx.h"
 #include "MasterHeader.h"
 
-
-#define DIRECTINPUT_VERSION 0x0800
-#define _CRT_SECURE_NO_DEPRECATE
-#define JOYSTICK_PI 3.14159265358979323846264338327950288
-#ifndef _WIN32_DCOM
-#define _WIN32_DCOM
-#endif
-
-#include <windows.h>
-#include <commctrl.h>
-//#include <basetsd.h>
-#include <dinput.h>
-#include <dinputd.h>
-//#include <assert.h>
-//#include <oleauto.h>
-//#include <shellapi.h>
-#include <math.h>
-#include <wbemidl.h>
-
-#pragma warning( disable : 4996 ) // disable deprecated warning 
-#include <strsafe.h>
-#pragma warning( default : 4996 )
-
-#include "Form1.h"
-#include "Joystick.h"
-#include "Comport.h"
-
-#define SAFE_DELETE(p)  { if(p) { delete (p);     (p)=NULL; } }
-#define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
+#include "SkynetController.h"
 
 //button bindings
 #define BTN_SQUARE 0
@@ -44,6 +16,44 @@
 #define BTN_START 9
 #define BTN_L3 10 // LEFT STICK
 #define BTN_R3 11
+
+
+#define ZOOM_TIME				800
+#define GIMBAL_FACTOR			4	// 1..8, 4 is best
+#define EXPONENTIAL_FACTOR		4.0
+#define ZOOM_NONE				-1
+#define ZOOM_IN					0
+#define ZOOM_OUT				1
+
+
+
+
+
+#define DIRECTINPUT_VERSION 0x0800
+#define _CRT_SECURE_NO_DEPRECATE
+#define JOYSTICK_PI 3.14159265358979323846264338327950288
+#ifndef _WIN32_DCOM
+#define _WIN32_DCOM
+#endif
+
+#include <windows.h>
+#include <commctrl.h>
+#include <dinput.h>
+#include <dinputd.h>
+#include <math.h>
+#include <wbemidl.h>
+
+#pragma warning( disable : 4996 ) // disable deprecated warning 
+#include <strsafe.h>
+#pragma warning( default : 4996 )
+
+#include "Form1.h"
+#include "Joystick.h"
+#include "Comport.h"
+
+#define SAFE_DELETE(p)  { if(p) { delete (p);     (p)=NULL; } }
+#define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
+
 
 
 // Function decls
@@ -63,6 +73,9 @@ LPDIRECTINPUTDEVICE8    g_pJoystick;
 
 
 static Communications::ComportUpstream * lastPacket;
+using namespace System;
+using namespace System::Timers;
+//using namespace Skynet;
 
 Joystick::Joystick( Object ^ theParent )
 {
@@ -103,10 +116,73 @@ Joystick::setZoom( int level )
 		zoom_level = level;
 }
 
+
+
+void Joystick::sendZoom( Object^ source, ElapsedEventArgs^ e )
+{
+	
+	int newZoomLevel = theWatcher->zoomLevel;
+	if (newZoomLevel == ZOOM_IN)
+		newZoomLevel++;
+	else if (newZoomLevel == ZOOM_OUT)
+		newZoomLevel--;
+	else
+		return;
+
+	if (newZoomLevel > MAX_ZOOM_LEVEL)
+		newZoomLevel = MAX_ZOOM_LEVEL;
+	if (newZoomLevel < MIN_ZOOM_LEVEL)
+		newZoomLevel = MIN_ZOOM_LEVEL;
+	theWatcher->zoomLevel = newZoomLevel;
+
+	unsigned __int32 zoom = 0;
+	switch( newZoomLevel )
+	{
+		case 1:
+			zoom = 0x00000000;
+			break;
+		case 2:
+			zoom = 0x00080000;
+			break;
+		case 3:
+			zoom = 0x01000000;
+			break;
+		case 4:
+			zoom = 0x01080000;
+			break;
+		case 5:
+			zoom = 0x02000000;
+			break;
+		case 6:
+			zoom = 0x02080000;
+			break;
+		case 7:
+			zoom = 0x03000000;
+			break;
+		case 8:
+			zoom = 0x03080000;
+			break;
+		case 9:
+			zoom = 0x04000000;
+			break;
+		default:
+			zoom = 0xAAAAAAAA; // no zoom update
+			break;
+	}
+	comm->sendZoom(zoom);
+	
+}
+
 HRESULT
 Joystick::init(HWND hDlg)
 {
 	HRESULT hr;
+
+	
+	zoomTimer = gcnew Timers::Timer(ZOOM_TIME/10);
+	zoomTimer->Elapsed += gcnew ElapsedEventHandler( this, &Joystick::sendZoom );
+	zoomTimer->Stop();
+	zoomDirection = ZOOM_NONE;
 
     // Register with the DirectInput subsystem and get a pointer
     // to a IDirectInput interface we can use.
@@ -397,7 +473,6 @@ Joystick::FreeDirectInput()
     SAFE_RELEASE( g_pDI );
 }
 
-#define EXPONENTIAL_FACTOR		4.0
 
 HRESULT 
 Joystick::UpdateInputState( HWND hDlg )
@@ -440,63 +515,23 @@ Joystick::UpdateInputState( HWND hDlg )
 	//Communications::ComportUpstream * packet = new Communications::ComportUpstream();
 
 
-	/*********************
-	 *	Non COM responses
-	 *********************/	
-	 // Button 1 = X = save picture
-	if( js.rgbButtons[BTN_X] & 0x80 )
-	{
-		tracker[BTN_X]++;
-	}
-	else
-	{
-		tracker[BTN_X] = 0;
-	}
 
-	if( tracker[BTN_X] == 1 )
-	{
-		//((Skynet::Form1 ^)parent)->saveImage();
-		/* 
-			A first chance exception of type 'System.NullReferenceException' occurred in Skynet.exe
-			A first chance exception of type 'System.Reflection.TargetInvocationException' occurred in mscorlib.dll
-			A first chance exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
-			An unhandled exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
 
-			Additional information: Input string was not in a correct format.
-
-		*/
-		try {
-			((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->saveImageDelegate );
-		} catch( Exception ^ e) {}
-		
-	}
-
-	/******************
-	 *	COM responses (set change == TRUE to send packet)
-	 ******************/		
 	//Calculate JOY_STATUS things.
 	joyie.thresholds = 1;
 	bool exponential = true;
 	double localX, localY;
 
-	//null and rest noise
+	// calculate joystick positions
 	if(js.lY > 200  || js.lX > 200 || js.lY < -200 || js.lX < -200){
 		manualMode = true;
 		manualModeCounter = 0;	
-		//packet->update_type = 0x0A;
 		
 		localX = js.lX;
 		localY = js.lY;
-
-		//System::Diagnostics::Trace::WriteLine("X (localX) = " + localX + "\n");
-		//System::Diagnostics::Trace::WriteLine("Y (localY) = " + localY + "\n");
-
 		double thresholdRange = 1000.00/joyie.thresholds;
 		localX = js.lX / thresholdRange;
 		localY = js.lY / thresholdRange;
-
-		//System::Diagnostics::Trace::WriteLine("X (localX) = " + localX + "\n");
-		//System::Diagnostics::Trace::WriteLine("Y (localY) = " + localY + "\n");
 
 		change = true;
 
@@ -525,12 +560,6 @@ Joystick::UpdateInputState( HWND hDlg )
 
 			
 		}
-		
-		//localX = localX*50;
-		//localY = localY*50;
-
-		//System::Diagnostics::Trace::WriteLine("X (localX) = " + localX + "\n");
-		//System::Diagnostics::Trace::WriteLine("Y (localY) = " + localY + "\n");
 
 		joyie.stickAngle = atan((float) (-js.lY)/js.lX)* 180.0 / JOYSTICK_PI;
 		//ANGLE CALCULATIONS
@@ -564,79 +593,74 @@ Joystick::UpdateInputState( HWND hDlg )
 		joyie.stickAngle = 0.0;
 	}
 	
-	//System::Diagnostics::Trace::WriteLine("X (localX) = " + localX + "\n");
-	//System::Diagnostics::Trace::WriteLine("Y (localY) = " + localY + "\n");
+
+
+	// Button 1 = X = save picture
+	if( js.rgbButtons[BTN_X] & 0x80 ) { tracker[BTN_X]++; }
+	else { tracker[BTN_X] = 0; }
+
+	if( tracker[BTN_X] == 1 )
+	{
+
+		((Skynet::SkynetController ^)theDelegate)->saveCurrentImageAsTarget();
+		
+		//((Skynet::Form1 ^)parent)->saveImage();
+		/* 
+			A first chance exception of type 'System.NullReferenceException' occurred in Skynet.exe
+			A first chance exception of type 'System.Reflection.TargetInvocationException' occurred in mscorlib.dll
+			A first chance exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
+			An unhandled exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
+
+			Additional information: Input string was not in a correct format.
+
+		*/
+		/*try {
+			((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->saveImageDelegate );
+		} catch( Exception ^ e) { e = nullptr; }*/
+		
+	}
+
 	// localX and Y contain the stick coordinates between -1 and 1
-	newGimbalRoll += 40*localX;
-	newGimbalPitch += 40*localY;
-	
+	newGimbalRoll += (unsigned __int16)(40.0f*GIMBAL_FACTOR*localX);
+	newGimbalPitch += (unsigned __int16)(40.0f*GIMBAL_FACTOR*localY);
+		
 	
 	if( js.rgbButtons[BTN_SQUARE] & 0x80 )
-	{
-		tracker[BTN_SQUARE]++;
-	}
-	else
-	{
-		tracker[BTN_SQUARE] = 0;
-	}
+	{ tracker[BTN_SQUARE]++; }
+	else { tracker[BTN_SQUARE] = 0; }
 
-	if( tracker[BTN_SQUARE] == 1 )
-	{
-		change = true;
-		//packet->update_type = 0x0E;
-	}
+	if( tracker[BTN_SQUARE] == 1 ) { }
 
-	if( js.rgbButtons[BTN_CIRCLE] & 0x80 )
-	{
-		tracker[BTN_CIRCLE]++;
-	}
-	else
-	{
-		tracker[BTN_CIRCLE] = 0;
-	}
+	if( js.rgbButtons[BTN_CIRCLE] & 0x80 ) { tracker[BTN_CIRCLE]++; }
+	else { tracker[BTN_CIRCLE] = 0; }
 
-	if( tracker[BTN_CIRCLE] == 1 )
-	{
-		change = true;
-		//packet->update_type = 0x0C;
-	}
+	if( tracker[BTN_CIRCLE] == 1 ) { }
 
 
-	//poll L1
-	if( js.rgbButtons[BTN_L1] & 0x80 )
-	{
-		tracker[BTN_L1]++;
-	}
-	else
-	{
-		tracker[BTN_L1] = 0;
-	}
+	// L1 button to zoom in
+	if( js.rgbButtons[BTN_L1] & 0x80 ) { tracker[BTN_L1]++; }
+	else { tracker[BTN_L1] = 0; }
 	
-	//when L1 is pressed first
-	if(tracker[BTN_L1] == 1)
+	// R1 button to zoom out
+	if( js.rgbButtons[BTN_R1] & 0x80 ) { tracker[BTN_R1]++; }
+	else { tracker[BTN_R1] = 0; }
+
+
+	// handle zoom buttons
+	if(tracker[BTN_L1] == 1 && !(tracker[BTN_R1] == 1))
 	{
-		//send zoom packet
 		if(newZoomLevel > MIN_ZOOM_LEVEL)
 		{
 			newZoomLevel--;
 			change = true;
-			//packet->update_type = 0x0A;
 		}
+
+		// start timer
+		zoomDirection = ZOOM_OUT;
+		zoomTimer->Start();
 		
 	}
-
-	//poll R1
-	if( js.rgbButtons[BTN_R1] & 0x80 )
-	{
-		tracker[BTN_R1]++;
-	}
-	else
-	{
-		tracker[BTN_R1] = 0;
-	}
-	
-	//when R1 is pressed first
-	if(tracker[BTN_R1] == 1)
+	else if(tracker[BTN_R1] == 1 && !(tracker[BTN_L1] == 1))
 	{
 		//send zoom packet
 		if(newZoomLevel < MAX_ZOOM_LEVEL)
@@ -646,34 +670,38 @@ Joystick::UpdateInputState( HWND hDlg )
 			//packet->update_type = 0x0A;
 		}
 		
+
+		// start timer
+		zoomDirection = ZOOM_IN;
+		zoomTimer->Start();
 	}
 
+	else {
+		// stop timer
+		zoomDirection = ZOOM_NONE;
+		zoomTimer->Stop();
+	}
+
+
+	// center gimbal by pushing stick
 	if( js.rgbButtons[BTN_L3] & 0x80 )
-	{
-		tracker[BTN_L3]++;
-	}
+	{ tracker[BTN_L3]++; }
 	else
-	{
-		tracker[BTN_L3] = 0;
-	}
-
+	{ tracker[BTN_L3] = 0; }
 	if( tracker[BTN_L3] == 1 )
 	{
 		newGimbalRoll = 3000;
 		newGimbalPitch = 3000;
 	}
 
-	// Fill up text w/ buttons
+	/*// Print status of each button
     for( int i = 0; i < 128; i++ )
     {
         if( js.rgbButtons[i] & 0x80 )
         {
-			//System::Diagnostics::Trace::WriteLine("Button " + i + " pressed.");
-            //TCHAR sz[128];
-            //StringCchPrintf( sz, 128, TEXT( "%02d " ), i );
-            //StringCchCat( strText, 512, sz );
+			System::Diagnostics::Trace::WriteLine("Button " + i + " pressed.");
         }
-    }
+    }*/
 
 	// send commands to Comms
 	if (newGimbalRoll != theWatcher->gimbalRoll || newGimbalPitch != theWatcher->gimbalPitch) {

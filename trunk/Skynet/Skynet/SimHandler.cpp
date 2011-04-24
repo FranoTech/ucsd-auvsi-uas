@@ -172,7 +172,7 @@ void SimHandler::tryToStartVideo(Object ^ arg)
 
 				// begin timer
 				TimerCallback^ tcb = gcnew TimerCallback(this, &SimHandler::splitVideo);
-				splitTimer = gcnew Threading::Timer(tcb, nullptr, SPLIT_LENGTH*1000, SPLIT_LENGTH*1000);
+				splitTimer = gcnew Threading::Timer(tcb, nullptr, SPLIT_LENGTH*1000, Timeout::Infinite);
 
 				recordVideo = true;
 				return;
@@ -201,6 +201,44 @@ void SimHandler::stopVideo()
 	}
 
 	openGLView->disableVideoRecording();
+	if (splitTimer != nullptr) {
+		splitTimer->~Timer(); // THIS LINE: FIX TODO:
+		splitTimer = nullptr;
+	}
+		/*
+	A first chance exception of type 'System.NullReferenceException' occurred in Skynet.exe
+System.Transactions Critical: 0 : <TraceRecord xmlns="http://schemas.microsoft.com/2004/10/E2ETraceEvent/TraceRecord" Severity="Critical"><TraceIdentifier>http://msdn.microsoft.com/TraceCodes/System/ActivityTracing/2004/07/Reliability/Exception/Unhandled</TraceIdentifier><Description>Unhandled exception</Description><AppDomain>Skynet.exe</AppDomain><Exception><ExceptionType>System.NullReferenceException, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</ExceptionType><Message>Object reference not set to an instance of an object.</Message><StackTrace>   at Simulator.SimHandler.stopVideo() in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\simhandler.cpp:line 204
+   at Simulator.SimHandler.endRecording() in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\simhandler.cpp:line 216
+   at Skynet.Form1.startRecordButton_Click(Object sender, EventArgs e) in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\form1.h:line 2249
+   at System.Windows.Forms.Button.OnMouseUp(MouseEventArgs mevent)
+   at System.Windows.Forms.Control.WmMouseUp(Message&amp;amp; m, MouseButtons button, Int32 clicks)
+   at System.Windows.Forms.Control.WndProc(Message&amp;amp; m)
+   at System.Windows.Forms.ButtonBase.WndProc(Message&amp;amp; m)
+   at System.Windows.Forms.Button.WndProc(Message&amp;amp; m)
+   at System.Windows.Forms.NativeWindow.DebuggableCallback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+   at System.Windows.Forms.UnsafeNativeMethods.DispatchMessageW(MSG&amp;amp; msg)
+   at System.Windows.Forms.Application.ComponentManager.System.Windows.Forms.UnsafeNativeMethods.IMsoComponentManager.FPushMessageLoop(IntPtr dwComponentID, Int32 reason, Int32 pvLoopData)
+   at System.Windows.Forms.Application.ThreadContext.RunMessageLoopInner(Int32 reason, ApplicationContext context)
+   at System.Windows.Forms.Application.ThreadContext.RunMessageLoop(Int32 reason, ApplicationContext context)
+   at main(String[] args) in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\skynet.cpp:line 16</StackTrace><ExceptionString>System.NullReferenceException: Object reference not set to an instance of an object.
+   at Simulator.SimHandler.stopVideo() in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\simhandler.cpp:line 204
+   at Simulator.SimHandler.endRecording() in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\simhandler.cpp:line 216
+   at Skynet.Form1.startRecordButton_Click(Object sender, EventArgs e) in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\form1.h:line 2249
+   at System.Windows.Forms.Button.OnMouseUp(MouseEventArgs mevent)
+   at System.Windows.Forms.Control.WmMouseUp(Message&amp;amp; m, MouseButtons button, Int32 clicks)
+   at System.Windows.Forms.Control.WndProc(Message&amp;amp; m)
+   at System.Windows.Forms.ButtonBase.WndProc(Message&amp;amp; m)
+   at System.Windows.Forms.Button.WndProc(Message&amp;amp; m)
+   at System.Windows.Forms.NativeWindow.DebuggableCallback(IntPtr hWnd, Int32 msg, IntPtr wparam, IntPtr lparam)
+   at System.Windows.Forms.UnsafeNativeMethods.DispatchMessageW(MSG&amp;amp; msg)
+   at System.Windows.Forms.Application.ComponentManager.System.Windows.Forms.UnsafeNativeMethods.IMsoComponentManager.FPushMessageLoop(IntPtr dwComponentID, Int32 reason, Int32 pvLoopData)
+   at System.Windows.Forms.Application.ThreadContext.RunMessageLoopInner(Int32 reason, ApplicationContext context)
+   at System.Windows.Forms.Application.ThreadContext.RunMessageLoop(Int32 reason, ApplicationContext context)
+   at main(String[] args) in c:\users\ucsd\documents\visual studio 2010\projects\skynet\skynet\skynet.cpp:line 16</ExceptionString></Exception></TraceRecord>
+An unhandled exception of type 'System.NullReferenceException' occurred in Skynet.exe
+
+Additional information: Object reference not set to an instance of an object.
+*/
 }
 
 void SimHandler::endRecording()

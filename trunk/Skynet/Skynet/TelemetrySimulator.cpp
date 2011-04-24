@@ -146,7 +146,7 @@ void TelemetrySimulator::simRunLoop()
 	}
 	catch (Exception ^ e)
 	{
-
+		e = nullptr;
 	}
 	
 	sr->Close();

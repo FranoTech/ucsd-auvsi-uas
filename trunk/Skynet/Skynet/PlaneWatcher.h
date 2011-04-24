@@ -11,11 +11,13 @@ using namespace System::Runtime::InteropServices;
 #define NUM_TELEM_DATA 100
 #define NUM_GIMBAL_DATA 100
 
+#define CAMERA_LATENCY 125
+
 namespace Communications
 {
 
 
-	ref class PlaneWatcher {
+	public ref class PlaneWatcher {
 	public:
 		PlaneWatcher(Object ^ theParent);
 
@@ -27,6 +29,7 @@ namespace Communications
 		float gimbalPitchInDegrees();
 		float rawToDegrees(unsigned __int16 input);
 		PlaneState ^ predictLocationAtTime( float timeOffset );
+		PlaneState ^ stateOfCurrentImage();
 
 		unsigned __int16 gimbalRoll;
 		unsigned __int16 gimbalPitch;

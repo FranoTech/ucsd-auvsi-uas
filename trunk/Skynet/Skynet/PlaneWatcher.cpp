@@ -4,6 +4,7 @@
 #include <msclr/lock.h>
 
 using namespace Communications;
+using namespace msclr;
 
 #define MAX_INT_32 2147483647
 
@@ -36,7 +37,6 @@ PlaneWatcher::PlaneWatcher(Object ^ theParent)
 	}
 }
 		
-using namespace msclr;
 
 void PlaneWatcher::updateGimbalInfo( GimbalInfo ^ data)
 {
@@ -85,13 +85,10 @@ void PlaneWatcher::updatePlaneTelemInfo( PlaneTelemPacket ^ data)
 	((Skynet::Form1 ^)parent)->reloadTable();
 }
 
-		
-/*PlaneState * PlaneWatcher::predictLocationAtTime( float timeOffset )
+PlaneState ^ PlaneWatcher::stateOfCurrentImage()
 {
-	//TODO:  that's right, something else for Todo to do.
-	//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime()");
-	return getClosestAutopilotState(timeOffset);
-}*/
+	return predictLocationAtTime( -CAMERA_LATENCY );
+}
 
 PlaneState ^ PlaneWatcher::predictLocationAtTime( float timeOffset )
 {
@@ -316,8 +313,8 @@ PlaneState ^ PlaneWatcher::predictLocationAtTime( float timeOffset )
 		if (smallestIndex == -1) 
 		{
 			retval->gimbalInfo->zoom = 1;
-			retval->gimbalInfo->pitch = 0;
-			retval->gimbalInfo->roll = 0;
+			retval->gimbalInfo->pitch = 3000;
+			retval->gimbalInfo->roll = 3000;
 			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): No rabbit packets");
 		}
 		// if packet found, but only one
@@ -373,8 +370,10 @@ PlaneState ^ PlaneWatcher::predictLocationAtTime( float timeOffset )
 		retval->gpsData->gpsLongitude = -117.0f;
 			
 		retval->gimbalInfo->zoom = 1;
-		retval->gimbalInfo->pitch = 0;
-		retval->gimbalInfo->roll = 0;
+		retval->gimbalInfo->pitch = 3000;
+		retval->gimbalInfo->roll = 3000;
+
+		e = nullptr;
 	}
 
 	return retval;

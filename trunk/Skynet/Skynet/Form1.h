@@ -14,6 +14,7 @@
 #endif
 
 #include "TargetDialog.h"
+#include "HUDControl.h"
 #include "Saliency.h"
 #include "OCR.h"
 //#include "VideoSimulator.h"
@@ -21,6 +22,7 @@
 #include "Comms.h"
 #include "PlaneWatcher.h"
 #include "AutopilotComport.h"
+#include "SkynetController.h"
 
 #include <math.h>
 
@@ -87,11 +89,13 @@ namespace Skynet {
 		Delegates::voidToVoid ^ comportEstablishDelegate;
 		Delegates::twointThreedoubleToVoid ^ imageDialogDelegate;
 		Delegates::rowDataToVoid ^ saliencyAddTarget;
-		Delegates::voidToVoid ^ saveImageDelegate;
 		Delegates::dataGridViewRowToVoid ^ ocrDelegate;
+		Delegates::voidToVoid ^ saveImageDelegate;
 	protected:
 		OpenGLForm::COpenGL ^ openGLView;  	// video viewport
 		Decklink::Callback * callback;		// decklink callback		
+
+		SkynetController ^ appController;
 
 		String ^ fileExtension;
 		String ^ defaultMapCache;
@@ -129,6 +133,7 @@ namespace Skynet {
 		Simulator::SimHandler ^ theSimHandler;
 
 		Communications::PlaneWatcher ^ thePlaneWatcher;
+
 
 		Image ^redImage;
 		Image ^yellowImage;
@@ -250,6 +255,10 @@ private: System::Windows::Forms::Label^  label14;
 private: System::Windows::Forms::Label^  label15;
 private: System::Windows::Forms::Label^  label16;
 private: System::Windows::Forms::Panel^  panel1;
+private: System::Diagnostics::Process^  process1;
+private: System::Windows::Forms::Panel^  gimbalHUDPanel;
+private: HUDControl^ gimbalHUDView;
+
 
 	private: System::Windows::Forms::Label^  label7;
 			 
@@ -263,7 +272,7 @@ private: System::Windows::Forms::Panel^  panel1;
 			
 			//GeoReference::computeHomography( 0, 0, 400, 0, Math::PI/4, 0, 0, -1.5708, 1 );
 
-
+			appController = gcnew SkynetController(this);
 
 			// Set up Map
 			this->mapView = gcnew MapControl();
@@ -272,13 +281,29 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->mapView->Size = this->mapPanel->Size;			
 			this->mapView->MouseMove += gcnew System::Windows::Forms::MouseEventHandler(this, &Form1::mapView_MouseMove);
 			this->mapView->MouseDown += gcnew System::Windows::Forms::MouseEventHandler(this, &Form1::mapView_MouseDown);
+
+			// Set up HUD
+			this->gimbalHUDView = gcnew HUDControl();
+			this->gimbalHUDView->Location = this->gimbalHUDPanel->Location;
+			this->gimbalHUDView->Name = L"gimbalHUDView";
+			this->gimbalHUDView->Size = this->gimbalHUDPanel->Size;
+			this->gimbalHUDView->Refresh();
+			this->gimbalHUDView->BackColor = System::Drawing::Color::Transparent;
+			
 			//this->mapView->ContextMenuStrip = mapMenuStrip;
 			
 			this->Controls->Add(this->mapView);
-						
+			this->Controls->Add(this->gimbalHUDView);
+
+			//hide map
 			this->mapPanel->Location = System::Drawing::Point(0, 0);
 			this->mapPanel->Name = L"mapPanel";
 			this->mapPanel->Size = System::Drawing::Size(0, 0);
+
+			//hide HUD
+			this->gimbalHUDPanel->Location = System::Drawing::Point(0, 0);
+			this->gimbalHUDPanel->Name = L"gimbalHUDPanel";
+			this->gimbalHUDPanel->Size = System::Drawing::Size(0, 0);
 
 			this->ResumeLayout(false);
 			this->PerformLayout();
@@ -293,13 +318,16 @@ private: System::Windows::Forms::Panel^  panel1;
 			// end set up Map
 			
 			thePlaneWatcher = gcnew Communications::PlaneWatcher(this);
+			appController->setPlaneWatcher( thePlaneWatcher );
 
 			// Set up openGL						
 			// old todo: in order to have two openGL windows, you really only get one OpenGL scene and give each one a different viewport
 			wglMakeCurrent( NULL, NULL ); // this causees a delay which allows wglCreateContext to work properly
 			//openGLView2 = gcnew OpenGLForm::COpenGL( this->openGLPanel2, this->openGLPanel2->Width, this->openGLPanel2->Height );
 			openGLView = gcnew OpenGLForm::COpenGL( this->openGLPanel, this->openGLPanel->Width, this->openGLPanel->Height, this, thePlaneWatcher );
-			
+			appController->setCameraView( openGLView );
+
+
 			// Set up DeckLink
 			callback = new Decklink::Callback( openGLView );
 			
@@ -314,12 +342,14 @@ private: System::Windows::Forms::Panel^  panel1;
 			m_joystick = gcnew Joystick( this );
 			m_joystick->init( NULL );
 			m_joystick->theWatcher = thePlaneWatcher;
+			m_joystick->setDelegate( appController );
 
 			//set up database
 			db = gcnew Database::DatabaseConnection();
 			bool connec = db->connect();
 			incrId = 0;
-		
+			appController->setDatabase( db );
+
 			// Video options
 			vidOptFolderDialogOpen = false;
 			recording = false;
@@ -388,7 +418,8 @@ private: System::Windows::Forms::Panel^  panel1;
 			//theComms->gotoLatLon(534.0f, 2878.0f);
 
 			consoleMessage("... Skynet online", Color::Orange);
-
+			
+			gimbalHUDView->BringToFront();
 		}
 
 	public:
@@ -490,6 +521,7 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->stopToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->openGLTimer = (gcnew System::Windows::Forms::Timer(this->components));
 			this->openGLPanel = (gcnew System::Windows::Forms::Panel());
+			this->gimbalHUDPanel = (gcnew System::Windows::Forms::Panel());
 			this->errorLogTextBox = (gcnew System::Windows::Forms::RichTextBox());
 			this->metadataTable = (gcnew System::Windows::Forms::DataGridView());
 			this->Property = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
@@ -579,6 +611,7 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->label15 = (gcnew System::Windows::Forms::Label());
 			this->label16 = (gcnew System::Windows::Forms::Label());
 			this->panel1 = (gcnew System::Windows::Forms::Panel());
+			this->process1 = (gcnew System::Diagnostics::Process());
 			this->menuStrip1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->BeginInit();
 			this->tabControl1->SuspendLayout();
@@ -763,21 +796,21 @@ private: System::Windows::Forms::Panel^  panel1;
 			// choosePathToolStripMenuItem
 			// 
 			this->choosePathToolStripMenuItem->Name = L"choosePathToolStripMenuItem";
-			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->choosePathToolStripMenuItem->Size = System::Drawing::Size(141, 22);
 			this->choosePathToolStripMenuItem->Text = L"Choose Path";
 			this->choosePathToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::choosePathToolStripMenuItem_Click);
 			// 
 			// pauseToolStripMenuItem
 			// 
 			this->pauseToolStripMenuItem->Name = L"pauseToolStripMenuItem";
-			this->pauseToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->pauseToolStripMenuItem->Size = System::Drawing::Size(141, 22);
 			this->pauseToolStripMenuItem->Text = L"Pause";
 			this->pauseToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::pauseToolStripMenuItem_Click);
 			// 
 			// stopToolStripMenuItem
 			// 
 			this->stopToolStripMenuItem->Name = L"stopToolStripMenuItem";
-			this->stopToolStripMenuItem->Size = System::Drawing::Size(152, 22);
+			this->stopToolStripMenuItem->Size = System::Drawing::Size(141, 22);
 			this->stopToolStripMenuItem->Text = L"Stop";
 			this->stopToolStripMenuItem->Click += gcnew System::EventHandler(this, &Form1::stopToolStripMenuItem_Click);
 			// 
@@ -794,6 +827,14 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->openGLPanel->Size = System::Drawing::Size(1280, 720);
 			this->openGLPanel->TabIndex = 1;
 			this->openGLPanel->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &Form1::openGLPanel_Paint);
+			// 
+			// gimbalHUDPanel
+			// 
+			this->gimbalHUDPanel->BackColor = System::Drawing::Color::Transparent;
+			this->gimbalHUDPanel->Location = System::Drawing::Point(997, 790);
+			this->gimbalHUDPanel->Name = L"gimbalHUDPanel";
+			this->gimbalHUDPanel->Size = System::Drawing::Size(134, 134);
+			this->gimbalHUDPanel->TabIndex = 34;
 			// 
 			// errorLogTextBox
 			// 
@@ -876,7 +917,7 @@ private: System::Windows::Forms::Panel^  panel1;
 			// 
 			this->tabControl1->Controls->Add(this->tabPage1);
 			this->tabControl1->Controls->Add(this->tabPage2);
-			this->tabControl1->Location = System::Drawing::Point(385, 781);
+			this->tabControl1->Location = System::Drawing::Point(1172, 781);
 			this->tabControl1->Name = L"tabControl1";
 			this->tabControl1->SelectedIndex = 0;
 			this->tabControl1->Size = System::Drawing::Size(493, 153);
@@ -1629,6 +1670,16 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->panel1->Size = System::Drawing::Size(292, 140);
 			this->panel1->TabIndex = 33;
 			// 
+			// process1
+			// 
+			this->process1->StartInfo->Domain = L"";
+			this->process1->StartInfo->LoadUserProfile = false;
+			this->process1->StartInfo->Password = nullptr;
+			this->process1->StartInfo->StandardErrorEncoding = nullptr;
+			this->process1->StartInfo->StandardOutputEncoding = nullptr;
+			this->process1->StartInfo->UserName = L"";
+			this->process1->SynchronizingObject = this;
+			// 
 			// Form1
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -1636,6 +1687,7 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->AutoValidate = System::Windows::Forms::AutoValidate::EnableAllowFocusChange;
 			this->BackColor = System::Drawing::Color::DimGray;
 			this->ClientSize = System::Drawing::Size(1924, 946);
+			this->Controls->Add(this->gimbalHUDPanel);
 			this->Controls->Add(this->panel1);
 			this->Controls->Add(this->pictureBox3);
 			this->Controls->Add(this->pictureBox2);
@@ -1654,10 +1706,10 @@ private: System::Windows::Forms::Panel^  panel1;
 			this->Controls->Add(this->label7);
 			this->Controls->Add(this->label6);
 			this->Controls->Add(this->label5);
-			this->Controls->Add(this->tabControl1);
 			this->Controls->Add(this->metadataTable);
 			this->Controls->Add(this->startRecordButton);
 			this->Controls->Add(this->errorLogTextBox);
+			this->Controls->Add(this->tabControl1);
 			this->Controls->Add(this->openGLPanel);
 			this->Controls->Add(this->menuStrip1);
 			this->MainMenuStrip = this->menuStrip1;
@@ -1761,6 +1813,12 @@ private: System::Void consoleMessage( String ^ message, Color col )
 		 	 return;
 		 }
 
+public:	 System::Void printToConsole( String ^ message, Color ^ color)
+		 {
+			 array<Object ^> ^ retArr = gcnew array< Object^ >{message, color};
+	
+			 printToConsole( retArr );
+		 }
 public:  System::Void printToConsole( array<Object ^> ^ retArr ) 
 		 {
 			 
@@ -1953,8 +2011,8 @@ public: System::Void saveImage(){
 			//data->verified = FALSE;					// human verified
 			data->center_latitude = 0;			// Latitude of center pixel
 			data->center_longitude = 0;			// Longitude of center pixel
-			data->mapping_latitude = Convert::ToDouble( this->metadataTable[1, A_LAT]->Value );			// pixel to meter translation for latitude
-			data->mapping_longitude = Convert::ToDouble( this->metadataTable[1, A_LON]->Value );		// pixel to meter translation for longitude
+			data->mapping_latitude = (float)Convert::ToDouble( this->metadataTable[1, A_LAT]->Value );			// pixel to meter translation for latitude
+			data->mapping_longitude = (float)Convert::ToDouble( this->metadataTable[1, A_LON]->Value );		// pixel to meter translation for longitude
 			
 			/*data->homography = GeoReference::computeHomography( Convert::ToDouble( this->metadataTable[1, A_LAT]->Value ),
 				Convert::ToDouble( this->metadataTable[1, A_LON]->Value ),
@@ -2033,6 +2091,7 @@ private: void AddText( Stream^ fs, String^ value )
 		 
 public: System::Void reloadTable( ) {
 			
+
 			
 			Communications::PlaneState ^ state = thePlaneWatcher->predictLocationAtTime(0.0);
 
@@ -2051,8 +2110,43 @@ public: System::Void reloadTable( ) {
 			 mapView->SetAirplaneLocation( state->gpsData->gpsLatitude, 
 					 state->gpsData->gpsLongitude, 
 					 state->telemData->heading );
-
+			 gimbalHUDView->setGimbalPosition( thePlaneWatcher->rawToDegrees(state->gimbalInfo->roll),
+				 thePlaneWatcher->rawToDegrees(state->gimbalInfo->pitch));
 			//delete state;
+
+			 // TESTING: write plane location to file
+
+				//http://localhost/Test.kml
+
+				String ^ file = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
+					"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n"+
+					"<Document>\n"+
+					"<Style id=\"plane\">\n"+
+					"<IconStyle>\n"+
+					"<heading>"+Single(state->telemData->heading).ToString("F")+"</heading>\n"+
+					"<Icon>\n"+
+					"<href>http://localhost/falco.png</href>\n"+
+					"<scale>1.0</scale>\n"+
+					"</Icon>\n"+   
+					"</IconStyle>\n"+
+					"</Style>\n"+
+					"<Placemark>\n"+
+					"<styleUrl>#plane</styleUrl>\n"+
+					"<name>Falco @ "+System::DateTime::Now.Second+"</name>\n"+
+					"<description>Attached to the ground. Intelligently places itself at the height of the underlying terrain.</description>\n"+
+					"<Point>\n"+
+					"<altitudeMode>absolute</altitudeMode>\n"+
+					"<coordinates>"+Single(state->gpsData->gpsLongitude).ToString("######.#######")+
+					","+Single(state->gpsData->gpsLatitude).ToString("######.#######")+
+					","+Single(state->gpsData->gpsAltitude).ToString("F")+"</coordinates>\n"+
+					"</Point>\n"+
+					"</Placemark>\n"+
+					"</Document>"+
+					"</kml>\n";
+				StreamWriter^ outfile = gcnew StreamWriter("C:\\xampp\\htdocs\\1.kml");
+				outfile->Write(file);
+				outfile->Close();
+
 		}
 
 public: System::Void updateGimbalInfo( Communications::GimbalInfo ^ data ) {
@@ -2215,8 +2309,11 @@ private: System::Void stopRecordButton_Click(System::Object^  sender, System::Ev
 
 
 private: System::Void videoSaveTimer_Tick(System::Object^  sender, System::EventArgs^  e) {
-		
+		// REMOVED
 		return;
+		
+
+
 		if( !recording )
 			return;
 
@@ -2534,21 +2631,21 @@ private: System::Void downloadToolStripMenuItem_Click(System::Object^  sender, S
 		 }
 private: System::Void mapLookGPSToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 				double lat, lon;
-				double north, east;
-				char zone[4];
+				double north = 0.0f, east = 0.0f;
+				//char zone[4];
 				mapView->GetPosition(mouseGPS.X, mouseGPS.Y, lon, lat);
 
-#ifndef OPENCV_DISABLED
-				GeoReference::LLtoUTM(23, lat, lon, north, east, zone);
-#endif
+
+				// fix georeferencing
+				//GeoReference::LLtoUTM(23, lat, lon, north, east, zone);
+
 
 				Communications::ComportUpstream * packet = new Communications::ComportUpstream();
-				packet->gps_lat_gimbal_x.f = north;
-				packet->gps_lon_gimbal_y.f = east;
+				packet->gps_lat_gimbal_x.f = (float)north;
+				packet->gps_lon_gimbal_y.f = (float)east;
 				packet->update_type = 0x0B;
 
-				for( int i = 0; i < 100; ++i )
-					;//theComport->writeData(packet); // TODO: send data correctly
+				//for( int i = 0; i < 100; ++i ) //theComport->writeData(packet); // TODO: send data correctly
 
 				delete packet;
 
@@ -2738,8 +2835,7 @@ private: System::Void Form1_KeyDown(System::Object^  sender, System::Windows::Fo
 
 			}
 
-			if (buffer != nullptr)
-				;//theComport->writeRawData(buffer); // TODO: fix this
+			//if (buffer != nullptr) //theComport->writeRawData(buffer); // TODO: fix this
 
 		 }
 private: System::Void Form1_KeyPress(System::Object^  sender, System::Windows::Forms::KeyPressEventArgs^  e) {
@@ -2768,21 +2864,20 @@ private: System::Void button1_Click(System::Object^  sender, System::EventArgs^ 
 			 theComms->sendHelloToRabbit();
 		 }
 private: System::Void button2_Click(System::Object^  sender, System::EventArgs^  e) {
-				array<System::Byte> ^ buffer = nullptr;
+			array<System::Byte> ^ buffer = nullptr;
 
 
-				// send stop zoom packet
-				buffer = gcnew array<System::Byte>(6);
-				buffer[0] = 0x81;
-				buffer[1] = 0x01;
-				buffer[2] = 0x04;
-				buffer[3] = 0x07;
-				buffer[4] = 0x00;
-				buffer[5] = 0xFF;
+			// send stop zoom packet
+			buffer = gcnew array<System::Byte>(6);
+			buffer[0] = 0x81;
+			buffer[1] = 0x01;
+			buffer[2] = 0x04;
+			buffer[3] = 0x07;
+			buffer[4] = 0x00;
+			buffer[5] = 0xFF;
 
 
-			if (buffer != nullptr)
-				;//theComport->writeRawData(buffer); // TODO: fix this
+			//if (buffer != nullptr) //theComport->writeRawData(buffer); // TODO: fix this
 		 }
 private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
 			array<System::Byte> ^ buffer = nullptr;
@@ -2799,8 +2894,7 @@ private: System::Void button3_Click(System::Object^  sender, System::EventArgs^ 
 
 			
 
-			if (buffer != nullptr)
-				;//theComport->writeRawData(buffer); // TODO: fix this
+			//if (buffer != nullptr) //theComport->writeRawData(buffer); // TODO: fix this
 		 }
 private: System::Void Form1_Click(System::Object^  sender, System::EventArgs^  e) {
 			 //System::Diagnostics::Trace::WriteLine( "click\nKEYPRESS\nKEYPRESS\nKEYPRESS\nKEYPRESS\nKEYPRESS\NKEYPRESS\nKEYPRESS\n" );
@@ -2898,6 +2992,8 @@ private: System::Void connectButton_Click(System::Object^  sender, System::Event
 			}
 
 		 }
+
+
 };
 }
 

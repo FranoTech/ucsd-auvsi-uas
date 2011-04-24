@@ -250,6 +250,7 @@
     <ClCompile Include="Skynet.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">true</CompileAsManaged>
     </ClCompile>
+    <ClCompile Include="SkynetController.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">Create</PrecompiledHeader>
@@ -319,6 +320,7 @@
       <FileType>CppForm</FileType>
     </ClInclude>
     <ClInclude Include="GeoReference.h" />
+    <ClInclude Include="HUDControl.h" />
     <ClInclude Include="Joystick.h" />
     <ClInclude Include="MapControl.h" />
     <ClInclude Include="MasterHeader.h" />
@@ -333,11 +335,13 @@
     <ClInclude Include="Saliency.h" />
     <ClInclude Include="SaveImage.h" />
     <ClInclude Include="SimHandler.h" />
+    <ClInclude Include="SkynetController.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TargetDialog.h">
       <FileType>CppForm</FileType>
     </ClInclude>
     <ClInclude Include="TelemetrySimulator.h" />
+    <ClInclude Include="TelemetryStructures.h" />
     <ClInclude Include="VideoReader.h" />
     <ClInclude Include="VideoSimulator.h" />
   </ItemGroup>
