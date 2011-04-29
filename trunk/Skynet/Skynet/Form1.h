@@ -3042,6 +3042,7 @@ public: System::Void editCandidateUsingDialog(Database::CandidateRowData ^ theDa
 			 imageDialog = gcnew TargetDialog( this, appController );
 			 
 			 imageDialog->showDialogForData(theData);
+			 imageDialog->Show();
 
 			 //imageDialog->TargetID = Convert::ToInt32( dataGridView3->Rows[e->RowIndex]->Cells[0]->Value );
 			 //imageDialog->RowID = e->RowIndex;
@@ -3061,6 +3062,7 @@ public: System::Void editUnverifiedTargetUsingDialog(Database::TargetRowData ^ d
 			imageDialog = gcnew TargetDialog( this, appController );
 			 
 			imageDialog->showDialogForData(data);
+			imageDialog->Show();
 
 		}
 

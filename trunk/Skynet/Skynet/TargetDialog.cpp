@@ -2,6 +2,7 @@
 #include "Form1.h"
 #include "TargetDialog.h"
 
+#include "SkynetController.h"
 #include "DatabaseStructures.h"
 
 using namespace System;
@@ -11,15 +12,15 @@ using namespace System::Windows::Forms;
 using namespace System::Data;
 using namespace System::Drawing;
 using namespace Database;
-
-#define SHAPE_COLOR	textBox1
-#define SHAPE		textBox2
-#define LETTER_COLOR	textBox3
-#define LETTER		textBox4
-
 using namespace Skynet;
 
-TargetDialog( Object ^ parent, Object ^ newAppController)
+#define SHAPE_COLOR		textBox1
+#define SHAPE			textBox2
+#define LETTER_COLOR	textBox3
+#define LETTER			textBox4
+
+
+TargetDialog::TargetDialog( Object ^ parent, Object ^ newAppController)
 {
 	_parent = parent;
 	appController = newAppController;
@@ -29,7 +30,7 @@ TargetDialog( Object ^ parent, Object ^ newAppController)
 
 }
 
-void showDialogForData(Database::CandidateRowData ^ theData)
+void TargetDialog::showDialogForData(Database::CandidateRowData ^ theData)
 {
 	mode = DialogEditingCandidate;
 	data = gcnew DialogEditingData(theData);
@@ -39,10 +40,9 @@ void showDialogForData(Database::CandidateRowData ^ theData)
 	_markLat = false;
 	_markHeading = false;
 	
-	this->Show();
 }
 
-void showDialogForData(Database::TargetRowData ^ theData)
+void TargetDialog::showDialogForData(Database::TargetRowData ^ theData)
 {
 	mode = DialogEditingUnverified;
 
@@ -53,10 +53,9 @@ void showDialogForData(Database::TargetRowData ^ theData)
 	_markLat = false;
 	_markHeading = false;
 
-	this->Show();
 }
 
-void reloadData()
+void TargetDialog::reloadData()
 {
 	// reload text fields
 	if (data->shape->Equals("Unknown"))
@@ -84,7 +83,7 @@ void reloadData()
 		case DialogEditingCandidate:
 			okButton->Text = "Move to Unverified";
 			break;
-		case DialogEditingCandidate:
+		case DialogEditingUnverified:
 			okButton->Text = "Save Changes";
 			break;
 		default:
@@ -92,21 +91,21 @@ void reloadData()
 			break;
 	}
 
-	centerX = data->targetX;
-	centerY = data->targetY;
+	centerX = (float)data->targetX;
+	centerY = (float)data->targetY;
 
-	topOfTargetX = data->topOfTargetY;
-	topOfTargetY = data->topOfTargetY;
+	topOfTargetX = (float)data->topOfTargetY;
+	topOfTargetY = (float)data->topOfTargetY;
 
 	setImage();
 
 }
 
-void setImage()
+void TargetDialog::setImage()
 {
 	try
 	{
-		_targetImage = Image::FromFile( HTTP_SERVER_TARGET_PATH + data->imageName->Remove(0, 8); );
+		_targetImage = Image::FromFile( HTTP_SERVER_TARGET_PATH + data->imageName->Remove(0, 8) );
 		imageBox->Image = _targetImage;
 	}
 	catch( Exception ^ )
@@ -115,7 +114,7 @@ void setImage()
 	}
 
 }
-void getDataFromUI()
+void TargetDialog::getDataFromUI()
 {
 	// reload text fields
 	if (!SHAPE->Text->Equals(""))
@@ -132,11 +131,11 @@ void getDataFromUI()
 	
 
 
-	data->targetX = centerX;
-	data->targetY = centerY;
+	data->targetX = (int)centerX;
+	data->targetY = (int)centerY;
 
-	data->topOfTargetX = topOfTargetX;
-	data->topOfTargetY = topOfTargetY;
+	data->topOfTargetX = (int)topOfTargetX;
+	data->topOfTargetY = (int)topOfTargetY;
 
 }
 
@@ -146,7 +145,7 @@ TargetDialog::okButton_Click(System::Object^  sender, System::EventArgs^  e)
 {
 	if (mode == DialogEditingCandidate) {
 		TargetRowData ^newData = gcnew TargetRowData(candidate);
-		newData->updateFrom(data)
+		newData->updateFrom(data);
 
 		((SkynetController ^)appController)->removeCandidate(candidate);
 		((SkynetController ^)appController)->addTarget(newData);
