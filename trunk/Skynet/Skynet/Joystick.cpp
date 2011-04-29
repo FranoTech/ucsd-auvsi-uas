@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "MasterHeader.h"
 
-#include "SkynetController.h"
+#include "SkynetControllerInterface.h"
 
 //button bindings
 #define BTN_SQUARE 0
@@ -36,6 +36,8 @@
 #define _WIN32_DCOM
 #endif
 
+#pragma warning( disable : 4995 ) // disable deprecated warning 
+#pragma warning( disable : 4996 ) // disable deprecated warning 
 #include <windows.h>
 #include <commctrl.h>
 #include <dinput.h>
@@ -43,13 +45,13 @@
 #include <math.h>
 #include <wbemidl.h>
 
-#pragma warning( disable : 4996 ) // disable deprecated warning 
 #include <strsafe.h>
-#pragma warning( default : 4996 )
 
 #include "Form1.h"
 #include "Joystick.h"
 #include "Comport.h"
+#pragma warning( default : 4995 )
+#pragma warning( default : 4996 )
 
 #define SAFE_DELETE(p)  { if(p) { delete (p);     (p)=NULL; } }
 #define SAFE_RELEASE(p) { if(p) { (p)->Release(); (p)=NULL; } }
@@ -120,7 +122,7 @@ Joystick::setZoom( int level )
 
 void Joystick::sendZoom( Object^ source, ElapsedEventArgs^ e )
 {
-	
+	System::Diagnostics::Trace::WriteLine("sendZoom started");
 	int newZoomLevel = theWatcher->zoomLevel;
 	if (newZoomLevel == ZOOM_IN)
 		newZoomLevel++;
@@ -170,6 +172,7 @@ void Joystick::sendZoom( Object^ source, ElapsedEventArgs^ e )
 			break;
 	}
 	comm->sendZoom(zoom);
+	System::Diagnostics::Trace::WriteLine("sendZoom sent");
 	
 }
 
@@ -477,6 +480,7 @@ Joystick::FreeDirectInput()
 HRESULT 
 Joystick::UpdateInputState( HWND hDlg )
 {
+	//System::Diagnostics::Trace::WriteLine("UpdateInputState");
     HRESULT hr;
     TCHAR strText[512] = {0}; // Device state text
     DIJOYSTATE2 js;           // DInput Joystick state 
@@ -602,21 +606,7 @@ Joystick::UpdateInputState( HWND hDlg )
 	if( tracker[BTN_X] == 1 )
 	{
 
-		((Skynet::SkynetController ^)theDelegate)->saveCurrentImageAsTarget();
-		
-		//((Skynet::Form1 ^)parent)->saveImage();
-		/* 
-			A first chance exception of type 'System.NullReferenceException' occurred in Skynet.exe
-			A first chance exception of type 'System.Reflection.TargetInvocationException' occurred in mscorlib.dll
-			A first chance exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
-			An unhandled exception of type 'System.FormatException' occurred in System.Windows.Forms.dll
-
-			Additional information: Input string was not in a correct format.
-
-		*/
-		/*try {
-			((Skynet::Form1 ^)parent)->Invoke( ((Skynet::Form1 ^)parent)->saveImageDelegate );
-		} catch( Exception ^ e) { e = nullptr; }*/
+		((Skynet::SkynetController ^)theDelegate)->saveCurrentFrameAsCandidate();
 		
 	}
 
@@ -635,7 +625,7 @@ Joystick::UpdateInputState( HWND hDlg )
 	else { tracker[BTN_CIRCLE] = 0; }
 
 	if( tracker[BTN_CIRCLE] == 1 ) { }
-
+	
 
 	// L1 button to zoom in
 	if( js.rgbButtons[BTN_L1] & 0x80 ) { tracker[BTN_L1]++; }
@@ -657,7 +647,7 @@ Joystick::UpdateInputState( HWND hDlg )
 
 		// start timer
 		zoomDirection = ZOOM_OUT;
-		zoomTimer->Start();
+		//zoomTimer->Start();
 		
 	}
 	else if(tracker[BTN_R1] == 1 && !(tracker[BTN_L1] == 1))
@@ -673,13 +663,15 @@ Joystick::UpdateInputState( HWND hDlg )
 
 		// start timer
 		zoomDirection = ZOOM_IN;
-		zoomTimer->Start();
+		//zoomTimer->Start();
+		//System::Diagnostics::Trace::WriteLine("R1 press registered");
 	}
 
 	else {
 		// stop timer
 		zoomDirection = ZOOM_NONE;
-		zoomTimer->Stop();
+		//zoomTimer->Stop();
+		//System::Diagnostics::Trace::WriteLine("no press");
 	}
 
 

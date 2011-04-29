@@ -2,9 +2,6 @@
 #include "Comms.h"
 #include "PlaneWatcher.h"
 
-
-using namespace System::Timers;
-
 struct DIJOYCONFIG;
 struct XINPUT_DEVICE_NODE;
 
@@ -42,7 +39,7 @@ public:
 
 	void setZoom( int level );
 	int getZoom( void );
-	void sendZoom( Object^ source, ElapsedEventArgs^ e );
+	void sendZoom( Object^ source, Timers::ElapsedEventArgs^ e );
 protected:
 	HRESULT SetupForIsXInputDevice();
 

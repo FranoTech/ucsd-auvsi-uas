@@ -182,6 +182,7 @@ namespace OpenGLForm
 			SwapBuffers(m_hDC) ;
 		}
 
+		// save current frame to path
 		System::Void saveImage( String ^ path )
 		{
 			if (imSaver != nullptr)

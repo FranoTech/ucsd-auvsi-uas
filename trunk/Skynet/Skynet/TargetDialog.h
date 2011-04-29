@@ -1,11 +1,16 @@
 #pragma once
 
 
-#ifndef OPENCV_DISABLED
 #include "GeoReference.h"
-#endif
+#include "DatabaseStructures.h"
 
 namespace Skynet {
+
+	enum DialogEditingMode {
+		DialogEditingCandidate,
+		DialogEditingUnverified,
+		DialogEditingVerified
+	};
 
 	using namespace System;
 	using namespace System::ComponentModel;
@@ -20,23 +25,46 @@ namespace Skynet {
 	public ref class TargetDialog : public System::Windows::Forms::Form
 	{
 	public:
-		TargetDialog( double centerLat, double centerLon, double latMap, double lonMap, array<float> ^ homo, Object ^ parent );
-		//{
-		//	_parent = parent;
-		//	_centerLat = centerLat;
-		//	_centerLon = centerLon;
-		//	_latMap = latMap;
-		//	_lonMap = lonMap;
+		TargetDialog( Object ^ parent, Object ^ newAppController);
 
-		//	_markLat = false;
-		//	_markHeading = false;
-		//	InitializeComponent();
-		//	//
-		//	//TODO: Add the constructor code here
-		//	//
-		//}
+		void showDialogForData(Database::CandidateRowData ^ theData);
+		void showDialogForData(Database::TargetRowData ^ theData);
 
-		property int TargetID
+		void reloadData();
+		void setImage();
+		void getDataFromUI();
+		bool isOpen() { return open; }
+
+		property Database::CandidateRowData ^ Candidate
+		{
+			Database::CandidateRowData ^ get()
+			{
+				return candidate;
+			}
+			void set( Database::CandidateRowData ^ newData)
+			{
+				candidate = newData;
+				data = gcnew Database::DialogEditingData(newData);
+				reloadData();
+			}
+
+		}
+
+		property Database::TargetRowData ^ Target
+		{
+			Database::TargetRowData ^ get()
+			{
+				return target;
+			}
+			void set( Database::TargetRowData ^ newData)
+			{
+				target = newData;
+				data = gcnew Database::DialogEditingData(newData);
+				reloadData();
+			}
+		}
+
+		/*property int TargetID
 		{
 			int get()
 			{
@@ -117,7 +145,7 @@ namespace Skynet {
 
 				}
 			}
-		}
+		}*/
 
 		static String ^ getHeadingString( double angle )
 		{
@@ -181,15 +209,27 @@ namespace Skynet {
 			return -angle;
 		}
 		
-		void setHeading( int x, int y )
+		/*void setHeading( int x, int y )
 		{
 			double angle = atan3( x, y ) * 180.0 / Math::PI;
 
 			_heading = angle;
-		}
+		}*/
 
 	protected:
-		int _targetID;
+
+		float centerX, centerY;
+		float topOfTargetX, topOfTargetY;
+		bool _markLat, _markHeading;
+		bool open, imageOpen;
+		Image ^ _targetImage;
+		Object ^ _parent;
+		Database::CandidateRowData ^ candidate;
+		Database::TargetRowData ^ target;
+		Database::DialogEditingData ^ data;
+		Object ^ appController;
+		DialogEditingMode mode;
+		/*int _targetID;
 		int _rowID;
 		String ^ _path;
 		Image ^ _targetImage;
@@ -198,12 +238,10 @@ namespace Skynet {
 
 		double _centerLat, _centerLon;
 		double _latMap, _lonMap;
-		bool _markLat, _markHeading;
 		Point _mouseDown;
 
-		array<float> ^ _homography;
+		array<float> ^ _homography;*/
 
-		Object ^ _parent;
 
 	private: System::Windows::Forms::PictureBox^  imageBox;
 
@@ -214,6 +252,16 @@ namespace Skynet {
 	private: System::Windows::Forms::Button^  okButton;
 	private: System::Windows::Forms::Button^  cancelButton;
 private: System::Windows::Forms::Label^  instructionLabel;
+private: System::Windows::Forms::TextBox^  textBox1;
+private: System::Windows::Forms::TextBox^  textBox2;
+private: System::Windows::Forms::Label^  label1;
+private: System::Windows::Forms::Label^  label2;
+private: System::Windows::Forms::Label^  label3;
+private: System::Windows::Forms::Label^  label4;
+private: System::Windows::Forms::Label^  label5;
+private: System::Windows::Forms::Label^  label6;
+private: System::Windows::Forms::TextBox^  textBox3;
+private: System::Windows::Forms::TextBox^  textBox4;
 
 
 	protected: 
@@ -237,6 +285,16 @@ private: System::Windows::Forms::Label^  instructionLabel;
 			this->okButton = (gcnew System::Windows::Forms::Button());
 			this->cancelButton = (gcnew System::Windows::Forms::Button());
 			this->instructionLabel = (gcnew System::Windows::Forms::Label());
+			this->textBox1 = (gcnew System::Windows::Forms::TextBox());
+			this->textBox2 = (gcnew System::Windows::Forms::TextBox());
+			this->label1 = (gcnew System::Windows::Forms::Label());
+			this->label2 = (gcnew System::Windows::Forms::Label());
+			this->label3 = (gcnew System::Windows::Forms::Label());
+			this->label4 = (gcnew System::Windows::Forms::Label());
+			this->label5 = (gcnew System::Windows::Forms::Label());
+			this->label6 = (gcnew System::Windows::Forms::Label());
+			this->textBox3 = (gcnew System::Windows::Forms::TextBox());
+			this->textBox4 = (gcnew System::Windows::Forms::TextBox());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->imageBox))->BeginInit();
 			this->SuspendLayout();
 			// 
@@ -244,7 +302,7 @@ private: System::Windows::Forms::Label^  instructionLabel;
 			// 
 			this->imageBox->Location = System::Drawing::Point(13, 12);
 			this->imageBox->Name = L"imageBox";
-			this->imageBox->Size = System::Drawing::Size(577, 448);
+			this->imageBox->Size = System::Drawing::Size(726, 540);
 			this->imageBox->SizeMode = System::Windows::Forms::PictureBoxSizeMode::Zoom;
 			this->imageBox->TabIndex = 0;
 			this->imageBox->TabStop = false;
@@ -253,17 +311,17 @@ private: System::Windows::Forms::Label^  instructionLabel;
 			// 
 			// latlonButton
 			// 
-			this->latlonButton->Location = System::Drawing::Point(13, 468);
+			this->latlonButton->Location = System::Drawing::Point(12, 597);
 			this->latlonButton->Name = L"latlonButton";
 			this->latlonButton->Size = System::Drawing::Size(97, 23);
 			this->latlonButton->TabIndex = 1;
-			this->latlonButton->Text = L"Mark Lat/Lon";
+			this->latlonButton->Text = L"Mark Center";
 			this->latlonButton->UseVisualStyleBackColor = true;
 			this->latlonButton->Click += gcnew System::EventHandler(this, &TargetDialog::latlonButton_Click);
 			// 
 			// headingButton
 			// 
-			this->headingButton->Location = System::Drawing::Point(116, 468);
+			this->headingButton->Location = System::Drawing::Point(115, 597);
 			this->headingButton->Name = L"headingButton";
 			this->headingButton->Size = System::Drawing::Size(96, 23);
 			this->headingButton->TabIndex = 2;
@@ -273,17 +331,17 @@ private: System::Windows::Forms::Label^  instructionLabel;
 			// 
 			// okButton
 			// 
-			this->okButton->Location = System::Drawing::Point(434, 468);
+			this->okButton->Location = System::Drawing::Point(549, 597);
 			this->okButton->Name = L"okButton";
-			this->okButton->Size = System::Drawing::Size(75, 23);
+			this->okButton->Size = System::Drawing::Size(109, 23);
 			this->okButton->TabIndex = 3;
-			this->okButton->Text = L"OK";
+			this->okButton->Text = L"Move to Unverified";
 			this->okButton->UseVisualStyleBackColor = true;
 			this->okButton->Click += gcnew System::EventHandler(this, &TargetDialog::okButton_Click);
 			// 
 			// cancelButton
 			// 
-			this->cancelButton->Location = System::Drawing::Point(515, 468);
+			this->cancelButton->Location = System::Drawing::Point(664, 597);
 			this->cancelButton->Name = L"cancelButton";
 			this->cancelButton->Size = System::Drawing::Size(75, 23);
 			this->cancelButton->TabIndex = 4;
@@ -294,17 +352,114 @@ private: System::Windows::Forms::Label^  instructionLabel;
 			// instructionLabel
 			// 
 			this->instructionLabel->AutoSize = true;
-			this->instructionLabel->Location = System::Drawing::Point(218, 473);
+			this->instructionLabel->Location = System::Drawing::Point(12, 558);
 			this->instructionLabel->Name = L"instructionLabel";
-			this->instructionLabel->Size = System::Drawing::Size(0, 13);
+			this->instructionLabel->Size = System::Drawing::Size(61, 13);
 			this->instructionLabel->TabIndex = 5;
+			this->instructionLabel->Text = L"Instructions";
+			// 
+			// textBox1
+			// 
+			this->textBox1->Location = System::Drawing::Point(259, 574);
+			this->textBox1->Name = L"textBox1";
+			this->textBox1->Size = System::Drawing::Size(100, 20);
+			this->textBox1->TabIndex = 6;
+			// 
+			// textBox2
+			// 
+			this->textBox2->Location = System::Drawing::Point(259, 600);
+			this->textBox2->Name = L"textBox2";
+			this->textBox2->Size = System::Drawing::Size(100, 20);
+			this->textBox2->TabIndex = 7;
+			// 
+			// label1
+			// 
+			this->label1->AutoSize = true;
+			this->label1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label1->Location = System::Drawing::Point(281, 555);
+			this->label1->Name = L"label1";
+			this->label1->Size = System::Drawing::Size(53, 16);
+			this->label1->TabIndex = 10;
+			this->label1->Text = L"Shape";
+			// 
+			// label2
+			// 
+			this->label2->AutoSize = true;
+			this->label2->Location = System::Drawing::Point(224, 580);
+			this->label2->Name = L"label2";
+			this->label2->Size = System::Drawing::Size(31, 13);
+			this->label2->TabIndex = 11;
+			this->label2->Text = L"Color";
+			// 
+			// label3
+			// 
+			this->label3->AutoSize = true;
+			this->label3->Location = System::Drawing::Point(224, 603);
+			this->label3->Name = L"label3";
+			this->label3->Size = System::Drawing::Size(31, 13);
+			this->label3->TabIndex = 12;
+			this->label3->Text = L"Type";
+			// 
+			// label4
+			// 
+			this->label4->AutoSize = true;
+			this->label4->Location = System::Drawing::Point(388, 603);
+			this->label4->Name = L"label4";
+			this->label4->Size = System::Drawing::Size(31, 13);
+			this->label4->TabIndex = 17;
+			this->label4->Text = L"Type";
+			// 
+			// label5
+			// 
+			this->label5->AutoSize = true;
+			this->label5->Location = System::Drawing::Point(388, 580);
+			this->label5->Name = L"label5";
+			this->label5->Size = System::Drawing::Size(31, 13);
+			this->label5->TabIndex = 16;
+			this->label5->Text = L"Color";
+			// 
+			// label6
+			// 
+			this->label6->AutoSize = true;
+			this->label6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 9.75F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point, 
+				static_cast<System::Byte>(0)));
+			this->label6->Location = System::Drawing::Point(421, 555);
+			this->label6->Name = L"label6";
+			this->label6->Size = System::Drawing::Size(102, 16);
+			this->label6->TabIndex = 15;
+			this->label6->Text = L"Alphanumeric";
+			// 
+			// textBox3
+			// 
+			this->textBox3->Location = System::Drawing::Point(423, 600);
+			this->textBox3->Name = L"textBox3";
+			this->textBox3->Size = System::Drawing::Size(100, 20);
+			this->textBox3->TabIndex = 14;
+			// 
+			// textBox4
+			// 
+			this->textBox4->Location = System::Drawing::Point(423, 574);
+			this->textBox4->Name = L"textBox4";
+			this->textBox4->Size = System::Drawing::Size(100, 20);
+			this->textBox4->TabIndex = 13;
 			// 
 			// TargetDialog
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->BackColor = System::Drawing::SystemColors::ControlDarkDark;
-			this->ClientSize = System::Drawing::Size(602, 503);
+			this->ClientSize = System::Drawing::Size(752, 629);
+			this->Controls->Add(this->label4);
+			this->Controls->Add(this->label5);
+			this->Controls->Add(this->label6);
+			this->Controls->Add(this->textBox3);
+			this->Controls->Add(this->textBox4);
+			this->Controls->Add(this->label3);
+			this->Controls->Add(this->label2);
+			this->Controls->Add(this->label1);
+			this->Controls->Add(this->textBox2);
+			this->Controls->Add(this->textBox1);
 			this->Controls->Add(this->instructionLabel);
 			this->Controls->Add(this->cancelButton);
 			this->Controls->Add(this->okButton);
@@ -322,73 +477,112 @@ private: System::Windows::Forms::Label^  instructionLabel;
 #pragma endregion
 
 private: System::Void okButton_Click(System::Object^  sender, System::EventArgs^  e); 
-		 //{
-			// // enter the data in the callbacks
 
-			// //((Skynet::Form1 ^)_parent)->Invoke( &Skynet::Form1::imageDialogDelegate );
-
-		 //}
 private: System::Void cancelButton_Click(System::Object^  sender, System::EventArgs^  e) {
+			 candidate = nullptr;
+			 target = nullptr;
+			 data = nullptr;
+			 open = false;
 			 this->Close();
 		 }
 private: System::Void headingButton_Click(System::Object^  sender, System::EventArgs^  e) {
-			 	try
-				{
-					_targetImage = Image::FromFile( _path + "_rectified.jpg" );
-					imageBox->Image = _targetImage;
-				}
-				catch( Exception ^ )
-				{
+			/*try
+			{
+				_targetImage = Image::FromFile( _path + "_rectified.jpg" );
+				imageBox->Image = _targetImage;
+			}
+			catch( Exception ^ )
+			{
 				
-		System::Diagnostics::Trace::WriteLine("catch in target dialog");
-				}
+				System::Diagnostics::Trace::WriteLine("catch in target dialog");
+			}*/
 
-			 _markHeading = true;
-			 _markLat = false;
-			 instructionLabel->Text = "Click and drag heading";
+			_markHeading = true;
+			_markLat = false;
+			instructionLabel->Text = "Click on top of target";
 		 }
 private: System::Void latlonButton_Click(System::Object^  sender, System::EventArgs^  e) {
-			 	try
-				{
-					_targetImage = Image::FromFile( _path + ".jpg" );
-					imageBox->Image = _targetImage;
-				}
-				catch( Exception ^ )
-				{
+			/*try
+			{
+				_targetImage = Image::FromFile( _path + ".jpg" );
+				imageBox->Image = _targetImage;
+			}
+			catch( Exception ^ )
+			{
 
-				}
-
-			 _markHeading = false;
-			 _markLat = true;
-			 instructionLabel->Text = "Click to mark lat/lon";
+			}
+			*/
+			_markHeading = false;
+			_markLat = true;
+			instructionLabel->Text = "Click on center of target";
 		 }
 private: System::Void imageBox_MouseDown(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {			 			 
 			 //if( e->Button != ::MouseButtons::Left )
 				// return;
+			 if (!imageOpen)
+				 setImage();
 
-			 if( _markHeading )
-				 _mouseDown = e->Location;
+			 if( _markHeading ) {
+				 //_mouseDown = e->Location;
+				 
+				 Point location = e->Location;
+
+				 float x = (float)location.X;
+				 float y = (float)location.Y;
+
+				 float boxWidth = (float)this->imageBox->Size.Width;
+				 float boxHeight = (float)this->imageBox->Size.Width;
+
+				 float imWidth = (float)data->dataWidth;
+				 float imHeight = (float)data->dataHeight;
+
+				 float newPointX = x/boxWidth*imWidth;
+				 float newPointY = y/boxHeight*imHeight;
+
+				 topOfTargetX = newPointX;
+				 topOfTargetY = newPointY;
+
+			 }
 			 else if( _markLat )
 			 {
-				 double latReturn = 0.0f, lonReturn = 0.0f;
+				 
+				 Point location = e->Location;
+
+				 float x = (float)location.X;
+				 float y = (float)location.Y;
+
+				 float boxWidth = (float)this->imageBox->Size.Width;
+				 float boxHeight = (float)this->imageBox->Size.Width;
+
+				 float imWidth = (float)data->dataWidth;
+				 float imHeight = (float)data->dataHeight;
+
+				 float newCenterX = x/boxWidth*imWidth;
+				 float newCenterY = y/boxHeight*imHeight;
+
+				 centerX = newCenterX;
+				 centerY = newCenterY;
+
+
+				 //double latReturn = 0.0f, lonReturn = 0.0f;
 
 				 // need to fix georeferencing
 				 //GeoReference::applyHomography( _homography, e->Location.X, e->Location.Y, _latMap, _lonMap, latReturn, lonReturn );
 
 
-				 _latitude = latReturn;
-				 _longitude = lonReturn;
+				 //_latitude = latReturn;
+				 //_longitude = lonReturn;
 				 
-				 instructionLabel->Text = "Lat: " + _latitude + ", Lon: " + _longitude;
+				 //instructionLabel->Text = "Lat: " + _latitude + ", Lon: " + _longitude;
 
-				 _markLat = false;
+				 //_markLat = false;
 			 }
 		 }
 private: System::Void imageBox_MouseUp(System::Object^  sender, System::Windows::Forms::MouseEventArgs^  e) {
 			 //if( e->Button != ::MouseButtons::Left )
 				// return;
-
-			 if( _markHeading )
+			 return;
+			 /*if( _markHeading )
 			 {
 				 // Get pixel displacement from prior point
 				 int deltaX, deltaY;
@@ -403,7 +597,8 @@ private: System::Void imageBox_MouseUp(System::Object^  sender, System::Windows:
 				 instructionLabel->Text = "Heading set to " + getHeadingString( _heading );
 				 
 				 _markHeading = false;
-			 }
+			 }*/
 		 }
+
 };
 }

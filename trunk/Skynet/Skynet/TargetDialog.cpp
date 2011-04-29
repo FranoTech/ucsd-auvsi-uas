@@ -2,36 +2,165 @@
 #include "Form1.h"
 #include "TargetDialog.h"
 
+#include "DatabaseStructures.h"
+
 using namespace System;
 using namespace System::ComponentModel;
 using namespace System::Collections;
 using namespace System::Windows::Forms;
 using namespace System::Data;
 using namespace System::Drawing;
+using namespace Database;
+
+#define SHAPE_COLOR	textBox1
+#define SHAPE		textBox2
+#define LETTER_COLOR	textBox3
+#define LETTER		textBox4
 
 using namespace Skynet;
 
-TargetDialog::TargetDialog( double centerLat, double centerLon, double latMap, double lonMap, array<float> ^ homo, Object ^ parent )
+TargetDialog( Object ^ parent, Object ^ newAppController)
 {
 	_parent = parent;
-	_centerLat = centerLat;
-	_centerLon = centerLon;
-	_latMap = latMap;
-	_lonMap = lonMap;
-	_homography = homo;
-
+	appController = newAppController;
 	_markLat = false;
 	_markHeading = false;
-	InitializeComponent();
-	//
-	//TODO: Add the constructor code here
-	//
+	
+
 }
+
+void showDialogForData(Database::CandidateRowData ^ theData)
+{
+	mode = DialogEditingCandidate;
+	data = gcnew DialogEditingData(theData);
+	candidate = theData;
+	target = nullptr;
+	open = true;
+	_markLat = false;
+	_markHeading = false;
+	
+	this->Show();
+}
+
+void showDialogForData(Database::TargetRowData ^ theData)
+{
+	mode = DialogEditingUnverified;
+
+	data = gcnew DialogEditingData(theData);
+	target = theData;
+	candidate = nullptr;
+	open = true;
+	_markLat = false;
+	_markHeading = false;
+
+	this->Show();
+}
+
+void reloadData()
+{
+	// reload text fields
+	if (data->shape->Equals("Unknown"))
+		SHAPE->Text = "";
+	else 
+		SHAPE->Text = data->shape;
+
+	if (data->shapeColor->Equals("Unknown"))
+		SHAPE_COLOR->Text = "";
+	else 
+		SHAPE_COLOR->Text = data->shapeColor;
+
+	if (data->letter->Equals("Unknown"))
+		LETTER->Text = "";
+	else 
+		LETTER->Text = data->letter;
+
+	if (data->letterColor->Equals("Unknown"))
+		LETTER_COLOR->Text = "";
+	else 
+		LETTER_COLOR->Text = data->letterColor;
+
+	// change name of ok button
+	switch (mode) {
+		case DialogEditingCandidate:
+			okButton->Text = "Move to Unverified";
+			break;
+		case DialogEditingCandidate:
+			okButton->Text = "Save Changes";
+			break;
+		default:
+			okButton->Text = "Shit, bro";
+			break;
+	}
+
+	centerX = data->targetX;
+	centerY = data->targetY;
+
+	topOfTargetX = data->topOfTargetY;
+	topOfTargetY = data->topOfTargetY;
+
+	setImage();
+
+}
+
+void setImage()
+{
+	try
+	{
+		_targetImage = Image::FromFile( HTTP_SERVER_TARGET_PATH + data->imageName->Remove(0, 8); );
+		imageBox->Image = _targetImage;
+	}
+	catch( Exception ^ )
+	{
+
+	}
+
+}
+void getDataFromUI()
+{
+	// reload text fields
+	if (!SHAPE->Text->Equals(""))
+		data->shape = SHAPE->Text;
+
+	if (!SHAPE_COLOR->Text->Equals(""))
+		data->shapeColor = SHAPE_COLOR->Text;
+
+	if (!LETTER->Text->Equals(""))
+		data->letter = LETTER->Text;
+	
+	if (!LETTER_COLOR->Text->Equals(""))
+		data->letterColor = LETTER_COLOR->Text;
+	
+
+
+	data->targetX = centerX;
+	data->targetY = centerY;
+
+	data->topOfTargetX = topOfTargetX;
+	data->topOfTargetY = topOfTargetY;
+
+}
+
 
 System::Void 
 TargetDialog::okButton_Click(System::Object^  sender, System::EventArgs^  e) 
 {
-	 // enter the data in the callbacks
-	((Skynet::Form1 ^)_parent)->imageDialogCallback( _rowID, _targetID, _latitude, _longitude, _heading );
+	if (mode == DialogEditingCandidate) {
+		TargetRowData ^newData = gcnew TargetRowData(candidate);
+		newData->updateFrom(data)
+
+		((SkynetController ^)appController)->removeCandidate(candidate);
+		((SkynetController ^)appController)->addTarget(newData);
+
+	}
+
+	else if (mode == DialogEditingUnverified) {
+		target->updateFrom(data);
+
+		((SkynetController ^)appController)->modifyTarget(target);
+	}
+
+	open = false;
+	_markLat = false;
+	_markHeading = false;
 	this->Close();
 }

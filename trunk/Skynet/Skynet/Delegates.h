@@ -9,4 +9,7 @@ namespace Delegates
 	public delegate void rowDataToVoid( Database::RowData ^ data );
 	public delegate void dataGridViewRowToVoid( DataGridViewRow ^ row );
 	public delegate void voidToVoid( void );
+	public delegate void candidateRowDataToVoid( Database::CandidateRowData ^ data );
+	public delegate void targetRowDataToVoid( Database::TargetRowData ^ data );
+	public delegate void verifiedTargetRowDataToVoid( Database::VerifiedTargetRowData ^ data );
 }

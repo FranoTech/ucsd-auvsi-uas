@@ -1,10 +1,10 @@
 #pragma once
 
 #include "TelemetryStructures.h"
+#include "DatabaseStructures.h"
 
 using namespace System;
 using namespace System::Data::Odbc;
-//using namespace Communications;
 
 namespace Database
 {
@@ -20,114 +20,6 @@ namespace Database
 		columnID
 	};
 
-	public ref struct CandidateRowData
-	{
-		CandidateRowData() {
-			shape = "Unkown";
-			shapeColor = "Unkown";
-			letter = "Unkown";
-			letterColor = "Unkown";
-			
-			data = 0;
-
-			dataWidth = 0;
-			dataHeight = 0;
-			dataNumChannels = 0;
-
-			originX = 0;
-
-			targetX = 0;
-			targetY = 0;
-		
-			gpsAltitude = 0;
-			gpsLatitude = 0;
-			gpsLongitude = 0;
-			altitudeAboveLaunch = 0;
-			velocity = 0;
-			planeRollDegrees = 0;
-			planePitchDegrees = 0;
-			planeHeadingDegres = 0;
-
-			gimbalRollDegrees = 0;
-			gimbalPitchDegrees = 0;
-
-			zoom = 0;
-
-			gimbalRollRateDegrees = 0;
-			gimbalPitchRateDegrees = 0;
-		
-			planeRollRateDegrees = 0;
-			planePitchRateDegrees = 0;
-			planeHeadingRateDegres = 0;
-
-			timestamp = 0;
-		}
-
-		String ^ shape;
-		String ^ shapeColor;
-		String ^ letter;
-		String ^ letterColor;
-
-		float * data;
-
-		int dataWidth;
-		int dataHeight;
-		int dataNumChannels;
-
-		int originX;
-
-		int targetX;
-		int targetY;
-		
-		float gpsAltitude;
-		float gpsLatitude;
-		float gpsLongitude;
-		float altitudeAboveLaunch;
-		float velocity;
-		float planeRollDegrees;
-		float planePitchDegrees;
-		float planeHeadingDegres;
-
-		float gimbalRollDegrees;
-		float gimbalPitchDegrees;
-
-		float zoom;
-
-		float gimbalRollRateDegrees;
-		float gimbalPitchRateDegrees;
-		
-		float planeRollRateDegrees;
-		float planePitchRateDegrees;
-		float planeHeadingRateDegres;
-
-		
-		double timestamp;
-	};
-
-	public ref struct RowData
-	{
-		RowData(void);
-
-		int id;							// Unique ID for this entry
-		String ^ path;					// Path to a file for the image
-		float target_latitude;			// Latitude of point selected as target
-		float target_longitude;			// Longitude of point selected as target
-		int target_X;					// pixel X of target
-		int target_Y;					// pixel Y of target
-		float heading;					// heading of target
-		String ^ letter;				
-		String ^ shape;					
-		String ^ fg_color;				// foreground color
-		String ^ bg_color;				// background color
-		bool processed;					// whether this has been processed by OpenCV
-		bool verified;					// human verified
-		float center_latitude;			// Latitude of center pixel
-		float center_longitude;			// Longitude of center pixel
-		float mapping_latitude;			// pixel to meter translation for latitude
-		float mapping_longitude;		// pixel to meter translation for longitude
-		array<float> ^ homography;		// homography used to transform this image
-	};
-
 	public ref class DatabaseConnection
 	{
 	public:
@@ -139,8 +31,27 @@ namespace Database
 		bool disconnect(void);
 		void fillDatabase();
 		bool reset(void);
-		void saveNewCandidate(float * data, int width, int height, int numChannels, int originX, int originY, Communications::PlaneState ^ stateOfPlane);
-		 
+
+		array<CandidateRowData ^>^ getAllCandidates();
+		array<TargetRowData ^>^ getAllTargets();
+		
+		void clearCandidatesTable();
+		void clearTargetsTable();
+
+		void saveNewCandidate( CandidateRowData ^ data);
+		void saveNewTarget( TargetRowData ^ data);
+
+		void modifyCandidate( CandidateRowData ^ data);
+		void modifyTarget( TargetRowData ^ data);
+
+		void removeCandidate( String ^ id);
+		void removeTarget( String ^id );
+
+		
+		CandidateRowData ^ candidateWithID(String ^ id);
+		TargetRowData ^ targetWithID(String ^ id);
+
+		///////////////////// no longer used /////////////////////
 		bool insertData( TableName table, RowData ^ data );
 		bool updateValue( TableName table, String ^ field, String ^ value, String ^ rowID );
 		String ^ formatHomography( array<float> ^ input );
@@ -152,10 +63,15 @@ namespace Database
 	protected:
 		String ^ getTableName( TableName table );
 		
+		CandidateRowData ^ candidateFromReader(OdbcDataReader ^ theReader);
+		TargetRowData ^ targetFromReader(OdbcDataReader ^ theReader);
 
 	private:
 		OdbcConnection ^ _database;
 		OdbcCommand ^ _command;
 		OdbcDataReader ^ _reader;
+		bool databaseOpen;
+
+
 	};
 }

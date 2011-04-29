@@ -1,6 +1,7 @@
 #pragma once
 
 namespace Communications {
+
 	public ref struct PlaneGPSPacket
 	{
 		float gpsVelocity;					//longitude of UAV in decimal degrees

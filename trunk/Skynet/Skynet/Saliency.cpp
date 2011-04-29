@@ -484,6 +484,34 @@ String ^ matToString(cv::Mat in)
 
 }
 
+#define GIMBAL_YAW 0.0
+
+
+void Saliency::getTargetGPS(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, data->dataWidth/2, data->dataHeight/2, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
+void Saliency::getTargetGPS(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, data->targetX, data->targetY, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
+void Saliency::getCenterGPSFromCandidateData(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, data->dataWidth/2, data->dataHeight/2, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
+
+void Saliency::getCenterGPSFromTargetData(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, data->targetX, data->targetY, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
 void Saliency::getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
 				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height)
 {

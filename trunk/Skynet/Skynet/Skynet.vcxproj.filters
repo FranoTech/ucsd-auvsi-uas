@@ -166,6 +166,9 @@
     <ClCompile Include="VideoSimulator.cpp">
       <Filter>Source Files\Simulation</Filter>
     </ClCompile>
+    <ClCompile Include="DatabaseStructures.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Auvsi_cvFft.h">
@@ -311,6 +314,12 @@
     </ClInclude>
     <ClInclude Include="TelemetryStructures.h">
       <Filter>Header Files\Communications</Filter>
+    </ClInclude>
+    <ClInclude Include="SkynetControllerInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DatabaseStructures.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

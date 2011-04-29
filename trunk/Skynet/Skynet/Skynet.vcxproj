@@ -227,6 +227,7 @@
     <ClCompile Include="Comport.cpp" />
     <ClCompile Include="ComportHandler.cpp" />
     <ClCompile Include="Database.cpp" />
+    <ClCompile Include="DatabaseStructures.cpp" />
     <ClCompile Include="DeckLinkAPI_i.c">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
@@ -313,6 +314,7 @@
     <ClInclude Include="Comport.h" />
     <ClInclude Include="ComportHandler.h" />
     <ClInclude Include="Database.h" />
+    <ClInclude Include="DatabaseStructures.h" />
     <ClInclude Include="DeckLinkAPI_h.h" />
     <ClInclude Include="DecklinkCallback.h" />
     <ClInclude Include="Delegates.h" />
@@ -336,6 +338,7 @@
     <ClInclude Include="SaveImage.h" />
     <ClInclude Include="SimHandler.h" />
     <ClInclude Include="SkynetController.h" />
+    <ClInclude Include="SkynetControllerInterface.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TargetDialog.h">
       <FileType>CppForm</FileType>
