@@ -6,7 +6,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Thu Apr 28 22:52:21 2011
+/* at Sat Apr 30 13:31:39 2011
  */
 /* Compiler settings for DeckLinkAPI.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 

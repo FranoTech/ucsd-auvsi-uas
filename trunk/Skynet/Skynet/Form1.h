@@ -3037,19 +3037,23 @@ private: System::Void dataGridView3_CellDoubleClick(System::Object^  sender, Sys
 			 System::Diagnostics::Trace::WriteLine("ERROR: dataGridView3_CellDoubleClick(): no methods in place to edit verified targets. tell developers to get back to work.");
 		 }
 
-public: System::Void editCandidateUsingDialog(Database::CandidateRowData ^ theData) 
+public: System::Void editCandidateUsingDialog(Database::CandidateRowData ^ data) 
 		{
-			 imageDialog = gcnew TargetDialog( this, appController );
+			if (data == nullptr) {
+				System::Diagnostics::Trace::WriteLine("ERROR: editCandidateUsingDialog(): data == nullptr.");
+				return;
+			}
+			imageDialog = gcnew TargetDialog( this, appController );
 			 
-			 imageDialog->showDialogForData(theData);
-			 imageDialog->Show();
+			imageDialog->showDialogForData(data);
+			imageDialog->Show();
 
-			 //imageDialog->TargetID = Convert::ToInt32( dataGridView3->Rows[e->RowIndex]->Cells[0]->Value );
-			 //imageDialog->RowID = e->RowIndex;
-			 //imageDialog->ImagePath = db->getField(Database::tableVerifiedTargets, 1, id);
-			 //imageDialog->Latitude = Convert::ToDouble( dataGridView3->Rows[e->RowIndex]->Cells[2]->Value );
-			 //imageDialog->Longitude = Convert::ToDouble( dataGridView3->Rows[e->RowIndex]->Cells[3]->Value );
-			 //imageDialog->Heading = Convert::ToDouble( dataGridView3->Rows[e->RowIndex]->Cells[4]->Value );
+			//imageDialog->TargetID = Convert::ToInt32( dataGridView3->Rows[e->RowIndex]->Cells[0]->Value );
+			//imageDialog->RowID = e->RowIndex;
+			//imageDialog->ImagePath = db->getField(Database::tableVerifiedTargets, 1, id);
+			//imageDialog->Latitude = Convert::ToDouble( dataGridView3->Rows[e->RowIndex]->Cells[2]->Value );
+			//imageDialog->Longitude = Convert::ToDouble( dataGridView3->Rows[e->RowIndex]->Cells[3]->Value );
+			//imageDialog->Heading = Convert::ToDouble( dataGridView3->Rows[e->RowIndex]->Cells[4]->Value );
 			 
 		}
 

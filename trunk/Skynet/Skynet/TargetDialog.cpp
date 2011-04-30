@@ -27,6 +27,26 @@ TargetDialog::TargetDialog( Object ^ parent, Object ^ newAppController)
 	_markLat = false;
 	_markHeading = false;
 	
+                //      _centerLat = centerLat;
+                //      _centerLon = centerLon;
+                //      _latMap = latMap;
+                //      _lonMap = lonMap;
+	centerX = -1.0f;
+	centerY = -1.0f;
+	
+	topOfTargetX = -1.0f;
+	topOfTargetY = -1.0f;
+	
+	open = false;
+	imageOpen = false;
+	_targetImage = nullptr;
+	candidate = nullptr;
+	target = nullptr;
+	data = nullptr;
+
+	mode = DialogEditingCandidate;
+
+	InitializeComponent();
 
 }
 
