@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cv.h>
+#include "DatabaseStructures.h"
 
-namespace GeoReference
+namespace Vision
 {
 	// Source code taken from http://www.gpsy.com/gpsinfo/geotoutm/
 	class Ellipsoid
@@ -21,6 +22,22 @@ namespace GeoReference
 		double eccentricitySquared;  
 	};
 
+	public ref class GeoReference {
+
+	public:
+		static void runTests();
+		static double distanceBetweenGPS(double lat1, double lon1, double lat2, double lon2);
+		static void getCenterGPSFromCandidateData(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
+		static void getCenterGPSFromTargetData(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
+		static void getTargetGPS(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
+		static void getTargetGPS(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
+
+		static cv::Mat EulerAngles(bool transpose, cv::Mat Orig_Vector, double Roll, double Pitch, double Yaw);
+		static bool getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
+				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height);
+		static void reverseGeoreference(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, 
+				double Target_Latitude, double Target_Longitude, double Target_Height, double & gimbal_roll, double & gimbal_pitch);
+	};
 	/*void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
 			 double &UTMNorthing, double &UTMEasting, char* UTMZone);
 
@@ -74,5 +91,5 @@ namespace GeoReference
 	// Using NTSC camera - pixel aspect ratio is 11:10
 	// Using Sony FCB EX 11D, focal length linear from 4.2mm (zoom level 1)
 	// to 42.0mm (zoom level 10)*/
-};
+}
 

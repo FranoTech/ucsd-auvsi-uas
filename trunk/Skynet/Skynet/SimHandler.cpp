@@ -333,10 +333,19 @@ SimHandler::writeVideo() {
 				numframes++;
 				//
 
-			} catch (ThreadInterruptedException ^) {}
+			} 
+			catch (ThreadInterruptedException ^ e) 
+			{
+				throw e;
+			}
+			catch (Exception ^ e) 
+			{
+				System::Diagnostics::Trace::WriteLine("SimHandler::writeVideo() ERROR writing video frame: " + e);
+
+			}
 		}
 	} catch (Exception ^ ) {
-		//System::Diagnostics::Trace::WriteLine("Exception in writeVideo() in SimHandler");
+		System::Diagnostics::Trace::WriteLine("SimHandler::writeVideo() shutting down");
 		
 
 	}

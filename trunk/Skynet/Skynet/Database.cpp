@@ -231,7 +231,7 @@ void DatabaseConnection::modifyCandidate( CandidateRowData ^ data)
 		+ ", height="+ data->dataHeight
 		+ ", \"numChannels\"="+ data->dataNumChannels
 		+ ", \"originX\"="+ data->originX
-		+ ", \"originY\""+ data->originY
+		+ ", \"originY\"="+ data->originY
 		+ ", \"targetX\"="+ data->targetX
 		+ ", \"targetY\"="+ data->targetY
 		+ " WHERE id=" + data->id;
@@ -301,7 +301,7 @@ void DatabaseConnection::modifyTarget( TargetRowData ^ data)
 		+ ", height="+ data->dataHeight
 		+ ", \"numChannels\"="+ data->dataNumChannels
 		+ ", \"originX\"="+ data->originX
-		+ ", \"originY\""+ data->originY
+		+ ", \"originY\"="+ data->originY
 		+ ", \"targetX\"="+ data->targetX
 		+ ", \"targetY\"="+ data->targetY
 		+ ", \"topOfTargetX\"="+ data->topOfTargetX

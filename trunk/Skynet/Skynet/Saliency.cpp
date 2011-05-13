@@ -53,10 +53,10 @@ Saliency::Saliency( Object ^ watcher )
 	
 	double t_lat_1, t_lat_2, t_lon_1, t_lon_2;
 
-	getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
-	getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, 10, target_y, zoom, t_lat_2, t_lon_2, t_alt);
+	GeoReference::getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
+	GeoReference::getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, 10, target_y, zoom, t_lat_2, t_lon_2, t_alt);
 
-	System::Diagnostics::Trace::WriteLine("Distance: " + distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2));
+	System::Diagnostics::Trace::WriteLine("Distance: " + GeoReference::distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2));
 			
 	System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " time (ms): " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
 
@@ -190,6 +190,7 @@ Saliency::saveImagesThreadFunction()
 			savingData = true;
 			newFrameForSaving = false;
 			frameCount++;
+			continue; // DEBUG: dont save images right now
 
 			// DEBUG: save original image
 			
@@ -222,19 +223,19 @@ Saliency::saveImagesThreadFunction()
 			double metersPerXPixel, metersPerYPixel;
 
 			target_x = 0; target_y = 100;
-			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
+			GeoReference::getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
 			
 			target_x = 200; target_y = 100;
-			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_2, t_lon_2, t_alt);
-			metersPerXPixel = distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2) / 200.0f;
+			GeoReference::getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_2, t_lon_2, t_alt);
+			metersPerXPixel = GeoReference::distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2) / 200.0f;
 			
 			target_x = 100; target_y = 0;
-			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
+			GeoReference::getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_1, t_lon_1, t_alt);
 			//System::Diagnostics::Trace::WriteLine("Saliency: lat1:" + t_lat_1 + " t_lon_1:" + t_lon_1 + " t_lat_2:" + t_lat_2 + " t_lon_2:" + t_lon_2);
 
 			target_x = 100; target_y = 200;
-			getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_2, t_lon_2, t_alt);
-			metersPerYPixel = distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2) / 200.0f;
+			GeoReference::getGPS(plane_lat, plane_lon, plane_alt, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, target_x, target_y, zoom, t_lat_2, t_lon_2, t_alt);
+			metersPerYPixel = GeoReference::distanceBetweenGPS(t_lat_1, t_lon_1, t_lat_2, t_lon_2) / 200.0f;
 			//System::Diagnostics::Trace::WriteLine("Saliency: lat1:" + (double)t_lat_1 + " t_lon_1:" + (double)t_lon_1 + " t_lat_2:" + (double)t_lat_2 + " t_lon_2:" + (double)t_lon_2);
 
 			//System::Diagnostics::Trace::WriteLine("Saliency: metersPerX:" + metersPerXPixel + " metersPerY:" + metersPerYPixel);
@@ -415,246 +416,4 @@ Saliency::~Saliency()
 	if( saveImagesThread != nullptr  )
 		saveImagesThread->Abort();
 
-}
-
-#define PI 3.14159265
-
-double cosd(double input)
-{
-	return cos(input*PI/180.0);
-}
-
-double sind(double input)
-{
-	return sin(input*PI/180.0);
-}
-
-double atand(double input)
-{
-	return atan(input)*180.0/PI;
-}
-
-double Saliency::distanceBetweenGPS(double lat1, double lon1, double lat2, double lon2)
-{
-	double radius = 6378000; // radius of earth!
-	double deltaLat = lat2 - lat1;
-	double deltaLon = lon2 - lon1;
-	double a = sind(deltaLat/2)*sind(deltaLat*2) + cosd(lat1)*cosd(lat2)*sind(deltaLon/2)*sind(deltaLon*2);
-	double c = 2*atan2(sqrt(a), sqrt((1-a)));
-	double d = radius*c;
-
-	return d;
-}
-
-cv::Mat Saliency::EulerAngles(bool transpose, cv::Mat Orig_Vector, double Roll, double Pitch, double Yaw)
-{
-	double R = Roll;
-	double P = Pitch;
-	double Y = Yaw;
-
-	 
-	double transarr[3][3] = {{cosd(P)*cosd(Y), cosd(P)*sind(Y), -sind(P)},
-							{sind(R)*sind(P)*cosd(Y)-cosd(R)*sind(Y), sind(R)*sind(P)*sind(Y)+cosd(R)*cosd(Y), sind(R)*cosd(P)},  
-	{cosd(R)*sind(P)*cosd(Y)+sind(R)*sind(Y), cosd(R)*sind(P)*sind(Y)-sind(R)*cosd(Y), cosd(R)*cosd(P)}};
-	cv::Mat Transfer = cv::Mat(3, 3, CV_64FC1, transarr).inv();
-
-	if (transpose)
-		Transfer = Transfer.t();
-
-	return Transfer*Orig_Vector;
-}
-
-String ^ matToString(cv::Mat in)
-{
-	String ^ ret = "{";
-	typedef cv::Vec<double, 1> VT;
-
-	for (int r = 0; r < in.rows; r++)
-	{
-		ret += "{";
-		for (int c = 0; c < in.cols; c++)
-		{
-			ret += in.at<VT>(r, c)[0];
-		}
-		ret += "}, ";
-	}
-
-	ret += "}";
-	return ret;
-
-}
-
-#define GIMBAL_YAW 0.0
-
-
-void Saliency::getTargetGPS(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
-{
-	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
-		GIMBAL_YAW, data->dataWidth/2, data->dataHeight/2, data->zoom, centerLatitude, centerLongitude, centerAltitude);
-}
-
-void Saliency::getTargetGPS(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
-{
-	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
-		GIMBAL_YAW, data->targetX, data->targetY, data->zoom, centerLatitude, centerLongitude, centerAltitude);
-}
-
-void Saliency::getCenterGPSFromCandidateData(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
-{
-	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
-		GIMBAL_YAW, data->dataWidth/2, data->dataHeight/2, data->zoom, centerLatitude, centerLongitude, centerAltitude);
-}
-
-
-void Saliency::getCenterGPSFromTargetData(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
-{
-	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
-		GIMBAL_YAW, data->targetX, data->targetY, data->zoom, centerLatitude, centerLongitude, centerAltitude);
-}
-
-void Saliency::getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
-				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height)
-{
-	double x_fov = 46.0f;
-	double y_fov = 34.0f;
-	double x_pixels = 720;
-	double y_pixels = 486;
-	double zoom_factor = zoom;
-	double target_pixel_x = target_x;
-	double target_pixel_y = target_y;
-
-
-	typedef cv::Vec<double, 1> VT;
-	double pix[3][1] = {{0}, {0}, {1}};
-	cv::Mat Pixel_CF_Vector(3, 1, CV_64FC1, pix );
-
-	double ground_altitude = 0;
-
-	double a = 6378137;
-	double b = 6356752.3142;
-
-	// PART A
-	double fovarr[3][1] = {{x_fov}, {y_fov}, {1}};
-	cv::Mat FOV(3, 1, CV_64FC1, fovarr );
-	
-
-	cv::Mat Scale(3, 3, CV_64FC1 );
-	Scale.at<VT>(0, 0)[0] = 1/zoom_factor;
-	Scale.at<VT>(0, 1)[0] = 0;
-	Scale.at<VT>(0, 2)[0] = 0;
-	Scale.at<VT>(1, 0)[0] = 1;
-	Scale.at<VT>(1, 1)[0] = 1/zoom_factor;
-	Scale.at<VT>(1, 2)[0] = 0;
-	Scale.at<VT>(2, 0)[0] = 0;
-	Scale.at<VT>(2, 1)[0] = 0;
-	Scale.at<VT>(2, 2)[0] = 1;
-	
-	cv::Mat FOV_zoom_accounted = Scale*FOV;
-
-	// PART B
-	double Pixel_Roll = (FOV_zoom_accounted.at<VT>(1, 0)[0])/2 * target_pixel_x / (x_pixels);
-	double Pixel_Pitch = (FOV_zoom_accounted.at<VT>(2, 0)[0])/2 * target_pixel_y / (y_pixels);
-	double Pixel_Yaw = 0;
-
-	//TODO: define EulerAngles function
-	cv::Mat CC_CF_Vector = EulerAngles(1, Pixel_CF_Vector, Pixel_Roll, Pixel_Pitch, Pixel_Yaw);
-
-	// PART C
-	cv::Mat GZ_CF_Vector = EulerAngles(1, CC_CF_Vector, gimbal_roll, gimbal_pitch, gimbal_yaw);
-
-	// PART D
-	cv::Mat Plane_CF_Vector = EulerAngles(1, GZ_CF_Vector, plane_roll, plane_pitch, plane_heading);
-
-	// PART E
-	double f = a/(a-b);
-	//double temp = ;
-	double e = sqrt( (1.0 / f ) * (2 - 1*(1 / f ))  );
-	double N = a/(sqrt((double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude))));
-
-	double X = (N+plane_altitude)*cosd(plane_latitude)*cosd(plane_longitude);
-	double Y = (N+plane_altitude)*cosd(plane_latitude)*sind(plane_longitude);
-	double Z = (N*(1-e*e)+plane_altitude)*sind(plane_latitude);
-
-	double m[3][1] = {{X}, {Y}, {Z}};
-	cv::Mat InitialXYZ = cv::Mat(3, 1, CV_64FC1, m);//.inv();
-	
-	/*System::Diagnostics::Trace::WriteLine("Part E initialxyz: " + matToString(InitialXYZ) + " f:" + f + " e:" + e + " N:" + N + " X:" + X + " Y:" + Y + " Z:" + Z);
-	System::Diagnostics::Trace::WriteLine("Part E a:" + a + " b:" + b + " plane_latitude:" + plane_latitude + " plane_longitude:" + plane_longitude);
-	System::Diagnostics::Trace::WriteLine("Part E a:" + sind(plane_latitude));
-	System::Diagnostics::Trace::WriteLine("Part E a:" + (e*e)*sind(plane_latitude)*sind(plane_latitude));
-	System::Diagnostics::Trace::WriteLine("Part E a:" + (double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)));
-	System::Diagnostics::Trace::WriteLine("Part E a:" + (sqrt((double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)))));*/
-
-	// PART F
-	double n = 1;
-	Target_Height = 0;
-	
-	const double HEIGHT_OF_FIELD = 3.3333333333;
-	const double MAX_DISTANCE = 500; // all of this in meters
-	double MIN_DISTANCE = plane_altitude - HEIGHT_OF_FIELD;
-	const double MARGIN_OF_ERROR = 0.5;
-	double range = MAX_DISTANCE - MIN_DISTANCE;
-	n = range/2 + MIN_DISTANCE;
-	range /= 2;
-
-	double h, p, mlong, latchange, newlat, lat;
-	int loopcounter = 0;
-	while (loopcounter < 100 && fabs(Target_Height - HEIGHT_OF_FIELD) > MARGIN_OF_ERROR)
-	{
-		cv::Mat NED = Plane_CF_Vector * n;
-
-
-		double transarr[3][3] = {{-sind(plane_latitude)*cosd(plane_longitude), -sind(plane_longitude), -cosd(plane_latitude)*cosd(plane_longitude)}, 
-								{-sind(plane_latitude)*sind(plane_longitude), -cosd(plane_longitude), -cosd(plane_latitude)*sind(plane_longitude)}, 
-								{cosd(plane_latitude), 0, -sind(plane_latitude)}};
-		cv::Mat Trans = cv::Mat(3, 3, CV_64FC1, transarr).inv();
-		cv::Mat XYZ = InitialXYZ + Trans*NED;
-
-		X = XYZ.at<VT>(0, 0)[0];
-		Y = XYZ.at<VT>(1, 0)[0];
-		Z = XYZ.at<VT>(2, 0)[0];
-		h = 0;
-		N = a;
-		p = sqrt(X*X + Y*Y);
-		mlong = atand(Y/X);
-		latchange = 10;
-		newlat = 10;
-		int count = 0;
-		double sinfind;
-		while (latchange > 0.0001)
-		{
-			sinfind = Z/(N*(1-e*e) + h);
-			lat = atand((Z+e*e*N*sinfind)/p);
-			N = a/(sqrt(1-e*e*sind(lat)*sind(lat)));
-			h = p/cosd(lat)-N;
-			latchange = abs(newlat - lat);
-			count ++;
-			newlat = lat;
-		}
-
-		mlong = (180-mlong)*-1;
-		Target_Latitude = lat;
-		Target_Longitude = mlong;
-		Target_Height = h;
-
-
-		if (norm(NED) > MAX_DISTANCE) {
-			//System::Diagnostics::Trace::WriteLine("FAILURE NO TARGET IN RANGE");
-			return;
-		}
-
-		if (h < HEIGHT_OF_FIELD)
-			n = n - range/2;
-		else 
-			n = n + range/2;
-
-		range /= 2;
-		loopcounter++;
-		
-	}
-
-	// return values!!!
-	Target_Latitude = lat;
-	Target_Longitude = mlong;
-	Target_Height = h;
 }

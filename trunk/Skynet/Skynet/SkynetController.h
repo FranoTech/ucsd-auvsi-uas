@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TelemetryStructures.h"
-#include "PlaneWatcher.h"
 #include "Database.h"
 #include "SkynetControllerInterface.h"
 
@@ -10,8 +9,14 @@
 using namespace System;
 using namespace Communications;
 
+namespace Communications {
+	ref class PlaneWatcher;
+	ref class TargetLock;
+}
+
 namespace Skynet
 {
+
 	public ref class SkynetController : public SkynetControllerInterface
 	{
 	public:
@@ -21,6 +26,12 @@ namespace Skynet
 		void setCameraView(Object ^ cameraView) { openGLView = cameraView; }
 		void setDatabase(Database::DatabaseConnection ^ newDatabase) { theDatabase = newDatabase; }
 		void setPlaneWatcher(PlaneWatcher ^ newWatcher) { theWatcher = newWatcher; }
+		void setTargetLock(TargetLock ^ newLock) { targetLock = newLock; }
+
+		virtual void intendedGimbalPositionUpdated( float rollDegrees, float pitchDegrees );
+		virtual void intendedCameraZoomUpdated( float zoom );
+
+		virtual void stopTargetLock();
 
 		void loadAllTablesFromDisk();
 		void loadCandidateTableFromDisk();
@@ -56,6 +67,7 @@ namespace Skynet
 		Object ^ openGLView;
 		Database::DatabaseConnection ^ theDatabase;
 		PlaneWatcher ^ theWatcher;
+		TargetLock ^ targetLock;
 
 	private:
 	};

@@ -9,6 +9,8 @@ using namespace System::Drawing;
 
 #define SIDE 134.0f
 #define SCALE (SIDE/180.0f)
+#define DEFAULT_IMAGE_WIDTH 34.0f
+#define DEFAULT_IMAGE_HEIGHT 25.0f
 
 #include "Delegates.h"
 
@@ -23,11 +25,17 @@ namespace Skynet {
 		HUDControl(void)
 		{
 			InitializeComponent();
-			gimbalX = SIDE/2;
+			gimbalX = SIDE/2.0f;
 			gimbalY = SIDE/2;
+			intendedGimbalX = SIDE/2.0f;
+			intendedGimbalY = SIDE/2.0f;
+			setCameraZoom(1.0f, false);
+			setIntendedCameraZoom(1.0f, false);
+			
 			_redrawHUDdelegate = gcnew Delegates::voidToVoid( this, &HUDControl::redraw );
 			bkgd = Image::FromFile( "C:\\Users\\UCSD\\Documents\\Visual Studio 2010\\Projects\\Skynet\\Skynet\\HUDbg.png" );
 			dot = Image::FromFile( "C:\\Users\\UCSD\\Documents\\Visual Studio 2010\\Projects\\Skynet\\Skynet\\HUDdot.png" );
+			outline = Image::FromFile( "C:\\Users\\UCSD\\Documents\\Visual Studio 2010\\Projects\\Skynet\\Skynet\\HUDoutline.png" );
 
 			this->BackgroundImage = bkgd;
 			this->Paint += gcnew System::Windows::Forms::PaintEventHandler( this, &HUDControl::paintHUD );
@@ -43,20 +51,76 @@ namespace Skynet {
 			this->Refresh();
 		}
 
-				//newX and newY are gotten by gimbal's center, no need to center it.
-		bool setGimbalPosition( float newX, float newY)
+		//newX and newY are gotten by gimbal's center, no need to center it.
+		bool setGimbalPosition( float newX, float newY, bool redraw)
 		{
 			gimbalX = (newX + 90.0f)*SCALE;
 			gimbalY = (newY + 90.0f)*SCALE;
-			this->Invoke( this->_redrawHUDdelegate );
+
+			if (redraw)
+				this->Invoke( this->_redrawHUDdelegate );
+
+			return true;
+		}
+
+		bool setIntendedGimbalPosition( float newX, float newY, bool redraw )
+		{
+			intendedGimbalX = (newX + 90.0f)*SCALE;
+			intendedGimbalY = (newY + 90.0f)*SCALE;
+			
+			if (redraw)
+				this->Invoke( this->_redrawHUDdelegate );
+
+			return true;
+
+		}
+
+		bool setCameraZoom( float zoom, bool redraw  )
+		{
+			if (zoom <= 1.0f || zoom > 10.1f) {
+				cameraSizeX = DEFAULT_IMAGE_WIDTH;
+				cameraSizeY = DEFAULT_IMAGE_HEIGHT;
+			} else {
+				cameraSizeX = DEFAULT_IMAGE_WIDTH/zoom;
+				cameraSizeY = DEFAULT_IMAGE_HEIGHT/zoom;
+			}
+			
+			if (redraw)
+				this->Invoke( this->_redrawHUDdelegate );
+
+			return true;
+		}
+
+		bool setIntendedCameraZoom( float zoom, bool redraw  )
+		{
+			if (zoom <= 1.0f || zoom > 10.1f) {
+				intendedCameraSizeX = DEFAULT_IMAGE_WIDTH;
+				intendedCameraSizeY = DEFAULT_IMAGE_HEIGHT;
+			} else {
+				intendedCameraSizeX = DEFAULT_IMAGE_WIDTH/zoom;
+				intendedCameraSizeY = DEFAULT_IMAGE_HEIGHT/zoom;
+			}
+			
+			if (redraw)
+				this->Invoke( this->_redrawHUDdelegate );
+
 			return true;
 		}
 
 	protected:
 		float gimbalX;
 		float gimbalY;
+		float intendedGimbalX;
+		float intendedGimbalY;
+		float cameraSizeX;
+		float cameraSizeY;
+		float intendedCameraSizeX;
+		float intendedCameraSizeY;
+
 		Image ^ bkgd;
 		Image ^ dot;
+		Image ^ outline;
+
 		/// <summary>
 		/// Clean up any resources being used.
 		/// </summary>
@@ -77,8 +141,8 @@ namespace Skynet {
 			//Next lets scale down the measure tile width to a most significant digit unit
 			try
 			{
-				//g->DrawImage(bkgd, 0.0f, 0.0f, 134.0f, 134.0f);
-				g->DrawImage(dot, gimbalX-17.0f, gimbalY-12.5f, 34.0f, 25.0f);
+				g->DrawImage(dot, gimbalX-cameraSizeX/2.0f, gimbalY-cameraSizeY/2.0f, cameraSizeX, cameraSizeY );
+				g->DrawImage(outline, intendedGimbalX-intendedCameraSizeX/2.0f, intendedGimbalY-intendedCameraSizeY/2.0f, intendedCameraSizeX, intendedCameraSizeY );
 			}
 			catch (Exception ^ e)
 			{

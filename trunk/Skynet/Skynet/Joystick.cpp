@@ -27,7 +27,7 @@
 
 
 
-
+#define INTENDED_POSITION_UPDATES_ENABLED	true
 
 #define DIRECTINPUT_VERSION 0x0800
 #define _CRT_SECURE_NO_DEPRECATE
@@ -697,19 +697,26 @@ Joystick::UpdateInputState( HWND hDlg )
 
 	// send commands to Comms
 	if (newGimbalRoll != theWatcher->gimbalRoll || newGimbalPitch != theWatcher->gimbalPitch) {
+
+		((Skynet::SkynetController ^)theDelegate)->stopTargetLock();
+
 		if (newGimbalRoll > MAX_ROLL)
 			newGimbalRoll = MAX_ROLL;
 		if (newGimbalRoll < MIN_ROLL)
 			newGimbalRoll = MIN_ROLL;
-		theWatcher->gimbalRoll = newGimbalRoll;
 		
 		if (newGimbalPitch > MAX_PITCH)
 			newGimbalPitch = MAX_PITCH;
 		if (newGimbalPitch < MIN_PITCH)
 			newGimbalPitch = MIN_PITCH;
+		
+		theWatcher->gimbalRoll = newGimbalRoll;
 		theWatcher->gimbalPitch = newGimbalPitch;
 
 		comm->sendGimbalRollPitch(newGimbalRoll, newGimbalPitch);
+
+		if (INTENDED_POSITION_UPDATES_ENABLED)
+			((Skynet::SkynetController ^)theDelegate)->intendedGimbalPositionUpdated(theWatcher->rawToDegrees(newGimbalRoll), theWatcher->rawToDegrees(newGimbalPitch));
 
 	}
 
@@ -755,6 +762,8 @@ Joystick::UpdateInputState( HWND hDlg )
 				break;
 		}
 		comm->sendZoom(zoom);
+		if (INTENDED_POSITION_UPDATES_ENABLED)
+			((Skynet::SkynetController ^)theDelegate)->intendedCameraZoomUpdated(theWatcher->rawZoomToFloat(zoom));
 	}
 
     return S_OK;

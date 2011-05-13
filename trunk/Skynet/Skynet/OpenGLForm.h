@@ -81,7 +81,7 @@ namespace OpenGLForm
 		{
 			Vision::FrameData ^ theData = gcnew Vision::FrameData();
 
-			// TODO: add in the data fields for real
+			/*// TODO: add in the data fields for real
 			theData->latitude;
 			theData->longitude;
 			theData->altitude;
@@ -90,7 +90,7 @@ namespace OpenGLForm
 			theData->elevation;
 			theData->zoomLevel;
 			theData->homography;
-
+			*/
 			
 			theSaliency->analyzeFrame(input, theData);
 			if (showSaliency)
@@ -121,7 +121,7 @@ namespace OpenGLForm
 			benchmark++;
 			imSaver->writeFrame( buffer );
 
-			//System::Diagnostics::Trace::WriteLine("writeFrame in Render in OpenGLForm.h: " + benchmark);
+			System::Diagnostics::Trace::WriteLine("writeFrame in Render in OpenGLForm.h: " + benchmark);
 		}
 
 		System::Void Render(System::Void)

@@ -262,6 +262,7 @@ private: System::Windows::Forms::Label^  label5;
 private: System::Windows::Forms::Label^  label6;
 private: System::Windows::Forms::TextBox^  textBox3;
 private: System::Windows::Forms::TextBox^  textBox4;
+private: System::Windows::Forms::Button^  button1;
 
 
 	protected: 
@@ -295,6 +296,7 @@ private: System::Windows::Forms::TextBox^  textBox4;
 			this->label6 = (gcnew System::Windows::Forms::Label());
 			this->textBox3 = (gcnew System::Windows::Forms::TextBox());
 			this->textBox4 = (gcnew System::Windows::Forms::TextBox());
+			this->button1 = (gcnew System::Windows::Forms::Button());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->imageBox))->BeginInit();
 			this->SuspendLayout();
 			// 
@@ -444,12 +446,23 @@ private: System::Windows::Forms::TextBox^  textBox4;
 			this->textBox4->Size = System::Drawing::Size(100, 20);
 			this->textBox4->TabIndex = 13;
 			// 
+			// button1
+			// 
+			this->button1->Location = System::Drawing::Point(665, 568);
+			this->button1->Name = L"button1";
+			this->button1->Size = System::Drawing::Size(75, 23);
+			this->button1->TabIndex = 18;
+			this->button1->Text = L"Delete";
+			this->button1->UseVisualStyleBackColor = true;
+			this->button1->Click += gcnew System::EventHandler(this, &TargetDialog::button1_Click);
+			// 
 			// TargetDialog
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->BackColor = System::Drawing::SystemColors::ControlDarkDark;
 			this->ClientSize = System::Drawing::Size(752, 629);
+			this->Controls->Add(this->button1);
 			this->Controls->Add(this->label4);
 			this->Controls->Add(this->label5);
 			this->Controls->Add(this->label6);
@@ -600,5 +613,6 @@ private: System::Void imageBox_MouseUp(System::Object^  sender, System::Windows:
 			 }*/
 		 }
 
+private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e);
 };
 }

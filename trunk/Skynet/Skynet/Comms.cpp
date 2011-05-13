@@ -3,6 +3,8 @@
 #include "Comport.h"
 #include "Form1.h"
 
+#include "MasterHeader.h"
+
 using namespace Communications;
 using namespace System::Threading;
 
@@ -283,6 +285,11 @@ void Comms::sendHelloToRabbit(){
 
 void Comms::sendGimbalRollPitch(unsigned __int16 roll, unsigned __int16 pitch)
 {
+	if (roll < MIN_ROLL || roll > MAX_ROLL || pitch < MIN_PITCH || pitch > MAX_PITCH) {
+		System::Diagnostics::Trace::WriteLine("Comms::sendGimbalRollPitch() ERROR: roll " + roll + " or pitch " + pitch + " out of bounds: ");
+		return;
+	}
+
 	rabbit->sendGimbalCommand(roll, pitch);
 
 }

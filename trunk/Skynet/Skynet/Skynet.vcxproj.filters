@@ -169,6 +169,9 @@
     <ClCompile Include="DatabaseStructures.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TargetLock.cpp">
+      <Filter>Source Files\Communications</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Auvsi_cvFft.h">
@@ -319,6 +322,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DatabaseStructures.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TargetLock.h">
+      <Filter>Header Files\Communications</Filter>
+    </ClInclude>
+    <ClInclude Include="Tester.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,6 +2,7 @@
 #include "PlaneWatcher.h"
 #include "Form1.h"
 #include <msclr/lock.h>
+#include "GeoReference.h"
 
 using namespace Communications;
 using namespace msclr;
@@ -154,8 +155,8 @@ PlaneState ^ PlaneWatcher::predictLocationAtTime( float timeOffset )
 			retval->gpsData->gpsVelocity = 20.0f;
 			retval->gpsData->gpsAltitude = 37;
 			retval->gpsData->gpsHeading = 0.0f;
-			retval->gpsData->gpsLatitude = 32.0f;
-			retval->gpsData->gpsLongitude = -117.0f;
+			retval->gpsData->gpsLatitude = 0.0f;
+			retval->gpsData->gpsLongitude = 0.0f;
 			//System::Diagnostics::Trace::WriteLine("PlaneWatcher::predictLocationAtTime(): No packets");
 		}
 
@@ -366,8 +367,8 @@ PlaneState ^ PlaneWatcher::predictLocationAtTime( float timeOffset )
 		retval->gpsData->gpsVelocity = 20.0f;
 		retval->gpsData->gpsAltitude = 37;
 		retval->gpsData->gpsHeading = 0.0f;
-		retval->gpsData->gpsLatitude = 32.0f;
-		retval->gpsData->gpsLongitude = -117.0f;
+		retval->gpsData->gpsLatitude = 0.0f;
+		retval->gpsData->gpsLongitude = 0.0f;
 			
 		retval->gimbalInfo->zoom = 1;
 		retval->gimbalInfo->pitch = 3000;
@@ -379,9 +380,71 @@ PlaneState ^ PlaneWatcher::predictLocationAtTime( float timeOffset )
 	return retval;
 }
 
+void PlaneWatcher::requiredRollPitchForGPS( unsigned __int16 & roll, unsigned __int16 & pitch, float lat, float lon)
+{
+	// get current state
+	PlaneState ^ state = currentState();
+
+	// calculate reverse georeference
+	double rollFloat, pitchFloat;
+	Vision::GeoReference::reverseGeoreference(state->gpsData->gpsLatitude, state->gpsData->gpsLongitude, state->telemData->altitudeHAL, state->telemData->roll*180.0/Math::PI, 
+				state->telemData->pitch*180.0/Math::PI, state->telemData->heading*180.0/Math::PI, 
+				lat, lon, 0.0, rollFloat, pitchFloat );
+	System::Diagnostics::Trace::WriteLine("PlaneWatcher::requiredRollPitchForGPS(): rollFloat: " + rollFloat + " pitchFloat + " + pitchFloat);
+
+	// convert rollFloat and pitchFloat into roll and pitch
+	roll = gimbalDegreesToRaw((float)rollFloat);
+	pitch = gimbalDegreesToRaw((float)pitchFloat);
+}
+
+unsigned __int16 PlaneWatcher::gimbalDegreesToRaw(float input)
+{
+	return (unsigned __int16)(input*20.0f + 3000.0f);
+}
+
 float PlaneWatcher::rawToDegrees(unsigned __int16 input)
 {
 	return (((float)input) - 3000.0f)/20.0f;
+}
+
+float PlaneWatcher::rawZoomToFloat(int theZoom)
+{
+	float retval = -1.0f;
+	switch( theZoom )
+	{
+		case 0x00000000:
+			retval = 1.0f;
+			break;
+		case 0x00080000:
+			retval = 2.0f;
+			break;
+		case 0x01000000:
+			retval = 3.0f;
+			break;
+		case 0x01080000:
+			retval = 4.0f;
+			break;
+		case 0x02000000:
+			retval = 5.0f;
+			break;
+		case 0x02080000:
+			retval = 6.0f;
+			break;
+		case 0x03000000:
+			retval = 7.0f;
+			break;
+		case 0x03080000:
+			retval = 8.0f;
+			break;
+		case 0x04000000:
+			retval = 9.0f;
+			break;
+		default:
+			retval = -1.0f; // no zoom update
+			break;
+	}
+
+	return retval;
 }
 
 float PlaneWatcher::gimbalRollInDegrees()

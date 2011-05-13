@@ -27,10 +27,7 @@ TargetDialog::TargetDialog( Object ^ parent, Object ^ newAppController)
 	_markLat = false;
 	_markHeading = false;
 	
-                //      _centerLat = centerLat;
-                //      _centerLon = centerLon;
-                //      _latMap = latMap;
-                //      _lonMap = lonMap;
+
 	centerX = -1.0f;
 	centerY = -1.0f;
 	
@@ -60,6 +57,8 @@ void TargetDialog::showDialogForData(Database::CandidateRowData ^ theData)
 	_markLat = false;
 	_markHeading = false;
 	
+	this->Show();
+	reloadData();
 }
 
 void TargetDialog::showDialogForData(Database::TargetRowData ^ theData)
@@ -72,7 +71,9 @@ void TargetDialog::showDialogForData(Database::TargetRowData ^ theData)
 	open = true;
 	_markLat = false;
 	_markHeading = false;
-
+	
+	this->Show();
+	reloadData();
 }
 
 void TargetDialog::reloadData()
@@ -123,14 +124,15 @@ void TargetDialog::reloadData()
 
 void TargetDialog::setImage()
 {
+	//System::Diagnostics::Trace::WriteLine("TargetDialog::setImage(): setting image: " + HTTP_SERVER_TARGET_PATH + data->imageName->Remove(0, 8));
 	try
 	{
 		_targetImage = Image::FromFile( HTTP_SERVER_TARGET_PATH + data->imageName->Remove(0, 8) );
 		imageBox->Image = _targetImage;
 	}
-	catch( Exception ^ )
+	catch( Exception ^ e)
 	{
-
+		System::Diagnostics::Trace::WriteLine("ERROR: TargetDialog::setImage(): failed to set image: " + e);
 	}
 
 }
@@ -163,12 +165,14 @@ void TargetDialog::getDataFromUI()
 System::Void 
 TargetDialog::okButton_Click(System::Object^  sender, System::EventArgs^  e) 
 {
+	getDataFromUI();
+
 	if (mode == DialogEditingCandidate) {
 		TargetRowData ^newData = gcnew TargetRowData(candidate);
 		newData->updateFrom(data);
-
-		((SkynetController ^)appController)->removeCandidate(candidate);
+		
 		((SkynetController ^)appController)->addTarget(newData);
+		((SkynetController ^)appController)->removeCandidate(candidate);
 
 	}
 
@@ -182,4 +186,23 @@ TargetDialog::okButton_Click(System::Object^  sender, System::EventArgs^  e)
 	_markLat = false;
 	_markHeading = false;
 	this->Close();
+}
+
+System::Void 
+TargetDialog::button1_Click(System::Object^  sender, System::EventArgs^  e) 
+{
+	if (mode == DialogEditingCandidate) {
+		((SkynetController ^)appController)->removeCandidate(candidate);
+
+	}
+
+	else if (mode == DialogEditingUnverified) {
+		((SkynetController ^)appController)->removeTarget(target);
+	}
+
+	open = false;
+	_markLat = false;
+	_markHeading = false;
+	this->Close();
+
 }

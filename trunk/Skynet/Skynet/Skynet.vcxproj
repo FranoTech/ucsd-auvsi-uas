@@ -260,6 +260,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</CompileAsManaged>
     </ClCompile>
     <ClCompile Include="TargetDialog.cpp" />
+    <ClCompile Include="TargetLock.cpp" />
     <ClCompile Include="TelemetrySimulator.cpp" />
     <ClCompile Include="VideoReader.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
@@ -343,8 +344,10 @@
     <ClInclude Include="TargetDialog.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="TargetLock.h" />
     <ClInclude Include="TelemetrySimulator.h" />
     <ClInclude Include="TelemetryStructures.h" />
+    <ClInclude Include="Tester.h" />
     <ClInclude Include="VideoReader.h" />
     <ClInclude Include="VideoSimulator.h" />
   </ItemGroup>

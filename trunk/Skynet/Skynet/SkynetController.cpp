@@ -2,9 +2,12 @@
 
 #include "SkynetController.h"
 
+
+#include "PlaneWatcher.h"
 #include "OpenGLForm.h"
 #include "Form1.h"
 #include "Delegates.h"
+#include "TargetLock.h"
 
 using namespace System;
 using namespace System::Data::Odbc;
@@ -28,6 +31,21 @@ SkynetController::~SkynetController()
 	theDatabase = nullptr;
 }
 
+
+void SkynetController::stopTargetLock()
+{
+	targetLock->endLock();
+}
+
+void SkynetController::intendedGimbalPositionUpdated( float rollDegrees, float pitchDegrees )
+{
+	((Form1 ^)form1View)->updateIntendedGimbalPosition( rollDegrees, pitchDegrees );
+}
+
+void SkynetController::intendedCameraZoomUpdated( float zoom )
+{
+	((Form1 ^)form1View)->updateIntendedCameraZoom( zoom );
+}
 
 void SkynetController::saveCurrentFrameAsCandidate()
 {
@@ -223,7 +241,7 @@ void SkynetController::removeCandidate(String ^ id)
 {	
 	theDatabase->removeCandidate(id);
 
-	Delegates::candidateRowDataToVoid ^ blahdelegate = gcnew Delegates::candidateRowDataToVoid((Form1 ^)form1View, &Form1::removeCandidateFromTable );
+	Delegates::stringToVoid ^ blahdelegate = gcnew Delegates::stringToVoid((Form1 ^)form1View, &Form1::removeCandidateFromTable );
 
 	try {
 		((Form1 ^)form1View)->Invoke( blahdelegate, gcnew array<Object ^>{id} );
@@ -241,9 +259,9 @@ void SkynetController::removeTarget(Database::TargetRowData ^ data)
 
 void SkynetController::removeTarget(String ^ id)
 {
-	theDatabase->removeCandidate(id);
+	theDatabase->removeTarget(id);
 
-	Delegates::targetRowDataToVoid ^ blahdelegate = gcnew Delegates::targetRowDataToVoid((Form1 ^)form1View, &Form1::removeTargetFromTable );
+	Delegates::stringToVoid ^ blahdelegate = gcnew Delegates::stringToVoid((Form1 ^)form1View, &Form1::removeTargetFromTable );
 
 	try {
 		((Form1 ^)form1View)->Invoke( blahdelegate, gcnew array<Object ^>{id} );

@@ -7,6 +7,425 @@
 #include "GeoReference.h"
 
 using namespace System;
+using namespace Vision;
+
+
+
+#define PI 3.14159265
+
+bool approxEqual(double one, double two)
+{
+	if (fabs(one - two) > 0.001)
+		return false;
+	else 
+		return true;
+}
+
+void GeoReference::runTests()
+{
+	System::Diagnostics::Trace::WriteLine("GeoReference::runTests() STARTING TESTS");
+	int score = 0, total = 0;
+	bool failed = true, result;
+
+	// run tests
+	double plane_latitude = 32.0, plane_longitude = -117.0, plane_altitude = 100, plane_roll, plane_pitch, plane_heading;
+	double target_x = -0, target_y = -0, zoom = 1; // for forward only
+	double Target_Latitude, Target_Longitude, Target_Height, gimbal_roll, gimbal_pitch, gimbal_yaw = 0;
+
+	double testvalRollPitch[5] = {-60, -30, 0.0, 30, 60 };
+	double testvalYaw[11] = {-180.0, -135.0, -90.0, -60.0, -30.0, 0.0, 30.0, 60.0, 90.0, 135.0, 180.0 };
+
+
+	result = getGPS(plane_latitude, plane_longitude, plane_altitude, 0, 0, 0, 0, 0, 0, 
+							0, 0, 1, Target_Latitude, Target_Longitude, Target_Height);
+
+	double totalRoll, totalPitch, maxAngle = 57.0;
+	for (int p_r = 0; p_r < 5; p_r++) 
+	{
+		for (int p_p = 0; p_p < 5; p_p++) 
+		{
+			for (int p_y = 0; p_y < 11; p_y++) 
+			{
+				for (int g_r = 0; g_r < 5; g_r++) 
+				{
+					for (int g_p = 0; g_p < 5; g_p++) 
+					{
+						plane_roll = testvalRollPitch[p_r];
+						plane_pitch = testvalRollPitch[p_p];
+						plane_heading = testvalYaw[p_y];
+
+						gimbal_roll = testvalRollPitch[g_r];
+						gimbal_pitch = testvalRollPitch[g_p];
+						
+						totalRoll = plane_roll + gimbal_roll;
+						totalPitch = plane_pitch + gimbal_pitch;
+
+						if (abs(totalRoll) > maxAngle || abs(totalPitch) > maxAngle )
+							continue;
+
+
+						total++;
+						failed = false;
+
+							
+						//if (g_r == 0 && p_r == 0)
+							//System::Diagnostics::Trace::WriteLine(" ");
+
+						result = getGPS(plane_latitude, plane_longitude, plane_altitude, plane_roll, plane_pitch, plane_heading, gimbal_roll, gimbal_pitch, gimbal_yaw, 
+							target_x, target_y, zoom, Target_Latitude, Target_Longitude, Target_Height);
+						
+						if (!result || approxEqual(Target_Latitude, 1000)) {
+							failed = true;
+
+						}
+						/*else {
+							reverseGeoreference(plane_latitude, plane_longitude, plane_altitude, plane_roll, plane_pitch, plane_heading, 
+								Target_Latitude, Target_Longitude, Target_Height, gimbal_roll, gimbal_pitch);
+						}*/
+
+						//if (g_r == 0 && p_r == 0)
+							//System::Diagnostics::Trace::WriteLine(" ");
+
+						if (failed) {// || !(approxEqual(gimbal_roll, testvalRollPitch[g_r]) && approxEqual(gimbal_pitch, testvalRollPitch[g_p]))) {
+							System::Diagnostics::Trace::WriteLine("TEST FAILED: ( " + score + "/" + total + ") (p_r, p_p, p_y, g_r, g_p): (" + p_r + ", " + p_p + ", " + p_y + ", " + g_r + ", " + g_p + 
+							") ... p_roll: " + plane_roll + " p_pitch: " + plane_pitch + " g_roll: " + gimbal_roll + " g_pitch: " + gimbal_pitch + " Target_Latitude: " + Target_Latitude + " Target_Longitude: " + Target_Longitude);
+							return;
+						} else {
+							score++;
+							System::Diagnostics::Trace::WriteLine("TEST PASSED: " + score + "/" + total);
+						}
+					}
+				}
+			}
+		}
+	}
+	System::Diagnostics::Trace::WriteLine("GeoReference::runTests() FINISHED TESTS: SCORE (" + score + "/" + total + ")");
+
+
+	/*reverseGeoreference(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, 
+				double Target_Latitude, double Target_Longitude, double Target_Height, double & gimbal_roll, double & gimbal_pitch)*/
+
+	/*getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
+				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height)*/
+}
+
+double cosd(double input)
+{
+	return cos(input*PI/180.0);
+}
+
+double sind(double input)
+{
+	return sin(input*PI/180.0);
+}
+
+double atand(double input)
+{
+	return atan(input)*180.0/PI;
+}
+
+double GeoReference::distanceBetweenGPS(double lat1, double lon1, double lat2, double lon2)
+{
+	double radius = 6378000; // radius of earth!
+	double deltaLat = lat2 - lat1;
+	double deltaLon = lon2 - lon1;
+	double a = sind(deltaLat/2)*sind(deltaLat*2) + cosd(lat1)*cosd(lat2)*sind(deltaLon/2)*sind(deltaLon*2);
+	double c = 2*atan2(sqrt(a), sqrt((1-a)));
+	double d = radius*c;
+
+	return d;
+}
+
+cv::Mat GeoReference::EulerAngles(bool transpose, cv::Mat Orig_Vector, double Roll, double Pitch, double Yaw)
+{
+	double R = Roll;
+	double P = Pitch;
+	double Y = Yaw;
+
+	 
+	double transarr[9] = {cosd(P)*cosd(Y), cosd(P)*sind(Y), -sind(P),
+							sind(R)*sind(P)*cosd(Y)-cosd(R)*sind(Y), sind(R)*sind(P)*sind(Y)+cosd(R)*cosd(Y), sind(R)*cosd(P),  
+							cosd(R)*sind(P)*cosd(Y)+sind(R)*sind(Y), cosd(R)*sind(P)*sind(Y)-sind(R)*cosd(Y), cosd(R)*cosd(P)};
+	cv::Mat Transfer = cv::Mat(3, 3, CV_64FC1, transarr).inv();
+
+	if (transpose)
+		Transfer = Transfer.t();
+
+	return Transfer*Orig_Vector;
+} 
+
+void GeoReference::reverseGeoreference(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, 
+				double Target_Latitude, double Target_Longitude, double Target_Height, double & gimbal_roll, double & gimbal_pitch)
+{
+	typedef cv::Vec<double, 1> VT;
+
+	// Step 1: Moving Plane and Target LAt/Lon into ECEF
+	double Plane_yaw = plane_heading;
+	double G_lat = 32.0;
+	double G_long = -117.0;
+
+	double a = 6378137.0;
+	double b = 6356752.3142;
+	double f = a/(a-b);
+	double e = sqrt((1/f)*(2.0-(1.0/f)));
+	double N_P = a/(sqrt(1.0-(e*e)*sind(plane_latitude)*sind(plane_latitude)));
+	double N_T = a/(sqrt(1.0-(e*e)*sind(Target_Latitude)*sind(Target_Latitude)));
+
+	double X_P = (N_P+plane_altitude)*cosd(plane_latitude)*cosd(plane_longitude);
+	double Y_P = (N_P+plane_altitude)*cosd(plane_latitude)*sind(plane_longitude);
+	double Z_P = (N_P*(1-e*e)+plane_altitude)*sind(plane_latitude);
+	
+	double X_T = (N_T+Target_Height)*cosd(Target_Latitude)*cosd(Target_Longitude);
+	double Y_T = (N_T+Target_Height)*cosd(Target_Latitude)*sind(Target_Longitude);
+	double Z_T = (N_T*(1-e*e)+Target_Height)*sind(Target_Latitude);
+
+	// Step 2: Form Positions, find vector that connects the two points 
+	double xyzparr[3] = {X_P, Y_P, Z_P};
+	cv::Mat XYZP(3, 1, CV_64FC1, xyzparr );
+	
+	double xyztarr[3] = {X_T, Y_T, Z_T};
+	cv::Mat XYZT(3, 1, CV_64FC1, xyzparr );
+
+	double transGarr[9] = {	-sind(G_lat)*cosd(G_long),		-sind(G_lat)*sind(G_long),	cosd(G_lat), 
+								-sind(G_long),					cosd(G_long),				0.0, 
+								-cosd(G_lat)*cosd(G_long),		-cosd(G_lat)*sind(G_long),	-sind(G_lat)	};
+	cv::Mat transG(3, 3, CV_64FC1, transGarr );
+
+	cv::Mat NEDP = transG*XYZP;
+	cv::Mat NEDT = transG*XYZT;
+
+	cv::Mat NED_TRUE = NEDT-NEDP;
+
+
+	// Step 3:  find NED plane
+
+	cv::Mat NED_PLANE = EulerAngles(true, NED_TRUE, plane_roll, plane_pitch, Plane_yaw);
+	
+	double up = NED_PLANE.at<VT>(0, 0)[0];
+	double vp = NED_PLANE.at<VT>(1, 0)[0];
+	double wp = NED_PLANE.at<VT>(2, 0)[0];
+
+	// Step 4: Find Gimbal Angles
+
+	gimbal_roll = -atand(vp/wp);
+	gimbal_pitch = -atand((-up)/(sind(gimbal_roll)*vp+cosd(gimbal_roll)*wp));
+
+}
+
+
+String ^ matToString(cv::Mat in)
+{
+	String ^ ret = "{";
+	typedef cv::Vec<double, 1> VT;
+
+	for (int r = 0; r < in.rows; r++)
+	{
+		ret += "{";
+		for (int c = 0; c < in.cols; c++)
+		{
+			ret += in.at<VT>(r, c)[0];
+		}
+		ret += "}, ";
+	}
+
+	ret += "}";
+	return ret;
+
+}
+
+#define GIMBAL_YAW		0.0
+#define X_PIXELS		720
+#define Y_PIXELS		486
+
+void GeoReference::getTargetGPS(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, 0, 0, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
+void GeoReference::getTargetGPS(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, data->targetX - X_PIXELS/2, data->targetY - Y_PIXELS/2, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
+void GeoReference::getCenterGPSFromCandidateData(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, 0, 0, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
+
+void GeoReference::getCenterGPSFromTargetData(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude )
+{
+	getGPS(data->gpsLatitude, data->gpsLongitude, data->altitudeAboveLaunch, data->planeRollDegrees, data->planePitchDegrees, data->planeHeadingDegrees, data->gimbalRollDegrees, data->gimbalPitchDegrees,
+		GIMBAL_YAW, data->targetX - X_PIXELS/2, data->targetY - Y_PIXELS/2, data->zoom, centerLatitude, centerLongitude, centerAltitude);
+}
+
+bool GeoReference::getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
+				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height)
+{
+	bool result = true;
+	double x_fov = 46.0f;
+	double y_fov = 34.0f;
+	double x_pixels = X_PIXELS;
+	double y_pixels = Y_PIXELS;
+	double zoom_factor = zoom;
+	double target_pixel_x = target_x;
+	double target_pixel_y = -target_y;
+	gimbal_yaw = 0.0;
+
+	typedef cv::Vec<double, 1> VT;
+	double pix[3] = {0,0,1};
+	cv::Mat Pixel_CF_Vector(3, 1, CV_64FC1, pix );
+
+	double ground_altitude = 0;
+
+	double a = 6378137;
+	double b = 6356752.3142;
+
+	// PART A
+	double fovarr[3] = {x_fov, y_fov, 1};
+	cv::Mat FOV(3, 1, CV_64FC1, fovarr );
+	
+
+	cv::Mat Scale(3, 3, CV_64FC1 );
+	Scale.at<VT>(0, 0)[0] = 1/zoom_factor;
+	Scale.at<VT>(0, 1)[0] = 0 ;
+	Scale.at<VT>(0, 2)[0] = 0;
+	Scale.at<VT>(1, 0)[0] = 0; // was 1
+	Scale.at<VT>(1, 1)[0] = 1/zoom_factor;
+	Scale.at<VT>(1, 2)[0] = 0;
+	Scale.at<VT>(2, 0)[0] = 0;
+	Scale.at<VT>(2, 1)[0] = 0;
+	Scale.at<VT>(2, 2)[0] = 1;
+	
+	cv::Mat FOV_zoom_accounted = Scale*FOV;
+
+	// PART B
+	double Pixel_Roll = (FOV_zoom_accounted.at<VT>(1, 0)[0])/2 * target_pixel_x / (x_pixels);
+	double Pixel_Pitch = (FOV_zoom_accounted.at<VT>(2, 0)[0])/2 * target_pixel_y / (y_pixels);
+	double Pixel_Yaw = 0;
+
+	//TODO: define EulerAngles function
+	cv::Mat CC_CF_Vector = EulerAngles(1, Pixel_CF_Vector, Pixel_Roll, Pixel_Pitch, Pixel_Yaw);
+
+	// PART C
+	cv::Mat GZ_CF_Vector = EulerAngles(1, CC_CF_Vector, gimbal_roll, gimbal_pitch, gimbal_yaw);
+
+	// PART D
+	cv::Mat Plane_CF_Vector = EulerAngles(1, GZ_CF_Vector, plane_roll, plane_pitch, plane_heading);
+
+	// PART E
+	double f = a/(a-b);
+	//double temp = ;
+	double e = sqrt( (1.0 / f ) * (2 - 1*(1 / f ))  );
+	double N = a/(sqrt((double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude))));
+
+	double X = (N+plane_altitude)*cosd(plane_latitude)*cosd(plane_longitude);
+	double Y = (N+plane_altitude)*cosd(plane_latitude)*sind(plane_longitude);
+	double Z = (N*(1-e*e)+plane_altitude)*sind(plane_latitude);
+
+	double m[3] = {X, Y, Z};
+	cv::Mat InitialXYZ = cv::Mat(3, 1, CV_64FC1, m);//.inv();
+	
+	/*System::Diagnostics::Trace::WriteLine("Part E initialxyz: " + matToString(InitialXYZ) + " f:" + f + " e:" + e + " N:" + N + " X:" + X + " Y:" + Y + " Z:" + Z);
+	System::Diagnostics::Trace::WriteLine("Part E a:" + a + " b:" + b + " plane_latitude:" + plane_latitude + " plane_longitude:" + plane_longitude);
+	System::Diagnostics::Trace::WriteLine("Part E a:" + sind(plane_latitude));
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (e*e)*sind(plane_latitude)*sind(plane_latitude));
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)));
+	System::Diagnostics::Trace::WriteLine("Part E a:" + (sqrt((double)(1.0f - (e*e)*sind(plane_latitude)*sind(plane_latitude)))));*/
+
+	// PART F
+	double n = 1;
+	Target_Height = 1000;
+	
+	const double HEIGHT_OF_FIELD = 3.3333333333;
+	const double MAX_DISTANCE = 1500; // DEBUG WAS 500 all of this in meters
+
+	double MIN_DISTANCE = plane_altitude - HEIGHT_OF_FIELD - 20;
+	const double MARGIN_OF_ERROR = 1; // DEBUG WAS 0.5
+
+	double range = MAX_DISTANCE - MIN_DISTANCE;
+	n = range/2 + MIN_DISTANCE;
+	range /= 2;
+
+	double h, p, mlong, latchange, newlat, lat;
+	int loopcounter = 0;
+	while (loopcounter < 100 && fabs(Target_Height - HEIGHT_OF_FIELD) > MARGIN_OF_ERROR)
+	{
+		cv::Mat NED = Plane_CF_Vector * n;
+
+
+		double transarr[9] = {-sind(plane_latitude)*cosd(plane_longitude), -sind(plane_longitude), -cosd(plane_latitude)*cosd(plane_longitude), 
+								-sind(plane_latitude)*sind(plane_longitude), -cosd(plane_longitude), -cosd(plane_latitude)*sind(plane_longitude), 
+								cosd(plane_latitude), 0, -sind(plane_latitude)};
+		cv::Mat Trans = cv::Mat(3, 3, CV_64FC1, transarr).inv();
+		cv::Mat XYZ = InitialXYZ + Trans*NED;
+
+		X = XYZ.at<VT>(0, 0)[0];
+		Y = XYZ.at<VT>(1, 0)[0];
+		Z = XYZ.at<VT>(2, 0)[0];
+		h = 0;
+		N = a;
+		p = sqrt(X*X + Y*Y);
+		mlong = atand(Y/X);
+		latchange = 10;
+		newlat = 10;
+		int count = 0;
+		double sinfind;
+		while (latchange > 0.0001)
+		{
+			sinfind = Z/(N*(1-e*e) + h);
+			lat = atand((Z+e*e*N*sinfind)/p);
+			N = a/(sqrt(1-e*e*sind(lat)*sind(lat)));
+			h = p/cosd(lat)-N;
+			latchange = abs(newlat - lat);
+			count ++;
+			newlat = lat;
+		}
+
+		mlong = (180-mlong)*-1;
+		Target_Latitude = lat;
+		Target_Longitude = mlong;
+		Target_Height = h;
+
+
+		if (norm(NED) > MAX_DISTANCE || loopcounter == 98) {
+			if (loopcounter == 98)
+				System::Diagnostics::Trace::WriteLine("FAILURE no target in range - inf loop detected");
+			else
+				System::Diagnostics::Trace::WriteLine("FAILURE no target in range");
+
+			Target_Latitude = 1000;
+			Target_Longitude = 1000;
+			Target_Height = 0;
+			return false;
+		}
+
+		if (h < HEIGHT_OF_FIELD)
+			n = n - range/2;
+		else 
+			n = n + range/2;
+
+		range /= 2;
+		loopcounter++;
+		
+	}
+
+	// return values!!!
+	Target_Latitude = lat;
+	Target_Longitude = mlong;
+	Target_Height = h;
+
+	return true;
+}
+
+
+
+
+
+
 
 /*Reference ellipsoids derived from Peter H. Dana's website- 
 http://www.utexas.edu/depts/grg/gcraft/notes/datum/elist.html

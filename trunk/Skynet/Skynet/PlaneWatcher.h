@@ -28,8 +28,14 @@ namespace Communications
 		float gimbalRollInDegrees();
 		float gimbalPitchInDegrees();
 		float rawToDegrees(unsigned __int16 input);
+		float rawZoomToFloat(int theZoom);
+		unsigned __int16 gimbalDegreesToRaw(float input);
+
 		PlaneState ^ predictLocationAtTime( float timeOffset );
 		PlaneState ^ stateOfCurrentImage();
+		PlaneState ^ currentState() { return predictLocationAtTime(0); }
+
+		void requiredRollPitchForGPS( unsigned __int16 & roll, unsigned __int16 & pitch, float lat, float lon);
 
 		unsigned __int16 gimbalRoll;
 		unsigned __int16 gimbalPitch;
