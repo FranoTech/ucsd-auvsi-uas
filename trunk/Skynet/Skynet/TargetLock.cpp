@@ -26,22 +26,25 @@ TargetLock::TargetLock(Comms ^ theComms, PlaneWatcher ^ theWatcher)
 	lon = 0.0f;
 	locked = false;
 
-	targetLockThread = gcnew Thread(gcnew ThreadStart(this, &TargetLock::targetLockThreadFunction));
+	/*targetLockThread = gcnew Thread(gcnew ThreadStart(this, &TargetLock::targetLockThreadFunction));
 	targetLockThread->Name = "TargetLock Thread";
-	targetLockThread->Start();
+	targetLockThread->Start();*/
 }
 
 TargetLock::~TargetLock(void)
 {
-	targetLockThread->Abort();
-	targetLockThread = nullptr;
+	//targetLockThread->Abort();
+	//targetLockThread = nullptr;
 }
 
 void TargetLock::lockOntoGPS( float newLat, float newLon )
 {
-	lat = newLat;
-	lon = newLon;
+	//lat = newLat;
+	//lon = newLon;
 	locked = true;
+
+
+
 }
 
 void TargetLock::endLock()

@@ -172,6 +172,12 @@
     <ClCompile Include="TargetLock.cpp">
       <Filter>Source Files\Communications</Filter>
     </ClCompile>
+    <ClCompile Include="GEarthHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VoteCounter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Auvsi_cvFft.h">
@@ -328,6 +334,12 @@
       <Filter>Header Files\Communications</Filter>
     </ClInclude>
     <ClInclude Include="Tester.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GEarthHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VoteCounter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

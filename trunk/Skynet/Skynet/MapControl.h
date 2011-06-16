@@ -10,6 +10,7 @@ using namespace System::Threading;
 using namespace System::Net;
 
 #include "Delegates.h"
+#include "MasterHeader.h"
 
 #ifndef OPENCV_DISABLED
 #include "GeoReference.h"
@@ -276,7 +277,7 @@ namespace Skynet {
 
 	static Bitmap ^ RotateImage(Image ^ image, double angle, bool highDetail)
         {
-            double pi2 = Math::PI / 2.0;
+            double pi2 = PI / 2.0;
 
             // Why can't C# allow these to be const, or at least readonly
             // *sigh*  I'm starting to talk like Christian Graus :omg:
@@ -284,7 +285,7 @@ namespace Skynet {
             double oldHeight = (double)image->Height;
 
             // Convert degrees to radians
-            double theta = angle * Math::PI / 180.0;
+            double theta = angle * PI / 180.0;
             double locked_theta = theta;
 
 			// DEBUG: this fixes a problem with the while()
@@ -293,7 +294,7 @@ namespace Skynet {
 
             // Ensure theta is now [0, 2pi)
             while (locked_theta < 0.0)
-                locked_theta += 2.0 * Math::PI;
+                locked_theta += 2.0 * PI;
 
             double newWidth, newHeight;
             int nWidth, nHeight; // The newWidth/newHeight expressed as ints
@@ -306,7 +307,7 @@ namespace Skynet {
             //   Refer to the first paragraph in the explaination above for 
             //   reasons why.
             if ((locked_theta >= 0.0 && locked_theta < pi2) ||
-                (locked_theta >= Math::PI && locked_theta < (Math::PI + pi2)))
+                (locked_theta >= PI && locked_theta < (PI + pi2)))
             {
                 adjacentTop = Math::Abs(Math::Cos(locked_theta)) * oldWidth;
                 oppositeTop = Math::Abs(Math::Sin(locked_theta)) * oldWidth;
@@ -371,7 +372,7 @@ namespace Skynet {
 									 };
 
             }
-            else if (locked_theta >= pi2 && locked_theta < Math::PI)
+            else if (locked_theta >= pi2 && locked_theta < PI)
             {
                 points = gcnew array<PointF> { 
 										 PointF( (float)newWidth, (float) oppositeTop ),
@@ -379,7 +380,7 @@ namespace Skynet {
 										 PointF( (float) oppositeBottom, 0.0 )						 
 									 };
             }
-            else if (locked_theta >= Math::PI && locked_theta < (Math::PI + pi2))
+            else if (locked_theta >= PI && locked_theta < (PI + pi2))
             {
                 points = gcnew array<PointF> { 
 										 PointF( (float) adjacentTop, (float)newHeight ), 
@@ -677,7 +678,7 @@ namespace Skynet {
 
 		static double Latitude2TileY( double latitude, int zoom )
 		{
-		  return (1.0 - log(tan(latitude * Math::PI/180.0) + 1.0 / cos(latitude * Math::PI/180.0)) / Math::PI) / 2.0 * pow(2.0, zoom); 
+		  return (1.0 - log(tan(latitude * PI/180.0) + 1.0 / cos(latitude * PI/180.0)) / PI) / 2.0 * pow(2.0, zoom); 
 		}
 
 		static double TileX2Longitude( double x, int zoom )
@@ -687,18 +688,18 @@ namespace Skynet {
 
 		static double TileY2Latitude( double y, int zoom )
 		{
-		  double n = Math::PI - 2.0 * Math::PI * y / pow(2.0, zoom);
-		  return 180.0 / Math::PI * atan(0.5 * (exp(n) - exp(-n)));
+		  double n = PI - 2.0 * PI * y / pow(2.0, zoom);
+		  return 180.0 / PI * atan(0.5 * (exp(n) - exp(-n)));
 		}
 
 		//This algorithm is taken from the authors AA+ class library (http://www.naughter.com/aa.html)
 		static double DistanceBetweenPoints( double Latitude1, double Longitude1, double Latitude2, double Longitude2 )
 		{
 			//Convert from degress to radians
-			Latitude1 = Latitude1 / 180 * Math::PI;
-			Latitude2 = Latitude2 / 180 * Math::PI;
-			Longitude1 = Longitude1 / 180 * Math::PI;
-			Longitude2 = Longitude2 / 180 * Math::PI;
+			Latitude1 = Latitude1 / 180 * PI;
+			Latitude2 = Latitude2 / 180 * PI;
+			Longitude1 = Longitude1 / 180 * PI;
+			Longitude2 = Longitude2 / 180 * PI;
 
 			double F = (Latitude1 + Latitude2) / 2;
 			double G = (Latitude1 - Latitude2) / 2;

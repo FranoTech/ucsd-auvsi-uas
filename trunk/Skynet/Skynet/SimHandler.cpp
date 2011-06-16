@@ -195,7 +195,7 @@ void SimHandler::stopVideo()
 			// stop, then wait
 
 			breakNow = true;
-			Thread::Sleep( 30 ); // ms
+			Thread::Sleep( 100 ); // ms
 
 			videoWriteThread->Abort();
 	}

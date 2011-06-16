@@ -283,6 +283,13 @@ void Comms::sendHelloToRabbit(){
 	System::Diagnostics::Trace::WriteLine("Comms::sendHelloToRabbit()");
 }
 
+
+void Comms::sendGimbalLatLon(float lat, float lon)
+{
+	rabbit->sendGimbalTarget(lat, lon);
+
+}
+
 void Comms::sendGimbalRollPitch(unsigned __int16 roll, unsigned __int16 pitch)
 {
 	if (roll < MIN_ROLL || roll > MAX_ROLL || pitch < MIN_PITCH || pitch > MAX_PITCH) {

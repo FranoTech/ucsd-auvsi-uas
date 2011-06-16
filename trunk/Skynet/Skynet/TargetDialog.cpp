@@ -16,11 +16,11 @@ using namespace Skynet;
 
 #define SHAPE_COLOR		textBox1
 #define SHAPE			textBox2
-#define LETTER_COLOR	textBox3
-#define LETTER			textBox4
+#define LETTER_COLOR	textBox4
+#define LETTER			textBox3
 
 
-TargetDialog::TargetDialog( Object ^ parent, Object ^ newAppController)
+TargetDialog::TargetDialog( Object ^ parent, SkynetController ^ newAppController)
 {
 	_parent = parent;
 	appController = newAppController;
@@ -49,6 +49,11 @@ TargetDialog::TargetDialog( Object ^ parent, Object ^ newAppController)
 
 void TargetDialog::showDialogForData(Database::CandidateRowData ^ theData)
 {
+	if (theData == nullptr) {
+		PRINT("TargetDialog::showDialogForData() ERROR theData == nullptr");
+		return;
+	}
+
 	mode = DialogEditingCandidate;
 	data = gcnew DialogEditingData(theData);
 	candidate = theData;
@@ -61,16 +66,39 @@ void TargetDialog::showDialogForData(Database::CandidateRowData ^ theData)
 	reloadData();
 }
 
-void TargetDialog::showDialogForData(Database::TargetRowData ^ theData)
+void TargetDialog::showDialogForData(Database::VotesOnCandidate ^ theData)
 {
+	if (theData == nullptr) {
+		PRINT("TargetDialog::showDialogForData() ERROR theData == nullptr");
+		return;
+	}
 	mode = DialogEditingUnverified;
 
-	data = gcnew DialogEditingData(theData);
-	target = theData;
-	candidate = nullptr;
+	data = gcnew DialogEditingData(theData->votes[0]);
+	votingData = theData;
 	open = true;
 	_markLat = false;
 	_markHeading = false;
+
+	
+	this->Show();
+	reloadData();
+}
+
+void TargetDialog::showDialogForData(Database::VerifiedTargetRowData ^ theData)
+{
+	if (theData == nullptr) {
+		PRINT("TargetDialog::showDialogForData() ERROR theData == nullptr");
+		return;
+	}
+
+	mode = DialogEditingVerified;
+
+	data = gcnew DialogEditingData(theData);
+	open = true;
+	_markLat = false;
+	_markHeading = false;
+
 	
 	this->Show();
 	reloadData();
@@ -79,33 +107,39 @@ void TargetDialog::showDialogForData(Database::TargetRowData ^ theData)
 void TargetDialog::reloadData()
 {
 	// reload text fields
-	if (data->shape->Equals("Unknown"))
+	if (String::IsNullOrEmpty(data->shape) || data->shape->Equals("Unknown"))
 		SHAPE->Text = "";
 	else 
 		SHAPE->Text = data->shape;
 
-	if (data->shapeColor->Equals("Unknown"))
+	if (String::IsNullOrEmpty(data->shapeColor) || data->shapeColor->Equals("Unknown"))
 		SHAPE_COLOR->Text = "";
 	else 
 		SHAPE_COLOR->Text = data->shapeColor;
 
-	if (data->letter->Equals("Unknown"))
+	if (String::IsNullOrEmpty(data->letter) || data->letter->Equals("Unknown"))
 		LETTER->Text = "";
 	else 
 		LETTER->Text = data->letter;
 
-	if (data->letterColor->Equals("Unknown"))
+	if (String::IsNullOrEmpty(data->letterColor) || data->letterColor->Equals("Unknown"))
 		LETTER_COLOR->Text = "";
 	else 
 		LETTER_COLOR->Text = data->letterColor;
 
-	// change name of ok button
+	// change UI elements
 	switch (mode) {
 		case DialogEditingCandidate:
-			okButton->Text = "Move to Unverified";
+			okButton->Text = "Vote";
+			clearVotingText();
 			break;
 		case DialogEditingUnverified:
-			okButton->Text = "Save Changes";
+			okButton->Text = "Approve for Export";
+			buildVotingText();
+			break;
+		case DialogEditingVerified:
+			okButton->Text = "STOP: DO NOT MODIFY";
+			clearVotingText();
 			break;
 		default:
 			okButton->Text = "Shit, bro";
@@ -119,6 +153,40 @@ void TargetDialog::reloadData()
 	topOfTargetY = (float)data->topOfTargetY;
 
 	setImage();
+
+}
+
+void TargetDialog::clearVotingText()
+{
+	centerVoteLabel->Text = "";
+	headingVoteLabel->Text = "";
+	shapeVoteResults->Text = "";
+	letterVoteResults->Text = "";
+}
+
+void TargetDialog::buildVotingText() 
+{
+	String ^ center = "";
+	String ^ heading = "";
+	String ^ shape = "";
+	String ^ letter = "";
+
+	for each(VoteRowData ^ data in votingData->votes) {
+		if (data == nullptr)
+			continue;
+
+		center += "("+ data->targetX + "," + data->targetY+")\n";
+		heading += "("+ data->topOfTargetX + "," + data->topOfTargetY+")\n";
+		shape += "" + data->shapeColor + " " + data->shape + "\n";
+		letter += "" + data->letterColor + " " + data->letter + "\n";
+
+
+	}
+
+	centerVoteLabel->Text = center;
+	headingVoteLabel->Text = heading;
+	shapeVoteResults->Text = shape;
+	letterVoteResults->Text = letter;
 
 }
 
@@ -168,20 +236,31 @@ TargetDialog::okButton_Click(System::Object^  sender, System::EventArgs^  e)
 	getDataFromUI();
 
 	if (mode == DialogEditingCandidate) {
-		TargetRowData ^newData = gcnew TargetRowData(candidate);
+		VoteRowData ^newData = gcnew VoteRowData();
 		newData->updateFrom(data);
 		
-		((SkynetController ^)appController)->addTarget(newData);
-		((SkynetController ^)appController)->removeCandidate(candidate);
+		bool result = ((SkynetController ^)appController)->addVote(newData);
+		if (result)
+			((SkynetController ^)appController)->removeCandidate(candidate);
+		else
+			PRINT("ERROR in TargetDialog::okButton_Click(): failed to add target");
+
 
 	}
 
 	else if (mode == DialogEditingUnverified) {
-		target->updateFrom(data);
+		//target->updateFrom(data);
 
-		((SkynetController ^)appController)->modifyTarget(target);
+		//((SkynetController ^)appController)->modifyTarget(target);
+
+		//VerifiedTargetRowData ^ newVerifiedTarget = gcnew VerifiedTargetRowData(data);
+
+		appController->addVerifiedTargetWithDialogData(data);
 	}
 
+	else if (mode == DialogEditingVerified) {
+		
+	}
 	open = false;
 	_markLat = false;
 	_markHeading = false;
@@ -191,14 +270,20 @@ TargetDialog::okButton_Click(System::Object^  sender, System::EventArgs^  e)
 System::Void 
 TargetDialog::button1_Click(System::Object^  sender, System::EventArgs^  e) 
 {
+	// delete button
 	if (mode == DialogEditingCandidate) {
 		((SkynetController ^)appController)->removeCandidate(candidate);
 
 	}
 
-	else if (mode == DialogEditingUnverified) {
-		((SkynetController ^)appController)->removeTarget(target);
+	else if (mode == DialogEditingVerified) {
+		appController->removeVerifiedTargetForID("" + data->id);
 	}
+
+	// dont delete all votes, that could blow shit up
+	/*else if (mode == DialogEditingUnverified) {
+		((SkynetController ^)appController)->removeTarget(target);
+	}*/
 
 	open = false;
 	_markLat = false;

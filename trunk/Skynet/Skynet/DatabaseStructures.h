@@ -10,6 +10,45 @@ namespace Communications
 namespace Database
 {
 	ref struct DialogEditingData;
+	ref struct CandidateRowData;
+	ref struct VoteRowData;
+	ref struct TargetRowData;
+
+
+	public ref struct VoteRowData
+	{
+		VoteRowData();
+
+		void updateFrom(DialogEditingData ^ data);
+
+		String ^ shape;
+		String ^ shapeColor;
+		String ^ letter;
+		String ^ letterColor;
+
+		int targetX;
+		int targetY;
+
+		int topOfTargetX;
+		int topOfTargetY;
+
+		String ^ userid;
+		
+		int candidateid;
+	};
+
+	public ref struct VotesOnCandidate
+	{
+		VotesOnCandidate();
+		void addVote(VoteRowData ^ newVote);
+		VoteRowData ^getSummaryOfVotes();
+
+		int candidateid;
+
+		int numVotes;
+
+		array<VoteRowData ^> ^ votes;
+	};
 
 	public ref struct CandidateRowData
 	{
@@ -68,7 +107,7 @@ namespace Database
 		TargetRowData(CandidateRowData ^ inputRow);
 		
 		void updateFrom(DialogEditingData ^ data);
-		
+		void updateFrom(VoteRowData ^ data);
 
 		String ^ imageName;
 
@@ -119,6 +158,23 @@ namespace Database
 	
 	public ref struct VerifiedTargetRowData
 	{
+		VerifiedTargetRowData();
+		VerifiedTargetRowData(TargetRowData ^ data);
+
+		String ^ Latitude;
+		String ^ Longitude;
+		String ^ Orientation;
+
+
+		String ^ shape;
+		String ^ shapeColor;
+		String ^ letter;
+		String ^ letterColor;
+
+		int candidateid;
+
+		String ^ imageName;
+
 	};
 
 	public ref struct DialogEditingData
@@ -126,6 +182,8 @@ namespace Database
 		DialogEditingData();
 		DialogEditingData(CandidateRowData ^ data);
 		DialogEditingData(TargetRowData ^ data);
+		DialogEditingData(VoteRowData ^ data);
+		DialogEditingData(VerifiedTargetRowData ^ data);
 		
 		
 		String ^ imageName;

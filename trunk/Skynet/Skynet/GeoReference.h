@@ -2,6 +2,7 @@
 
 #include <cv.h>
 #include "DatabaseStructures.h"
+#include "TelemetryStructures.h"
 
 namespace Vision
 {
@@ -26,17 +27,36 @@ namespace Vision
 
 	public:
 		static void runTests();
+
+		static void completeVerifiedUsingUnverified(Database::VerifiedTargetRowData ^ verified, Database::TargetRowData ^ unverified); // TODO
+
 		static double distanceBetweenGPS(double lat1, double lon1, double lat2, double lon2);
 		static void getCenterGPSFromCandidateData(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
 		static void getCenterGPSFromTargetData(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
 		static void getTargetGPS(Database::CandidateRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
 		static void getTargetGPS(Database::TargetRowData ^ data, double & centerLatitude, double & centerLongitude, double & centerAltitude );
+		static void getCenterGPSFromState(Communications::PlaneState ^ planeState, double & centerLatitude, double & centerLongitude, double & centerAltitude );
+		static void getCorners(Communications::PlaneState ^ planeState, double & BLLat, double & BLLon, double & BRLat, double & BRLon, double & TRLat, double & TRLon,
+			double & TLLat, double & TLLon);
+		static void getCorners(Database::TargetRowData ^ data, double & BLLat, double & BLLon, double & BRLat, double & BRLon, double & TRLat, double & TRLon,
+			double & TLLat, double & TLLon);
 
 		static cv::Mat EulerAngles(bool transpose, cv::Mat Orig_Vector, double Roll, double Pitch, double Yaw);
 		static bool getGPS(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
 				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height);
 		static void reverseGeoreference(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, 
 				double Target_Latitude, double Target_Longitude, double Target_Height, double & gimbal_roll, double & gimbal_pitch);
+		static bool forwardGeoreferencing(double plane_latitude, double plane_longitude, double plane_altitude, double plane_roll, double plane_pitch, double plane_heading, double gimbal_roll, double gimbal_pitch, double gimbal_yaw, 
+				double target_x, double target_y, double zoom, double & Target_Latitude, double & Target_Longitude, double & Target_Height);
+
+	private:
+		static String ^ matToString(cv::Mat in);
+		static cv::Mat Quaternion(double theta, double X, double Y, double Z);
+		static cv::Mat Quaternion_Transform(cv::Mat Orig_Vector, cv::Mat Quat);
+		static cv::Mat NED_to_ECEF(cv::Mat NED, double Latitude, double Longitude);
+		static cv::Mat ECEF_to_GEO(cv::Mat ECEF, double flatness, double eccentricity, double semi_major_axis);
+		static cv::Mat EulerAngles_Plane(cv::Mat Orig_Vector, double Roll, double Pitch, double Yaw);
+
 	};
 	/*void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
 			 double &UTMNorthing, double &UTMEasting, char* UTMZone);

@@ -23,12 +23,18 @@ namespace Communications
 		//void connectToRabbit();
 		//void stopConnecting( bool connected );
 
+		// handle data
 		virtual void analyzeData( array<System::Byte> ^ inBuffer ) override; 
 		virtual void afterBeginReading() override;
 		virtual void disconnect() override;
+
+		// send commands
 		void sendGimbalCommand( unsigned __int16 roll, unsigned __int16 pitch );
+		void sendGimbalTarget(float lat, float lon);
 		void sendCameraZoom( unsigned __int32 zoom );
 		void sendHello();
+
+		// instance variables
 		bool rabbitState;
 
 	protected:

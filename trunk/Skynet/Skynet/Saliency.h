@@ -32,12 +32,15 @@ namespace Vision
 	{
 	public:
 		Saliency( Object ^ watcher ); 	// constructor
+		Saliency();
 		virtual ~Saliency();	// destructor
 
 		void setValues(int w, int h, Object ^ newDelegate);		// set initial values
 		bool canAcceptFrame() { return !currentlyAnalyzing;}	// call to see if ready to accept new frame
 		void analyzeFrame(float * buffer, FrameData ^ theData);						// pass in new frame to analyze
 		float * postSaliency;		// results of saliency (black and white)
+
+		void runTestOnImageNamed(String ^ filename);
 
 	protected:
 		bool currentlyAnalyzing;	// saliency is running

@@ -5,6 +5,147 @@
 
 using namespace Database;
 
+VoteRowData::VoteRowData()
+{
+	candidateid = -1;
+
+	shape = "";
+	shapeColor = "";
+	letter = "";
+	letterColor = "";
+
+	targetX = -1;
+	targetY = -1;
+
+	topOfTargetX = -1;
+	topOfTargetY = -1;
+
+	userid = "ground_station";
+		
+
+}
+
+VotesOnCandidate::VotesOnCandidate()
+{
+	candidateid = -1;
+
+	numVotes = 0;
+
+	votes = gcnew array<VoteRowData ^>(5);
+}
+
+VerifiedTargetRowData::VerifiedTargetRowData()
+{
+	candidateid = -1;
+
+	Latitude = nullptr;
+	Longitude = nullptr;
+	Orientation = nullptr;
+
+	shape = nullptr;
+	shapeColor = nullptr;
+	letter = nullptr;
+	letterColor = nullptr;
+
+	imageName = nullptr;
+}
+
+VerifiedTargetRowData::VerifiedTargetRowData(TargetRowData ^ data)
+{
+	candidateid = data->id; 
+	imageName = data->imageName; 
+	
+	shape = data->shape; 
+	shapeColor = data->shapeColor; 
+	letter = data->letter; 
+	letterColor = data->letterColor; 
+
+}
+
+
+void VotesOnCandidate::addVote(VoteRowData ^ newVote)
+{
+	if (newVote == nullptr)
+		return;
+
+	// check size
+	if (numVotes >= votes->GetLength(0)) 
+	{
+		Array::Resize(votes, numVotes+1);
+
+	}
+
+	votes[numVotes] = newVote;
+
+	numVotes++;
+}
+
+VoteRowData ^ VotesOnCandidate::getSummaryOfVotes()
+{
+	// TODO:
+	return nullptr;
+}
+
+
+DialogEditingData::DialogEditingData(VoteRowData ^ data)
+{
+	imageName = nullptr;
+
+	shape = data->shape;
+	shapeColor = data->shapeColor;
+	letter = data->letter;
+	letterColor = data->letterColor;
+		
+	id = data->candidateid;
+
+	dataWidth = -1;
+	dataHeight = -1;
+
+	targetX = data->targetX;
+	targetY = data->targetY;
+
+	topOfTargetX = data->topOfTargetX;
+	topOfTargetY = data->topOfTargetY;
+
+}
+
+
+DialogEditingData::DialogEditingData(VerifiedTargetRowData ^ data)
+{
+	shape = data->shape;
+	shapeColor = data->shapeColor;
+	letter = data->letter;
+	letterColor = data->letterColor;
+		
+	id = data->candidateid;
+
+	dataWidth = -1;
+	dataHeight = -1;
+
+	targetX = -1;
+	targetY = -1;
+
+	topOfTargetX = -1;
+	topOfTargetY = -1;
+}
+
+void VoteRowData::updateFrom(DialogEditingData ^ data)
+{
+	candidateid = data->id;
+
+	shape = data->shape;
+	shapeColor = data->shapeColor;
+	letter = data->letter;
+	letterColor = data->letterColor;
+		
+	targetX = data->targetX;
+	targetY = data->targetY;
+	
+	topOfTargetX = data->topOfTargetX;
+	topOfTargetY = data->topOfTargetY;
+
+}
+
 CandidateRowData::CandidateRowData()
 {
 	id = System::DateTime::Now.Minute*100000 + System::DateTime::Now.Second*1000 + System::DateTime::Now.Millisecond;
@@ -193,7 +334,7 @@ void TargetRowData::updateFrom(DialogEditingData ^ data)
 	shapeColor = data->shapeColor;
 	letter = data->letter;
 	letterColor = data->letterColor;
-		
+	
 	id = data->id;
 
 	dataWidth = data->dataWidth;
@@ -204,6 +345,23 @@ void TargetRowData::updateFrom(DialogEditingData ^ data)
 
 	topOfTargetX = data->topOfTargetX;
 	topOfTargetY = data->topOfTargetY;
+}
+
+
+void TargetRowData::updateFrom(VoteRowData ^ data)
+{
+
+	shape = data->shape;
+	shapeColor = data->shapeColor;
+	letter = data->letter;
+	letterColor = data->letterColor;
+	
+	targetX = data->targetX;
+	targetY = data->targetY;
+
+	topOfTargetX = data->topOfTargetX;
+	topOfTargetY = data->topOfTargetY;
+
 }
 
 DialogEditingData::DialogEditingData()

@@ -58,7 +58,7 @@ void PlaneWatcher::updateGimbalInfo( GimbalInfo ^ data)
 void PlaneWatcher::updatePlaneGPSInfo( PlaneGPSPacket ^ data)
 {
 	//System::Diagnostics::Trace::WriteLine("PlaneWatcher::updatePlaneGPSInfo()");
-	
+	theController->gotGPS();
 	incrementGPSInfoIndex();
 
 	lock l(autopilotGPSInfo);
@@ -387,8 +387,8 @@ void PlaneWatcher::requiredRollPitchForGPS( unsigned __int16 & roll, unsigned __
 
 	// calculate reverse georeference
 	double rollFloat, pitchFloat;
-	Vision::GeoReference::reverseGeoreference(state->gpsData->gpsLatitude, state->gpsData->gpsLongitude, state->telemData->altitudeHAL, state->telemData->roll*180.0/Math::PI, 
-				state->telemData->pitch*180.0/Math::PI, state->telemData->heading*180.0/Math::PI, 
+	Vision::GeoReference::reverseGeoreference(state->gpsData->gpsLatitude, state->gpsData->gpsLongitude, state->telemData->altitudeHAL, state->telemData->roll*180.0/PI, 
+				state->telemData->pitch*180.0/PI, state->telemData->heading*180.0/PI, 
 				lat, lon, 0.0, rollFloat, pitchFloat );
 	System::Diagnostics::Trace::WriteLine("PlaneWatcher::requiredRollPitchForGPS(): rollFloat: " + rollFloat + " pitchFloat + " + pitchFloat);
 
@@ -538,5 +538,11 @@ __int32 PlaneWatcher::getTimeUTC(GimbalInfo ^state){
 
 float PlaneWatcher::linearInterpolation(float A, float B, __int32 timeA, __int32 timeB, __int32 timeActual)
 {
+	// DOESNT ACTUALLY DO INTERPOLATION
+	if (timeA < timeB)
+		return A;
+	else 
+		return B;
+
 	return A + (B - A) * (timeActual - timeA) / (timeB - timeA);
 }

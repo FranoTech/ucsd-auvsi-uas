@@ -6,6 +6,7 @@
 
 #include <string>
 #include <stdio.h>
+#include <iostream>
 
 #include "MasterHeader.h"
 
@@ -38,7 +39,7 @@ SaveImage::convertBuffer( float * buffer, float scale )
 	cv::Mat retVal;
 	typedef cv::Vec<float, 3> VT;
 	int fullWidth = _width * _channels;
-
+	float total = 0;
 	retVal = cv::Mat( _height, _width, CV_32FC3 );
 
 	cv::MatIterator_<VT> matIter = retVal.begin<VT>();
@@ -55,11 +56,13 @@ SaveImage::convertBuffer( float * buffer, float scale )
 				float r = buffer[row * fullWidth + col * _channels + 0] * scale;
 				float g = buffer[row * fullWidth + col * _channels + 1] * scale;
 				float b = buffer[row * fullWidth + col * _channels + 2] * scale;
+				total += r+g+b;
 				*matIter = VT( b, g, r );
 				++matIter;
 			}
 		}
 	}
+	cout << "convertBuffer:" << total;
 
 	return retVal;
 }
@@ -67,7 +70,6 @@ SaveImage::convertBuffer( float * buffer, float scale )
 void
 SaveImage::saveFrame( float * buffer, std::string path  )
 {
-	
 	cv::imwrite( path, convertBuffer( buffer, 255.0f ) );
 }
 
@@ -112,7 +114,7 @@ SaveImage::writeFrame( float * buffer )
 	if( _writer.isOpened() )
 	{
 		_writer << convertBuffer( buffer, 1.0f );
-		printf("write frame");
+		printf((_writer.isOpened() ? "write frame: opened":"write frame: closed"));
 		//System::Debug::Print("writeFrame in SaveImage.cpp");
 	}
 }

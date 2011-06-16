@@ -3,6 +3,7 @@
 
 #include "GeoReference.h"
 #include "DatabaseStructures.h"
+#include "SkynetControllerInterface.h"
 
 namespace Skynet {
 
@@ -19,16 +20,19 @@ namespace Skynet {
 	using namespace System::Data;
 	using namespace System::Drawing;
 
+	//ref class SkynetController;
+
 	/// <summary>
 	/// Summary for TargetDialog
 	/// </summary>
 	public ref class TargetDialog : public System::Windows::Forms::Form
 	{
 	public:
-		TargetDialog( Object ^ parent, Object ^ newAppController);
+		TargetDialog( Object ^ parent, SkynetController ^ newAppController);
 
 		void showDialogForData(Database::CandidateRowData ^ theData);
-		void showDialogForData(Database::TargetRowData ^ theData);
+		void showDialogForData(Database::VotesOnCandidate ^ theData);
+		void showDialogForData(Database::VerifiedTargetRowData ^ theData);
 
 		void reloadData();
 		void setImage();
@@ -44,13 +48,15 @@ namespace Skynet {
 			void set( Database::CandidateRowData ^ newData)
 			{
 				candidate = newData;
+				// TODO set type
+
 				data = gcnew Database::DialogEditingData(newData);
 				reloadData();
 			}
 
 		}
 
-		property Database::TargetRowData ^ Target
+		/*property Database::TargetRowData ^ Target
 		{
 			Database::TargetRowData ^ get()
 			{
@@ -62,6 +68,23 @@ namespace Skynet {
 				data = gcnew Database::DialogEditingData(newData);
 				reloadData();
 			}
+		}*/
+
+		property Database::VotesOnCandidate ^ Votes
+		{
+			Database::VotesOnCandidate ^ get()
+			{
+				return votingData;
+			}
+			void set( Database::VotesOnCandidate ^ newData)
+			{
+				votingData = newData;
+				// set type
+
+				//data = gcnew Database::DialogEditingData(newData);
+				reloadData();
+			}
+
 		}
 
 		/*property int TargetID
@@ -183,6 +206,9 @@ namespace Skynet {
 			}
 		}
 
+		void buildVotingText();
+		void clearVotingText();
+
 		double atan3( double x, double y )
 		{
 			double angle;
@@ -192,17 +218,17 @@ namespace Skynet {
 			else if(x>0 && y<0)
 			    angle = Math::Atan(-y/x);
 			else if(x<0 && y<0)
-				angle =   Math::PI/2.0 +Math::Atan(-x/-y);
+				angle =   PI/2.0 +Math::Atan(-x/-y);
 			else if(x<0 && y>0)
-			    angle = -Math::PI/2 -Math::Atan(-x/y);
+			    angle = -PI/2 -Math::Atan(-x/y);
 			else if(x> 0 && y == 0)
 			    angle = 0;
 			else if(x<0 && y==0)
-			    angle = Math::PI;
+			    angle = PI;
 			else if(x==0 && y >0)
-			    angle = -Math::PI/2.0;
+			    angle = -PI/2.0;
 			else if(x==0 && y<0)
-			    angle = -Math::PI/2.0;
+			    angle = -PI/2.0;
 			else if(x==0 && y==0)
 			    angle =0;
 
@@ -211,7 +237,7 @@ namespace Skynet {
 		
 		/*void setHeading( int x, int y )
 		{
-			double angle = atan3( x, y ) * 180.0 / Math::PI;
+			double angle = atan3( x, y ) * 180.0 / PI;
 
 			_heading = angle;
 		}*/
@@ -227,7 +253,8 @@ namespace Skynet {
 		Database::CandidateRowData ^ candidate;
 		Database::TargetRowData ^ target;
 		Database::DialogEditingData ^ data;
-		Object ^ appController;
+		Database::VotesOnCandidate ^ votingData;
+		SkynetController ^ appController;
 		DialogEditingMode mode;
 		/*int _targetID;
 		int _rowID;
@@ -263,6 +290,10 @@ private: System::Windows::Forms::Label^  label6;
 private: System::Windows::Forms::TextBox^  textBox3;
 private: System::Windows::Forms::TextBox^  textBox4;
 private: System::Windows::Forms::Button^  button1;
+private: System::Windows::Forms::Label^  centerVoteLabel;
+private: System::Windows::Forms::Label^  headingVoteLabel;
+private: System::Windows::Forms::Label^  shapeVoteResults;
+private: System::Windows::Forms::Label^  letterVoteResults;
 
 
 	protected: 
@@ -297,6 +328,10 @@ private: System::Windows::Forms::Button^  button1;
 			this->textBox3 = (gcnew System::Windows::Forms::TextBox());
 			this->textBox4 = (gcnew System::Windows::Forms::TextBox());
 			this->button1 = (gcnew System::Windows::Forms::Button());
+			this->centerVoteLabel = (gcnew System::Windows::Forms::Label());
+			this->headingVoteLabel = (gcnew System::Windows::Forms::Label());
+			this->shapeVoteResults = (gcnew System::Windows::Forms::Label());
+			this->letterVoteResults = (gcnew System::Windows::Forms::Label());
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->imageBox))->BeginInit();
 			this->SuspendLayout();
 			// 
@@ -333,9 +368,9 @@ private: System::Windows::Forms::Button^  button1;
 			// 
 			// okButton
 			// 
-			this->okButton->Location = System::Drawing::Point(549, 597);
+			this->okButton->Location = System::Drawing::Point(549, 568);
 			this->okButton->Name = L"okButton";
-			this->okButton->Size = System::Drawing::Size(109, 23);
+			this->okButton->Size = System::Drawing::Size(109, 52);
 			this->okButton->TabIndex = 3;
 			this->okButton->Text = L"Move to Unverified";
 			this->okButton->UseVisualStyleBackColor = true;
@@ -456,12 +491,52 @@ private: System::Windows::Forms::Button^  button1;
 			this->button1->UseVisualStyleBackColor = true;
 			this->button1->Click += gcnew System::EventHandler(this, &TargetDialog::button1_Click);
 			// 
+			// centerVoteLabel
+			// 
+			this->centerVoteLabel->AutoSize = true;
+			this->centerVoteLabel->Location = System::Drawing::Point(12, 623);
+			this->centerVoteLabel->Name = L"centerVoteLabel";
+			this->centerVoteLabel->Size = System::Drawing::Size(95, 13);
+			this->centerVoteLabel->TabIndex = 19;
+			this->centerVoteLabel->Text = L"Center vote results";
+			// 
+			// headingVoteLabel
+			// 
+			this->headingVoteLabel->AutoSize = true;
+			this->headingVoteLabel->Location = System::Drawing::Point(113, 623);
+			this->headingVoteLabel->Name = L"headingVoteLabel";
+			this->headingVoteLabel->Size = System::Drawing::Size(104, 13);
+			this->headingVoteLabel->TabIndex = 20;
+			this->headingVoteLabel->Text = L"Heading vote results";
+			// 
+			// shapeVoteResults
+			// 
+			this->shapeVoteResults->AutoSize = true;
+			this->shapeVoteResults->Location = System::Drawing::Point(256, 623);
+			this->shapeVoteResults->Name = L"shapeVoteResults";
+			this->shapeVoteResults->Size = System::Drawing::Size(101, 13);
+			this->shapeVoteResults->TabIndex = 21;
+			this->shapeVoteResults->Text = L"Shape Vote Results";
+			// 
+			// letterVoteResults
+			// 
+			this->letterVoteResults->AutoSize = true;
+			this->letterVoteResults->Location = System::Drawing::Point(421, 623);
+			this->letterVoteResults->Name = L"letterVoteResults";
+			this->letterVoteResults->Size = System::Drawing::Size(97, 13);
+			this->letterVoteResults->TabIndex = 22;
+			this->letterVoteResults->Text = L"Letter Vote Results";
+			// 
 			// TargetDialog
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->BackColor = System::Drawing::SystemColors::ControlDarkDark;
-			this->ClientSize = System::Drawing::Size(752, 629);
+			this->ClientSize = System::Drawing::Size(743, 737);
+			this->Controls->Add(this->letterVoteResults);
+			this->Controls->Add(this->shapeVoteResults);
+			this->Controls->Add(this->headingVoteLabel);
+			this->Controls->Add(this->centerVoteLabel);
 			this->Controls->Add(this->button1);
 			this->Controls->Add(this->label4);
 			this->Controls->Add(this->label5);
@@ -614,5 +689,6 @@ private: System::Void imageBox_MouseUp(System::Object^  sender, System::Windows:
 		 }
 
 private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e);
+
 };
 }

@@ -13,4 +13,6 @@ namespace Delegates
 	public delegate void targetRowDataToVoid( Database::TargetRowData ^ data );
 	public delegate void verifiedTargetRowDataToVoid( Database::VerifiedTargetRowData ^ data );
 	public delegate void stringToVoid( String ^ id );
+	public delegate void arrayTargetRowDataToVoid( array<Database::TargetRowData ^> ^ data);
+	public delegate void arrayIntToVoid( array<int> ^ data);
 }

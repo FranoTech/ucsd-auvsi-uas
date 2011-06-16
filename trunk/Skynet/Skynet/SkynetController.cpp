@@ -2,12 +2,13 @@
 
 #include "SkynetController.h"
 
-
+#include "GEarthHandler.h"
 #include "PlaneWatcher.h"
 #include "OpenGLForm.h"
 #include "Form1.h"
 #include "Delegates.h"
 #include "TargetLock.h"
+#include "VoteCounter.h"
 
 using namespace System;
 using namespace System::Data::Odbc;
@@ -15,13 +16,24 @@ using namespace Skynet;
 using namespace OpenGLForm;
 using namespace Database;
 using namespace msclr;
+using namespace Communications;
 
-
-SkynetController::SkynetController(Object ^ mainView)
+SkynetController::SkynetController(Form1 ^ mainView)
 {
 	openGLView = nullptr;
 	theDatabase = nullptr;
 	form1View = mainView;
+	theGEarthHandler = gcnew GEarthHandler(nullptr, nullptr);
+	theGEarthHandler->setController(this);
+
+	voteCounter = gcnew VoteCounter(this);
+	voteCounter->setForm1(mainView);
+
+
+	guiHasData = false;
+	hasTelemetry = false;
+	hasVideo = false;
+	frameCount = 0;
 }
 
 SkynetController::~SkynetController()
@@ -29,8 +41,95 @@ SkynetController::~SkynetController()
 	form1View = nullptr;
 	openGLView = nullptr;
 	theDatabase = nullptr;
+	theGEarthHandler = nullptr;
+	voteCounter = nullptr;
 }
 
+
+void SkynetController::exportData()
+{
+	// get data
+	String ^ result = theDatabase->getTabDelimitedVerifiedTargetDataForSubmission();
+
+	if (result == nullptr)
+	{
+		PRINT("SkynetController::exportData() ERROR: unable to get exported data");
+	}
+
+	// write string
+	FileStream^ fs = gcnew FileStream( HTTP_SERVER_ROOT + "turnin\\UCSD.txt", FileMode::CreateNew);
+	StreamWriter ^ file = gcnew StreamWriter( fs, Encoding::UTF8 );
+
+	file->Write(result);
+	file->Close();
+
+
+	// write images
+	array<VerifiedTargetRowData ^>^ targets = theDatabase->getAllVerifiedTargets();
+
+	int targetNumber = 1;
+	for each(VerifiedTargetRowData ^ target in targets)
+	{
+		String ^ imageName = theDatabase->imageNameForID("" + target->candidateid);
+		String ^ sourcePath = HTTP_SERVER_TARGETS_PATH + imageName->Remove(0, 8);
+		String ^ destPath = HTTP_SERVER_EXPORT_PATH + Int32(targetNumber).ToString("00") + ".jpg";
+		
+		try {
+			File::Copy(sourcePath, destPath);
+		}
+		catch(Exception ^ e)
+		{
+			PRINT("ERROR: failed to copy image: " + e);
+			form1View->errorMessageUniversal("Failed to export image");
+		}
+		targetNumber++;
+	}
+
+}
+
+void SkynetController::comeAlive()
+{
+	theGEarthHandler->start();
+}
+
+void SkynetController::setCameraView(OpenGLForm::COpenGL ^ cameraView) 
+{ 
+	openGLView = cameraView; 
+	theGEarthHandler->setOpenGL(cameraView);
+	openGLView->theController = this;
+
+}
+
+void SkynetController::setPlaneWatcher(PlaneWatcher ^ newWatcher)
+{ 
+	theWatcher = newWatcher; 
+	theGEarthHandler->setWatcher(newWatcher);
+	theWatcher->setController(this);
+}
+
+void SkynetController::setDatabase(Database::DatabaseConnection ^ newDatabase)
+{ 
+	theDatabase = newDatabase;
+	theGEarthHandler->setDatabase(newDatabase);
+	voteCounter->setDatabase(newDatabase);
+}
+
+void SkynetController::gotGPS()
+{
+	hasTelemetry = true;
+	if (hasVideo)
+		guiHasData = true;
+}
+
+
+void SkynetController::gotVideo()
+{
+	hasVideo = true;
+	frameCount++;
+
+	if (hasTelemetry)
+		guiHasData = true;
+}
 
 void SkynetController::stopTargetLock()
 {
@@ -47,6 +146,25 @@ void SkynetController::intendedCameraZoomUpdated( float zoom )
 	((Form1 ^)form1View)->updateIntendedCameraZoom( zoom );
 }
 
+
+String ^ SkynetController::saveCurrentFrameAsImage()
+{
+	// invoke saveCurrentFrameAsCandidateOnMainThread()
+	if (openGLView == nullptr) {
+		System::Diagnostics::Trace::WriteLine("SkynetController::saveCurrentFrameAsCandidate() ran, but openGLView == nullptr");
+		return nullptr;
+	}
+
+	COpenGL ^theOpenGL = (COpenGL ^)openGLView;
+
+	// save current image to a file
+	String ^ pathbase = HTTP_SERVER_IMAGERY_PATH;
+	String ^ filename = "img_" + DateTime::Now.ToString("o")->Replace(":", "-") + ".jpg";
+	theOpenGL->saveImage( pathbase + filename );
+
+	return filename;
+}
+
 void SkynetController::saveCurrentFrameAsCandidate()
 {
 	// invoke saveCurrentFrameAsCandidateOnMainThread()
@@ -57,7 +175,6 @@ void SkynetController::saveCurrentFrameAsCandidate()
 
 	COpenGL ^theOpenGL = (COpenGL ^)openGLView;
 
-	// TODO:  get plane information
 	int width = theOpenGL->frameW; 
 	int height = theOpenGL->frameH;
 	int numChannels = 4;
@@ -96,7 +213,10 @@ void SkynetController::saveCurrentFrameAsCandidateOnMainThread()
 		System::Diagnostics::Trace::WriteLine("SkynetController::saveCurrentFrameAsCandidate() ran, but openGLView == nullptr");
 		return;
 	}
-
+	System::Diagnostics::Trace::WriteLine("SkynetController::saveCurrentFrameAsCandidate() ERROR: function no longer used. use saveCurrentFrameAsCandidate() instead.");
+	throw gcnew Exception();
+	return;
+	
 	COpenGL ^theOpenGL = (COpenGL ^)openGLView;
 
 	float *imageBuffer = new float[ theOpenGL->frameW * theOpenGL->frameH * sizeof(float) * 4 / 2];
@@ -128,6 +248,9 @@ void SkynetController::addCandidateToGUITable(Object ^ theObject)
 
 void SkynetController::addTargetToGUITable(Object ^ theObject)
 {	
+	PRINT("SkynetController::addTargetToGUITable() REMOVED AND SHOULD NOT BE USED");
+	return;
+
 	array<TargetRowData ^>^ theArr = (array<TargetRowData ^> ^)theObject;
 	TargetRowData ^ data = (TargetRowData ^)(theArr[0]);
 	Delegates::targetRowDataToVoid ^ blahdelegate = gcnew Delegates::targetRowDataToVoid((Form1 ^)form1View, &Form1::insertTargetData );
@@ -136,7 +259,7 @@ void SkynetController::addTargetToGUITable(Object ^ theObject)
 		((Form1 ^)form1View)->Invoke( blahdelegate, gcnew array<Object ^>{data} );
 	}
 	catch(Exception ^ e) {
-		System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::targetRowDataToVoid(): Failed to add image to GUI Table - " + e);
+		System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::addTargetToGUITable(): Failed to add image to GUI Table - " + e);
 	}
 
 }
@@ -144,7 +267,7 @@ void SkynetController::addTargetToGUITable(Object ^ theObject)
 void SkynetController::loadAllTablesFromDisk()
 {
 	loadCandidateTableFromDisk();
-	loadTargetTableFromDisk();
+	loadVerifiedTargetsTableFromDisk();
 }
 
 void SkynetController::loadCandidateTableFromDisk()
@@ -158,8 +281,22 @@ void SkynetController::loadCandidateTableFromDisk()
 		((Form1 ^)form1View)->insertCandidateData(theRows[i]);
 }
 
+void SkynetController::loadVerifiedTargetsTableFromDisk()
+{
+	array<VerifiedTargetRowData ^>^ theRows = theDatabase->getAllVerifiedTargets();
+	
+	if (theRows == nullptr)
+		return;
+
+	
+	((Form1 ^)form1View)->setVerifiedTableContents(theRows);
+}
+
 void SkynetController::loadTargetTableFromDisk()
 {
+	PRINT("WARNING: SkynetController::loadTargetTableFromDisk() REMOVED AND SHOULD NOT BE USED");
+	return;
+
 	array<TargetRowData ^>^ theRows = theDatabase->getAllTargets();
 
 	if (theRows == nullptr)
@@ -172,7 +309,8 @@ void SkynetController::loadTargetTableFromDisk()
 void SkynetController::clearAllTables()
 {
 	theDatabase->clearCandidatesTable();
-	theDatabase->clearTargetsTable();
+	theDatabase->clearVotesTable();
+	theDatabase->clearVerifiedTargetsTable();
 }
 
 
@@ -201,16 +339,19 @@ void SkynetController::addCandidate(CandidateRowData ^ data)
 	}
 }
 
-void SkynetController::addTarget(Database::TargetRowData ^ data)
+bool SkynetController::addTarget(Database::TargetRowData ^ data)
 {	
+	PRINT("SkynetController::addTarget() REMOVED AND SHOULD NOT BE USED");
+	return false;
+
 	if (theDatabase == nullptr) {
 		System::Diagnostics::Trace::WriteLine("SkynetController::addTarget() ran, but theDatabase == nullptr");
-		return;
+		return false;
 	}
 
 	if (data == nullptr) {
 		System::Diagnostics::Trace::WriteLine("SkynetController::addTarget() ran, but data == nullptr");
-		return;
+		return false;
 	}
 	try {
 		theDatabase->saveNewTarget(data);
@@ -223,13 +364,115 @@ void SkynetController::addTarget(Database::TargetRowData ^ data)
 	}
 	catch(Exception ^ e) {
 		System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::addTarget(): Failed to save imageS - " + e);
+		return false;
 	}
+
+	return true;
+}
+
+void SkynetController::addVerifiedTarget(VerifiedTargetRowData ^ data) // not yet
+{
+	if (data == nullptr)
+		return;
+
+
+	bool result = theDatabase->saveNewVerifiedTarget(data);
+
+	if (!result)
+		form1View->errorMessageUniversal("Failed to save verified target");
+	else
+		addVerifiedTargetToGUITable(data);
 
 }
 
-void SkynetController::addVerifiedTarget(Database::TargetRowData ^ data) // not yet
+void SkynetController::addVerifiedTargetWithDialogData(DialogEditingData ^ data)
 {
-	System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::addVerifiedTarget(): Not implemented");
+	if (data == nullptr)
+		return;
+
+
+	VerifiedTargetRowData ^ verifiedTarget = theDatabase->addVerifiedTargetWithDialogData(data);
+
+	if (verifiedTarget == nullptr)
+		form1View->errorMessageUniversal("Failed to save verified target");
+	else
+		addVerifiedTargetToGUITable(verifiedTarget);
+
+}
+
+void SkynetController::addVerifiedTargetToGUITable(VerifiedTargetRowData ^ data)
+{
+	if (data == nullptr)
+		return;
+
+	data->imageName = theDatabase->imageNameForID("" + data->candidateid);
+
+
+	Delegates::verifiedTargetRowDataToVoid ^ blahdelegate = gcnew Delegates::verifiedTargetRowDataToVoid(form1View, &Form1::insertVerifiedTargetData );
+
+	try {
+		form1View->Invoke( blahdelegate, gcnew array<Object ^>{data} );
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::addVerifiedTargetToGUITable(): Failed to set unverified table contents: " + e);
+	}
+}
+
+void SkynetController::removeVerifiedTargetForID(String ^ id)
+{
+	if (id == nullptr)
+		return;
+	
+	theDatabase->removeVerifiedTarget(id);
+	form1View->removeVerifiedTargetFromTable(id);
+
+}
+
+bool SkynetController::addVote(Database::VoteRowData ^ data)
+{
+	if (theDatabase == nullptr) {
+		System::Diagnostics::Trace::WriteLine("SkynetController::addVote() ran, but theDatabase == nullptr");
+		return false;
+	}
+
+	if (data == nullptr) {
+		System::Diagnostics::Trace::WriteLine("SkynetController::addVote() ran, but data == nullptr");
+		return false;
+	}
+	try {
+		theDatabase->addVote(data);
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::addVote(): Failed to add vote - " + e);
+		return false;
+	}
+
+	return true;
+}
+
+
+void SkynetController::removeVotesForID(String ^ id)
+{
+	
+	if (theDatabase == nullptr) {
+		System::Diagnostics::Trace::WriteLine("SkynetController::removeVotesForID() ran, but theDatabase == nullptr");
+		return;
+	}
+
+	if (id == nullptr) {
+		System::Diagnostics::Trace::WriteLine("SkynetController::removeVotesForID() ran, but id == nullptr");
+		return;
+	}
+
+	try {
+		theDatabase->removeVotesForId(id);
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::removeVotesForID(): Failed to add vote - " + e);
+		return;
+	}
+
+	return;
 }
 
 void SkynetController::removeCandidate(Database::CandidateRowData ^ data)
@@ -239,7 +482,7 @@ void SkynetController::removeCandidate(Database::CandidateRowData ^ data)
 
 void SkynetController::removeCandidate(String ^ id)
 {	
-	theDatabase->removeCandidate(id);
+	//theDatabase->removeCandidate(id);
 
 	Delegates::stringToVoid ^ blahdelegate = gcnew Delegates::stringToVoid((Form1 ^)form1View, &Form1::removeCandidateFromTable );
 
@@ -259,6 +502,7 @@ void SkynetController::removeTarget(Database::TargetRowData ^ data)
 
 void SkynetController::removeTarget(String ^ id)
 {
+	PRINT("SkynetController::removeTarget() REMOVED");
 	theDatabase->removeTarget(id);
 
 	Delegates::stringToVoid ^ blahdelegate = gcnew Delegates::stringToVoid((Form1 ^)form1View, &Form1::removeTargetFromTable );
@@ -288,6 +532,9 @@ void SkynetController::modifyCandidate(Database::CandidateRowData ^ data)
 
 void SkynetController::modifyTarget(Database::TargetRowData ^ data)
 {
+	PRINT("SkynetController::modifyTarget() REMOVED");
+	return;
+
 	theDatabase->modifyTarget(data);
 
 	Delegates::targetRowDataToVoid ^ blahdelegate = gcnew Delegates::targetRowDataToVoid((Form1 ^)form1View, &Form1::modifyTargetInTable );
@@ -311,11 +558,17 @@ Database::TargetRowData ^ SkynetController::targetWithID(String ^ id)
 	return theDatabase->targetWithID(id);
 }
 
+
+Database::VotesOnCandidate ^ SkynetController::votesForID(String ^ id)
+{
+	return theDatabase->votesForID(id);
+}
+
 Database::VerifiedTargetRowData ^ SkynetController::verifiedTargetWithID(String ^ id) // not yet
 {
-	System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::verifiedTargetWithID(): not implemented");
+	//System::Diagnostics::Trace::WriteLine("ERROR in SkynetController::verifiedTargetWithID(): not implemented");
 
-	return nullptr;
+	return theDatabase->verifiedTargetForID(id);
 }
 
 

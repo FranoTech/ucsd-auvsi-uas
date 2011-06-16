@@ -54,6 +54,8 @@ namespace Skynet {
 		//newX and newY are gotten by gimbal's center, no need to center it.
 		bool setGimbalPosition( float newX, float newY, bool redraw)
 		{
+			//PRINT("raw newX: " + newX);
+			newX = -newX;
 			gimbalX = (newX + 90.0f)*SCALE;
 			gimbalY = (newY + 90.0f)*SCALE;
 
@@ -65,6 +67,9 @@ namespace Skynet {
 
 		bool setIntendedGimbalPosition( float newX, float newY, bool redraw )
 		{
+			PRINT("raw intendedGimbalX: " + newX);
+			//intendedGimbalX = -intendedGimbalX;
+			newX = -newX;
 			intendedGimbalX = (newX + 90.0f)*SCALE;
 			intendedGimbalY = (newY + 90.0f)*SCALE;
 			

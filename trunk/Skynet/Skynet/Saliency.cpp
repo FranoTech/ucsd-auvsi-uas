@@ -17,6 +17,12 @@ using namespace Vision;
 
 // TODO: check for memory leaks
 
+Saliency::Saliency()
+{
+	PRINT("WARNING: DEFAULT constructor for saliency does not function properly and is only for testing. Use Saliency(pointer) if you want saliency to work.");
+
+}
+
 Saliency::Saliency( Object ^ watcher )
 {
 	saliencyThread = gcnew Thread(gcnew ThreadStart(this, &Saliency::saliencyThreadFunction));
@@ -60,6 +66,103 @@ Saliency::Saliency( Object ^ watcher )
 			
 	System::Diagnostics::Trace::WriteLine("Saliency: Done with Georeference lat: " + t_lat + " lon: " + t_lon + " alt: " + t_alt + " time (ms): " + System::DateTime::Now.Subtract(start).TotalMilliseconds);
 
+}
+
+std::string ManagedToSTL(String ^ s) 
+{
+	using namespace Runtime::InteropServices;
+	const char* chars = 
+		(const char*)(Marshal::StringToHGlobalAnsi(s)).ToPointer();
+	std::string retVal = chars;
+	Marshal::FreeHGlobal(IntPtr((void*)chars));
+
+	return retVal;
+}
+
+
+void Saliency::runTestOnImageNamed(String ^ filename)
+{
+	// load image from file
+	cv::Mat image = cv::imread(ManagedToSTL(filename), 1);
+
+	// convert into float * buffer
+	typedef cv::Vec<float, 3> VT;
+	int channels = 4, width = image.cols, height = image.rows;
+	int fullWidth = image.cols * channels;
+	float scale = 1.0f/255.0f;
+	float threshold = 0.7f;
+	float * buffer = new float[width*height*channels];
+
+	PRINT("cols/width: "+width+" rows/height: "+height+"");
+	
+
+	for( int row = 0; row < height; ++row )
+	{
+		for( int col = 0; col < width; ++col )
+		{
+			// B G R format
+			VT pixel = image.at<VT>(row, col);
+			buffer[row * fullWidth + col * channels + 0]  = pixel[2]*scale; // r
+			buffer[row * fullWidth + col * channels + 1]  = pixel[1]*scale; // g
+			buffer[row * fullWidth + col * channels + 2]  = pixel[0]*scale; // b
+			buffer[row * fullWidth + col * channels + 3]  = 1.0f; // a
+		}
+		
+	}
+
+	// run saliency on it
+	Auvsi_Saliency * theSaliency = new Auvsi_Saliency();
+		
+	theSaliency->setInformation( width, height );
+	theSaliency->prepareFilters();
+	theSaliency->prepareForSaliency();
+	
+	//theSaliency->loadImage( "C:\\Users\\UCSD\\Pictures\\Saliency Sample\\heli.bmp" );
+	theSaliency->loadImage( width, height, buffer );
+	theSaliency->computeSaliency(threshold);
+	theSaliency->labelConnectedComponents();
+
+
+	// extract info
+	float * imageReturn = new float[ width*height*channels ];
+	box * boxReturn;
+	int numBoxReturn;
+
+	theSaliency->getFinalData( imageReturn, boxReturn, numBoxReturn); // save data for image saving thread to grab
+	
+	PRINT("got final data: " + numBoxReturn);
+
+	// print info
+	for (int i = 0; i < numBoxReturn; i++) {
+		box currentBox = boxReturn[i]; // get bounding box
+
+		PRINT("x: "+currentBox.x+" y: "+currentBox.y+" width: "+currentBox.width+" height: "+currentBox.height);
+
+		ImageUtil::SaveImage theImSaver( (int)currentBox.height, (int)currentBox.width, (int)4 );
+
+
+		float * tempBuffer = new float[(size_t)(currentBox.height * currentBox.width * 4)];
+		int counter = 0;
+
+		for (int y =  (int)currentBox.y; y < (int)(currentBox.y + currentBox.height) && y < height; y++) {
+			for (int x =  (int)currentBox.x; x < (int)(currentBox.x + currentBox.width) && x < (int)width; x++) {
+
+				for (int c = 0; c < 4; c++) {
+					tempBuffer[counter] = savingBuffer[(y * width + x)*4 + c];
+					counter++;
+
+				}
+
+			}
+		}
+
+		theImSaver.saveFrame(tempBuffer, ManagedToSTL("C:\\Users\\UCSD\\Desktop\\saliencytestS_" + i + ".bmp"));
+
+	}
+
+
+	delete buffer;
+	delete theSaliency;
 }
 
 void 
@@ -167,16 +270,7 @@ Saliency::saliencyThreadFunction(void)
 	}
 }
 
-std::string ManagedToSTL(String ^ s) 
-		{
-		   using namespace Runtime::InteropServices;
-		   const char* chars = 
-		      (const char*)(Marshal::StringToHGlobalAnsi(s)).ToPointer();
-		   std::string retVal = chars;
-		   Marshal::FreeHGlobal(IntPtr((void*)chars));
 
-		   return retVal;
-		}
 
 void 
 Saliency::saveImagesThreadFunction()

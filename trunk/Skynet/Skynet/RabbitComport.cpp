@@ -6,6 +6,7 @@
 
 #define RABBIT_DELAY	125 // (ms)
 
+#define GIMBAL_TARGET_LOCK_PACKET	0x02
 #define GIMBAL_PACKET	0x01
 #define CAMERA_PACKET	0x00
 #define HELLO_PACKET    0x33
@@ -82,6 +83,31 @@ void RabbitComport::sendBytesToRabbit( array<System::Byte> ^ packet )
 	((AutopilotComport ^)autopilotComport)->sendPassthroughPacket( packet );
 }
 
+void RabbitComport::sendGimbalTarget(float lat, float lon)
+{
+	const int packetLength = 9;
+	unsigned char packetType = GIMBAL_TARGET_LOCK_PACKET;
+	char * dataPtr;
+	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength);
+	packet[0] = *(char *)&packetType;
+	dataPtr = (char*)&lat;
+	packet[1] = *dataPtr++;
+	packet[2] = *dataPtr++;
+	packet[3] = *dataPtr++;
+	packet[4] = *dataPtr++;
+	dataPtr = (char*)&lon;
+	packet[5] = *dataPtr++;
+	packet[6] = *dataPtr++;
+	packet[7] = *dataPtr++;
+	packet[8] = *dataPtr++;
+
+	System::Diagnostics::Trace::WriteLine("SENDING gimbal command type 2. lat: " + lat + " lon: " + lon);
+		
+
+	// send 
+	sendBytesToRabbit( packet );
+}
+
 void RabbitComport::sendGimbalCommand( unsigned __int16 roll, unsigned __int16 pitch )
 {
 //	System::Diagnostics::Trace::WriteLine("RabbitComport::sendGimbalCommand() roll:" + roll + " pitch:" + pitch);
@@ -92,11 +118,11 @@ void RabbitComport::sendGimbalCommand( unsigned __int16 roll, unsigned __int16 p
 	array<System::Byte> ^ packet = gcnew array<System::Byte>(packetLength);
 	packet[0] = *(char *)&packetType;
 	dataPtr = (char*)&roll;
+	packet[1] = *dataPtr++;   //NOTE: Tim Reversed thee bytes 1&2, 3&4
 	packet[2] = *dataPtr++;
-	packet[1] = *dataPtr++;
 	dataPtr = (char*)&pitch;
-	packet[4] = *dataPtr++;
 	packet[3] = *dataPtr++;
+	packet[4] = *dataPtr++;
 
 	System::Diagnostics::Trace::WriteLine("SENDING gimbal command type 1. roll: " + roll + " pitch: " + pitch);
 		
@@ -167,10 +193,10 @@ void RabbitComport::analyzeData( array<System::Byte> ^ inBuffer )
 		pin_ptr<unsigned __int16> data = &(packet->roll);
 		char * dataPtr = (char *)data;
 		
-		*dataPtr++ = inBuffer[2];
 		*dataPtr++ = inBuffer[1];
-		*dataPtr++ = inBuffer[4];
+		*dataPtr++ = inBuffer[2];
 		*dataPtr++ = inBuffer[3];
+		*dataPtr++ = inBuffer[4];
 
 		/*for (int j = 0; j < numElements; j++) {
 

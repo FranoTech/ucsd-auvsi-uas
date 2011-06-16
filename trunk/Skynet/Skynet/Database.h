@@ -32,24 +32,40 @@ namespace Database
 		void fillDatabase();
 		bool reset(void);
 
+		OdbcDataReader ^ runQuery(String ^ query);
+
 		array<CandidateRowData ^>^ getAllCandidates();
 		array<TargetRowData ^>^ getAllTargets();
+		array<VotesOnCandidate ^>^ getAllVotes();
+		array<VerifiedTargetRowData ^>^ getAllVerifiedTargets();
+		String ^ getTabDelimitedVerifiedTargetDataForSubmission();
+
+		String ^ imageNameForID(String ^ id);
 		
 		void clearCandidatesTable();
 		void clearTargetsTable();
+		void clearVotesTable();
+		void clearVerifiedTargetsTable();
 
 		void saveNewCandidate( CandidateRowData ^ data);
 		void saveNewTarget( TargetRowData ^ data);
+		void addVote(VoteRowData ^ data);
+		bool saveNewVerifiedTarget(VerifiedTargetRowData ^ data);
+		VerifiedTargetRowData ^ addVerifiedTargetWithDialogData(DialogEditingData ^ data);
 
 		void modifyCandidate( CandidateRowData ^ data);
 		void modifyTarget( TargetRowData ^ data);
+		void modifyVerifiedTarget(VerifiedTargetRowData ^ data);
 
 		void removeCandidate( String ^ id);
 		void removeTarget( String ^id );
-
+		void removeVotesForId( String ^ id);
+		void removeVerifiedTarget( String ^id );
 		
 		CandidateRowData ^ candidateWithID(String ^ id);
 		TargetRowData ^ targetWithID(String ^ id);
+		VotesOnCandidate ^ votesForID(String ^ id);
+		VerifiedTargetRowData ^ verifiedTargetForID(String ^ id);
 
 		///////////////////// no longer used /////////////////////
 		bool insertData( TableName table, RowData ^ data );
@@ -65,6 +81,9 @@ namespace Database
 		
 		CandidateRowData ^ candidateFromReader(OdbcDataReader ^ theReader);
 		TargetRowData ^ targetFromReader(OdbcDataReader ^ theReader);
+		VoteRowData ^ voteFromReader(OdbcDataReader ^ theReader);
+		VerifiedTargetRowData ^ verifiedTargetFromReader(OdbcDataReader ^ theReader);
+
 
 	private:
 		OdbcConnection ^ _database;

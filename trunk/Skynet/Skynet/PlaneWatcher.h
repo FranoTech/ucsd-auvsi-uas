@@ -2,6 +2,7 @@
 
 #include "Comport.h"
 #include "AutopilotComport.h"
+#include "MasterHeader.h"
 
 using namespace std;
 using namespace System;
@@ -13,6 +14,12 @@ using namespace System::Runtime::InteropServices;
 
 #define CAMERA_LATENCY 125
 
+
+namespace Skynet
+{
+	ref class SkynetController;
+}
+
 namespace Communications
 {
 
@@ -21,15 +28,18 @@ namespace Communications
 	public:
 		PlaneWatcher(Object ^ theParent);
 
+		void setController(Skynet::SkynetController ^ theCntl) { theController = theCntl; }
+
 		void updatePlaneGPSInfo(PlaneGPSPacket ^ data);
 		void updatePlaneTelemInfo(PlaneTelemPacket ^ data);
 		void updateGimbalInfo( GimbalInfo ^ data);
 
 		float gimbalRollInDegrees();
 		float gimbalPitchInDegrees();
-		float rawToDegrees(unsigned __int16 input);
-		float rawZoomToFloat(int theZoom);
-		unsigned __int16 gimbalDegreesToRaw(float input);
+		static float rawToDegrees(unsigned __int16 input);
+		static float rawToRadians(unsigned __int16 input) {return (float)(rawToDegrees(input)*PI/180.0);};
+		static float rawZoomToFloat(int theZoom);
+		static unsigned __int16 gimbalDegreesToRaw(float input);
 
 		PlaneState ^ predictLocationAtTime( float timeOffset );
 		PlaneState ^ stateOfCurrentImage();
@@ -43,6 +53,7 @@ namespace Communications
 		int zoomLevel;
 	private:
 		Object ^ parent;
+		Skynet::SkynetController ^ theController;
 
 		array<GimbalInfo ^> ^ gimbalInfo;
 		array<PlaneGPSPacket ^> ^ autopilotGPSInfo;

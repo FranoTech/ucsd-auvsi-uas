@@ -36,23 +36,20 @@ namespace Communications
 		// connecting
 		void connectAll();
 		void disconnectAll();
-
 		//void stopConnectingToRabbit();
 		//void connectToRabbit();
 		void attemptConnectionOnPort( Object ^ port );
-
 		bool connectAutopilot();
 		bool connectRabbit();
-		
 		void disconnectAutopilot();
 		void disconnectRabbit();
-
 		void rabbitJustConnected();
 
 		// sending
 		void gotoLatLon(float lat, float lon);
 		void sendHelloToRabbit();
 		void sendGimbalRollPitch(unsigned __int16 roll, unsigned __int16 pitch); 
+		void sendGimbalLatLon(float lat, float lon);
 		void sendZoom(unsigned __int32 zoom);
 
 		// receiving
@@ -60,6 +57,7 @@ namespace Communications
 		void receivePlaneGPS(PlaneGPSPacket ^ packet);
 		void receivePlaneTelem(PlaneTelemPacket ^ packet);
 
+		// tell user stuff
 		void printToConsole( String ^ message, Color col );
 		void updateUIAboutCommsStatus(int status, String ^ type);
 

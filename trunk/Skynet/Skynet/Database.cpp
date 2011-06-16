@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "Database.h"
 
+#include "GeoReference.h"
 #include "AutopilotComport.h"
 #include <msclr/lock.h>
 
@@ -9,6 +10,7 @@ using namespace System::Data::Odbc;
 using namespace Database;
 using namespace Communications;
 using namespace msclr;
+using namespace Vision;
 
 #define DATABASE_NAME	"AUVSI_flightdata" //"AUVSI_metadata"
 
@@ -37,6 +39,643 @@ DatabaseConnection::DatabaseConnection(void)
 	//reader->Close();
 	//fillDatabase();
 	
+}
+
+array<VerifiedTargetRowData ^>^ DatabaseConnection::getAllVerifiedTargets()
+{
+	array<VerifiedTargetRowData ^> ^ retarr = nullptr;
+
+	String ^ query = "SELECT * FROM verifiedtargets";
+
+	PRINT(query);
+	OdbcDataReader ^ reader = runQuery(query);
+	
+	if (reader == nullptr) 
+	{
+		PRINT("DatabaseConnection::verifiedTargetForID() FAILED");
+	}
+	else
+	{
+		int i = 0, size = 10;
+		retarr = gcnew array<VerifiedTargetRowData ^>(size);
+
+		while (reader->Read())
+		{
+			retarr[i++] = verifiedTargetFromReader(reader);
+
+			if (i+2 >= size) 
+			{
+				size += 10;
+				Array::Resize(retarr, size);
+			}
+		}
+
+		
+		Array::Resize(retarr, i);
+
+		reader->Close();
+	}
+
+	return retarr;
+}
+
+String ^ DatabaseConnection::imageNameForID(String ^ id)
+{
+	if (id == nullptr)
+		return nullptr;
+
+	String ^ retval = nullptr;
+
+	String ^ query = "SELECT imagename FROM computeroutput WHERE id=" + id;
+	OdbcDataReader ^ reader = runQuery(query);
+	
+	if (reader != nullptr && reader->Read())
+		retval = reader->GetString(0);
+
+	if (reader != nullptr)
+		reader->Close();
+
+	return retval;
+}
+
+VerifiedTargetRowData ^ DatabaseConnection::addVerifiedTargetWithDialogData(DialogEditingData ^ data)
+{
+	CandidateRowData ^ candidate = candidateWithID("" + data->id);
+	
+	TargetRowData ^ unverifiedTarget = gcnew TargetRowData(candidate);
+	unverifiedTarget->updateFrom(data);
+
+	VerifiedTargetRowData ^ verifiedTarget = gcnew VerifiedTargetRowData(unverifiedTarget);
+
+	GeoReference::completeVerifiedUsingUnverified(verifiedTarget, unverifiedTarget);
+
+	saveNewVerifiedTarget(verifiedTarget);
+
+	return verifiedTarget;
+}
+
+
+bool DatabaseConnection::saveNewVerifiedTarget(VerifiedTargetRowData ^ data)
+{
+	if (data == nullptr) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::saveNewVerifiedTarget(): data == nullptr");
+		return false;
+	}
+
+	String ^ query = "INSERT INTO verifiedtargets (latitude, longitude,orientation, shape, " +
+		" shapecolor, letter, lettercolor, candidateid) VALUES ("
+		+ "'" + data->Latitude + "'" +", "
+		+ "'" + data->Longitude + "'" + ", "
+		+ "'" + data->Orientation + "'"  + ", "
+		+ "'" + data->shape + "'" +", "
+		+ "'" + data->shapeColor + "'" + ", "
+		+ "'" + data->letter + "'"  + ", "
+		+ "'" + data->letterColor + "'" + "," 
+		+ data->candidateid + ")";
+	
+	PRINT(query);
+	OdbcDataReader ^ reader = runQuery(query);
+	
+	if (reader == nullptr) 
+	{
+		PRINT("DatabaseConnection::saveNewVerifiedTarget() FAILED");
+		return false;
+	}
+	else
+	{
+		reader->Close();
+	}
+	return true;
+
+}
+
+void DatabaseConnection::modifyVerifiedTarget(VerifiedTargetRowData ^ data)
+{
+	if (data == nullptr) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::modifyVerifiedTarget(): data == nullptr");
+		return;
+	}
+
+	String ^ query = "MODIFY verifiedtargets SET latitude='" + data->Latitude + "', longitude='" + data->Longitude + "', "+
+		"orientation='" + data->Orientation + "', shape='" + data->shape + "', " +
+		"shapecolor='" + data->shapeColor + "', letter='" + data->letter + "', lettercolor='" + data->letterColor + "', "+
+		"candidateid='" + data->candidateid + "' WHERE candidateid=" + data->candidateid;
+
+	PRINT(query);
+	OdbcDataReader ^ reader = runQuery(query);
+	
+	if (reader == nullptr) 
+	{
+		PRINT("DatabaseConnection::modifyVerifiedTarget() FAILED");
+	}
+	else
+	{
+		reader->Close();
+	}
+
+
+}
+
+void DatabaseConnection::removeVerifiedTarget( String ^id )
+{
+	if (id == nullptr) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::removeVerifiedTarget(): data == nullptr");
+		return;
+	}
+
+	String ^ query = "DELETE FROM verifiedtargets WHERE candidateid=" + id;
+
+	PRINT(query);
+	OdbcDataReader ^ reader = runQuery(query);
+	
+	if (reader == nullptr) 
+	{
+		PRINT("DatabaseConnection::removeVerifiedTarget() FAILED");
+	}
+	else
+	{
+		reader->Close();
+	}
+}
+
+VerifiedTargetRowData ^ DatabaseConnection::verifiedTargetForID(String ^ id)
+{
+	if (id == nullptr) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::verifiedTargetForID(): data == nullptr");
+		return nullptr;
+	}
+	VerifiedTargetRowData ^ retval = nullptr;
+
+	String ^ query = "SELECT * FROM verifiedtargets WHERE candidateid=" + id;
+
+	PRINT(query);
+	OdbcDataReader ^ reader = runQuery(query);
+	
+	if (reader == nullptr) 
+	{
+		PRINT("DatabaseConnection::verifiedTargetForID() FAILED");
+	}
+	else
+	{
+		if (reader->Read())
+			retval = verifiedTargetFromReader(reader);
+
+		reader->Close();
+	}
+
+	return retval;
+}
+
+VerifiedTargetRowData ^ DatabaseConnection::verifiedTargetFromReader(OdbcDataReader ^ theReader)
+{
+	VerifiedTargetRowData ^ newRow = gcnew VerifiedTargetRowData();
+
+	// fill row
+	int col = 1;
+
+	try {
+		newRow->Latitude = theReader->GetString(col++);
+		newRow->Longitude = theReader->GetString(col++);
+		newRow->Orientation = theReader->GetString(col++);
+	}
+	catch (InvalidCastException ^)
+	{
+		//System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::verifiedTargetFromReader(): " + e);
+	}
+
+	try {
+		newRow->shape = theReader->GetString(col++);
+		newRow->shapeColor = theReader->GetString(col++);
+		newRow->letter = theReader->GetString(col++);
+		newRow->letterColor = theReader->GetString(col++);
+				
+	}
+	catch (InvalidCastException ^)
+	{
+		//System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::verifiedTargetFromReader(): " + e);
+	}
+
+	try { newRow->candidateid = theReader->GetInt32(8); } catch(InvalidCastException ^){}
+
+	return newRow;
+}
+
+void DatabaseConnection::removeVotesForId( String ^ id)
+{
+	// DELETE FROM votes WHERE candidateid=id
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::removeVotesForId() running");
+
+	if (id == nullptr) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::removeVotesForId(): data == nullptr");
+		return;
+	}
+	if (_database->State == System::Data::ConnectionState::Closed) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::removeVotesForId(): database not open.");
+		return;
+	}
+
+	
+	lock l(_database);
+	_command->Connection = _database;
+
+	// DETERMINE WHETHER VOTE ALREADY EXISTS
+	String ^ commandText = "DELETE FROM votes WHERE candidateid=" + id;
+
+	_command->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine(_command->CommandText);
+	// execute command
+	try
+	{
+		_reader = _command->ExecuteReader();
+		_reader->HasRows;
+		_reader->Close();
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("DatabaseConnection::removeVotesForId(): Executing command failed :( " + e);
+		_reader->Close();
+	}
+	
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::removeVotesForId() finished");
+}
+
+void DatabaseConnection::addVote(VoteRowData ^ data)
+{
+	// SELECT * FROM votes WHERE userid='data->userid' AND candidateid=data->candidateid
+	// if (result is not empty)
+	//		UPDATE votes SET shape='magikarp', ... WHERE userid='data->userid' AND candidateid=data->candidateid
+	// else
+	//		INSERT INTO votes VALUES (...)
+
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::addVote() running");
+
+	if (data == nullptr) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::addVote(): data == nullptr");
+		return;
+	}
+	if (_database->State == System::Data::ConnectionState::Closed) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::addVote(): database not open.");
+		return;
+	}
+
+	
+	lock l(_database);
+	_command->Connection = _database;
+
+	// DETERMINE WHETHER VOTE ALREADY EXISTS
+	String ^ commandText = "SELECT * FROM votes WHERE userid='" + data->userid + "' AND candidateid=" + data->candidateid;
+
+	_command->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine(_command->CommandText);
+	// execute command
+	bool readerHasRows = false;
+	try
+	{
+		_reader = _command->ExecuteReader();
+		readerHasRows = _reader->HasRows;
+		_reader->Close();
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("DatabaseConnection::addVote(): Executing command failed :( " + e);
+		_reader->Close();
+	}
+
+	// ADD VOTE TO DATABASE
+	if (readerHasRows)
+	{
+		// use UPDATE command
+		commandText = "UPDATE votes SET "+
+			"shape='"+data->shape+"', "+
+			"shapecolor='"+data->shapeColor+"', "+
+			"letter='"+data->letter+"', "+
+			"lettercolor='"+data->letterColor+"', "+
+			"targetx="+data->targetX+", "+
+			"targety="+data->targetY+", "+
+			"topoftargetx="+data->topOfTargetX+", "+
+			"topoftargety="+data->topOfTargetY+" "+
+			" WHERE userid='" + data->userid + "' AND candidateid=" + data->candidateid;
+
+
+	}
+	else
+	{
+		// use INSERT command
+		commandText = "INSERT INTO votes (shape, shapecolor, letter, lettercolor, targetx, targety, topoftargetx, topoftargety, userid, candidateid) VALUES (" + 
+			"'"+data->shape+"', "+
+			"'"+data->shapeColor+"', "+
+			"'"+data->letter+"', "+
+			"'"+data->letterColor+"', "+
+			data->targetX+", "+
+			data->targetY+", "+
+			data->topOfTargetX+", "+
+			data->topOfTargetY+", "+
+			"'"+data->userid + "', "+
+			data->candidateid+")";
+
+	}
+	
+	_command->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::addVote():"+_command->CommandText);
+	// execute command
+	try
+	{
+		_reader = _command->ExecuteReader();
+		_reader->HasRows;
+		_reader->Close();
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("DatabaseConnection::addVote(): Executing command failed :( " + e);
+		_reader->Close();
+	}
+
+
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::addVote() finished");
+}
+
+void DatabaseConnection::clearVotesTable()
+{
+	// DELETE FROM votes
+
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::clearVotesTable() running");
+
+	if (_database->State == System::Data::ConnectionState::Closed) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::clearVotesTable(): database not open.");
+		return;
+	}
+
+	
+	lock l(_database);
+	_command->Connection = _database;
+
+	// form command
+	String ^ commandText = "DELETE FROM votes";
+
+	_command->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine(_command->CommandText);
+	// execute command
+	try
+	{
+		_reader = _command->ExecuteReader();
+		_reader->Close();
+	
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("DatabaseConnection::clearVotesTable(): Executing command failed :( " + e);
+		_reader->Close();
+		return;
+	}
+
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::clearVotesTable() finished");
+
+}
+
+OdbcDataReader ^ DatabaseConnection::runQuery(String ^ query)
+{
+	if (_database->State == System::Data::ConnectionState::Closed) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::runQuery(): database not open.");
+		return nullptr;
+	}
+
+	if (query == nullptr) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::runQuery(): query == nullptr");
+		return nullptr;
+	}
+
+	
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::runQuery() running: " + query);
+
+	
+	lock l(_database);
+	_command->Connection = _database;
+
+	// form command
+	String ^ commandText = query;
+
+	_command->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine(_command->CommandText);
+
+	OdbcDataReader ^ reader;
+
+	// execute command
+	try
+	{
+		reader = _command->ExecuteReader();
+		return reader;
+	
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("DatabaseConnection::runQuery(): Executing command failed :( " + e);
+		_reader->Close();
+		return nullptr;
+	}
+
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::runQuery() finished");
+
+}
+
+void DatabaseConnection::clearVerifiedTargetsTable()
+{
+	// DELETE FROM verifiedtargets
+
+	OdbcDataReader ^ reader = runQuery("DELETE FROM verifiedtargets");
+	
+	if (reader == nullptr) 
+	{
+		PRINT("DatabaseConnection::clearVerifiedTargetsTable() FAILED");
+	}
+	else
+	{
+		reader->Close();
+	}
+
+}
+
+
+
+String ^ DatabaseConnection::getTabDelimitedVerifiedTargetDataForSubmission()
+{
+	String ^ retval = "";
+	OdbcDataReader ^ reader = runQuery("SELECT * FROM verifiedtargets");
+	
+	if (reader == nullptr) 
+	{
+		PRINT("DatabaseConnection::getTabDelimitedVerifiedTargetDataForSubmission() FAILED");
+		return nullptr;
+	}
+	else
+	{
+		// read data
+		int i = 0;
+		while (reader->Read())
+		{
+			int col = 1;
+
+			retval += Int32(i).ToString("00");
+			retval += "\t";
+			retval += reader->GetString(col++);
+			retval += "\t";
+			retval += reader->GetString(col++);
+			retval += "\t";
+			retval += reader->GetString(col++);
+			retval += "\t";
+			retval += reader->GetString(col++);
+			retval += "\t";
+			retval += reader->GetString(col++);
+			retval += "\t";
+			retval += reader->GetString(col++);
+			retval += "\t";
+			retval += reader->GetString(col++);
+			retval += "\n";
+		}
+
+		reader->Close();
+	}
+	return retval;
+}
+
+VotesOnCandidate ^ DatabaseConnection::votesForID(String ^ id)
+{
+	// SELECT * FROM votes WHERE id=x
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::votesForID() running");
+
+	if (_database->State == System::Data::ConnectionState::Closed) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::votesForID(): database not open.");
+		return nullptr;
+	}
+
+	VotesOnCandidate ^ retval = nullptr;
+	
+	lock l(_database);
+	_command->Connection = _database;
+
+	// form command
+	String ^ commandText = "SELECT * FROM votes WHERE candidateid=" + id;
+
+	_command->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine(_command->CommandText);
+	// execute command
+	try
+	{
+		_reader = _command->ExecuteReader();
+
+		int size = 50;
+		int numElements = 0;
+
+		if (_reader->HasRows)
+			retval = gcnew VotesOnCandidate();
+		
+
+		// iterate through rows
+		while (_reader->Read())
+		{
+			// load row into retarr: search for existing candidateid, if not found, add one
+			int id = _reader->GetInt32(10);
+			VoteRowData ^ newVote = voteFromReader(_reader);
+
+			retval->candidateid = id;
+			retval->addVote(newVote);
+			
+		}
+
+		_reader->Close();
+	
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("DatabaseConnection::votesForID(): Executing command failed :( " + e);
+		_reader->Close();
+		return nullptr;
+	}
+
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::votesForID() finished");
+	return retval;
+}
+
+array<VotesOnCandidate ^>^ DatabaseConnection::getAllVotes()
+{
+	// SELECT * FROM votes
+
+	//System::Diagnostics::Trace::WriteLine("DatabaseConnection::getAllVotes() running");
+
+	if (_database->State == System::Data::ConnectionState::Closed) {
+		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::getAllVotes(): database not open.");
+		return nullptr;
+	}
+
+	array<VotesOnCandidate ^>^ retarr = nullptr;
+	
+	lock l(_database);
+	_command->Connection = _database;
+
+	// form command
+	String ^ commandText = "SELECT * FROM votes";
+
+	_command->CommandText = commandText;
+	System::Diagnostics::Trace::WriteLine(_command->CommandText);
+	// execute command
+	try
+	{
+		_reader = _command->ExecuteReader();
+
+		int size = 50;
+		int numElements = 0;
+
+		retarr = gcnew array<VotesOnCandidate ^>(size);
+
+		// iterate through rows
+		while (_reader->Read())
+		{
+			// load row into retarr: search for existing candidateid, if not found, add one
+			int id = -1;
+			try { id = _reader->GetInt32(10); } catch (InvalidCastException ^){}
+			
+
+			VoteRowData ^ newVote = voteFromReader(_reader);
+			bool foundMatchingID = false;
+			for (int i = 0; i < numElements; i++)
+			{
+				if (id == retarr[i]->candidateid)
+				{
+					
+					retarr[i]->addVote(newVote);
+
+					foundMatchingID = true;
+					break;
+				}
+			}
+				
+			if (!foundMatchingID)
+			{
+				// add new VotesOnCandidate
+				//PRINT("num: " + numElements +"/"+retarr->Length);
+				retarr[numElements] = gcnew VotesOnCandidate();
+				retarr[numElements]->candidateid = id;
+				retarr[numElements]->addVote(newVote);
+
+
+				numElements++;
+				if (numElements >= size) 
+				{
+					size += 10;
+					Array::Resize(retarr, size);
+				}
+			}
+			
+			
+		
+		}
+		Array::Resize(retarr, numElements);
+
+		_reader->Close();
+	
+	}
+	catch(Exception ^ e) {
+		System::Diagnostics::Trace::WriteLine("DatabaseConnection::getAllVotes(): Executing command failed :( " + e);
+		_reader->Close();
+		return nullptr;
+	}
+
+	//System::Diagnostics::Trace::WriteLine("DatabaseConnection::getAllVotes() finished");
+	return retarr;
+
 }
 
 void DatabaseConnection::saveNewCandidate( CandidateRowData ^ data)
@@ -114,7 +753,7 @@ void DatabaseConnection::saveNewTarget( TargetRowData ^ data)
 {
 	//String ^ retString;
 
-	System::Diagnostics::Trace::WriteLine("DatabaseConnection::saveNewTarget() running");
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::saveNewTarget() DEPRECATED: DO NOT USE");
 
 	if (data == nullptr) {
 		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::saveNewTarget(): data == nullptr");
@@ -257,7 +896,7 @@ void DatabaseConnection::modifyTarget( TargetRowData ^ data)
 {
 	//String ^ retString;
 
-	System::Diagnostics::Trace::WriteLine("DatabaseConnection::modifyTarget() running");
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::modifyTarget() DEPRECATED: DO NOT USE");
 
 	if (data == nullptr) {
 		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::modifyTarget(): data == nullptr");
@@ -368,7 +1007,7 @@ void DatabaseConnection::removeTarget( String ^id )
 {
 	//String ^ retString;
 
-	System::Diagnostics::Trace::WriteLine("DatabaseConnection::removeTarget() running");
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::removeTarget() DEPRECATED: DO NOT USE");
 
 	if (id == nullptr) {
 		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::removeTarget(): id == nullptr");
@@ -461,56 +1100,60 @@ array<CandidateRowData ^>^ DatabaseConnection::getAllCandidates()
 	return retArr;
 }
 
-// TODO: implement next three functions
 CandidateRowData ^ DatabaseConnection::candidateFromReader(OdbcDataReader ^ theReader)
 {
 	CandidateRowData ^ newRow = gcnew CandidateRowData();
 
 	// fill row
 	int col = 0;
-	newRow->id = theReader->GetInt32(col++);
+	try {
+		newRow->id = theReader->GetInt32(col++);
 
-	newRow->shape = theReader->GetString(col++);
-	newRow->shapeColor = theReader->GetString(col++);
-	newRow->letter = theReader->GetString(col++);
-	newRow->letterColor = theReader->GetString(col++);
+		newRow->shape = theReader->GetString(col++);
+		newRow->shapeColor = theReader->GetString(col++);
+		newRow->letter = theReader->GetString(col++);
+		newRow->letterColor = theReader->GetString(col++);
 				
-	newRow->timestamp = theReader->GetDouble(col++);
+		newRow->timestamp = theReader->GetDouble(col++);
 		
-	newRow->gpsAltitude = theReader->GetFloat(col++);
-	newRow->gpsLatitude = theReader->GetFloat(col++);
-	newRow->gpsLongitude = theReader->GetFloat(col++);
+		newRow->gpsAltitude = theReader->GetFloat(col++);
+		newRow->gpsLatitude = theReader->GetFloat(col++);
+		newRow->gpsLongitude = theReader->GetFloat(col++);
 
-	newRow->altitudeAboveLaunch = theReader->GetFloat(col++);
-	newRow->velocity = theReader->GetFloat(col++);
-	newRow->planeRollDegrees =theReader->GetFloat(col++);
-	newRow->planePitchDegrees = theReader->GetFloat(col++);
-	newRow->planeHeadingDegrees = theReader->GetFloat(col++);
+		newRow->altitudeAboveLaunch = theReader->GetFloat(col++);
+		newRow->velocity = theReader->GetFloat(col++);
+		newRow->planeRollDegrees =theReader->GetFloat(col++);
+		newRow->planePitchDegrees = theReader->GetFloat(col++);
+		newRow->planeHeadingDegrees = theReader->GetFloat(col++);
 
-	newRow->gimbalRollDegrees = theReader->GetFloat(col++);
-	newRow->gimbalPitchDegrees = theReader->GetFloat(col++);
+		newRow->gimbalRollDegrees = theReader->GetFloat(col++);
+		newRow->gimbalPitchDegrees = theReader->GetFloat(col++);
 
-	newRow->zoom = theReader->GetFloat(col++);
+		newRow->zoom = theReader->GetFloat(col++);
 
-	newRow->gimbalRollRateDegrees = theReader->GetFloat(col++);
-	newRow->gimbalPitchRateDegrees =theReader->GetFloat(col++);
+		newRow->gimbalRollRateDegrees = theReader->GetFloat(col++);
+		newRow->gimbalPitchRateDegrees =theReader->GetFloat(col++);
 		
-	newRow->planeRollRateDegrees = theReader->GetFloat(col++);
-	newRow->planePitchRateDegrees =theReader->GetFloat(col++);
-	newRow->planeHeadingRateDegrees = theReader->GetFloat(col++);
+		newRow->planeRollRateDegrees = theReader->GetFloat(col++);
+		newRow->planePitchRateDegrees =theReader->GetFloat(col++);
+		newRow->planeHeadingRateDegrees = theReader->GetFloat(col++);
 
-	newRow->imageName = theReader->GetString(col++);
+		newRow->imageName = theReader->GetString(col++);
 
-	newRow->dataWidth = theReader->GetInt32(col++);
-	newRow->dataHeight = theReader->GetInt32(col++);
-	newRow->dataNumChannels = theReader->GetInt32(col++);
+		newRow->dataWidth = theReader->GetInt32(col++);
+		newRow->dataHeight = theReader->GetInt32(col++);
+		newRow->dataNumChannels = theReader->GetInt32(col++);
 
-	newRow->originX = theReader->GetInt32(col++);
-	newRow->originY = theReader->GetInt32(col++);
+		newRow->originX = theReader->GetInt32(col++);
+		newRow->originY = theReader->GetInt32(col++);
 
-	newRow->targetX = theReader->GetInt32(col++);
-	newRow->targetY = theReader->GetInt32(col++);
-	
+		newRow->targetX = theReader->GetInt32(col++);
+		newRow->targetY = theReader->GetInt32(col++);
+	}
+	catch (InvalidCastException ^)
+	{
+		//System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::candidateFromReader(): " + e);
+	}
 	return newRow;
 }
 
@@ -521,53 +1164,93 @@ TargetRowData ^ DatabaseConnection::targetFromReader(OdbcDataReader ^ theReader)
 
 	// fill row
 	int col = 0;
-	newRow->id = theReader->GetInt32(col++);
 
-	newRow->shape = theReader->GetString(col++);
-	newRow->shapeColor = theReader->GetString(col++);
-	newRow->letter = theReader->GetString(col++);
-	newRow->letterColor = theReader->GetString(col++);
+	try {
+		newRow->id = theReader->GetInt32(col++);
+
+		newRow->shape = theReader->GetString(col++);
+		newRow->shapeColor = theReader->GetString(col++);
+		newRow->letter = theReader->GetString(col++);
+		newRow->letterColor = theReader->GetString(col++);
 				
-	newRow->timestamp = theReader->GetDouble(col++);
+		newRow->timestamp = theReader->GetDouble(col++);
 
 				
-	newRow->gpsAltitude = theReader->GetFloat(col++);
-	newRow->gpsLatitude = theReader->GetFloat(col++);
-	newRow->gpsLongitude = theReader->GetFloat(col++);
+		newRow->gpsAltitude = theReader->GetFloat(col++);
+		newRow->gpsLatitude = theReader->GetFloat(col++);
+		newRow->gpsLongitude = theReader->GetFloat(col++);
 
-	newRow->altitudeAboveLaunch = theReader->GetFloat(col++);
-	newRow->velocity = theReader->GetFloat(col++);
-	newRow->planeRollDegrees =theReader->GetFloat(col++);
-	newRow->planePitchDegrees = theReader->GetFloat(col++);
-	newRow->planeHeadingDegrees = theReader->GetFloat(col++);
+		newRow->altitudeAboveLaunch = theReader->GetFloat(col++);
+		newRow->velocity = theReader->GetFloat(col++);
+		newRow->planeRollDegrees =theReader->GetFloat(col++);
+		newRow->planePitchDegrees = theReader->GetFloat(col++);
+		newRow->planeHeadingDegrees = theReader->GetFloat(col++);
 
-	newRow->gimbalRollDegrees = theReader->GetFloat(col++);
-	newRow->gimbalPitchDegrees = theReader->GetFloat(col++);
+		newRow->gimbalRollDegrees = theReader->GetFloat(col++);
+		newRow->gimbalPitchDegrees = theReader->GetFloat(col++);
 
-	newRow->zoom = theReader->GetFloat(col++);
+		newRow->zoom = theReader->GetFloat(col++);
 
-	newRow->gimbalRollRateDegrees = theReader->GetFloat(col++);
-	newRow->gimbalPitchRateDegrees =theReader->GetFloat(col++);
+		newRow->gimbalRollRateDegrees = theReader->GetFloat(col++);
+		newRow->gimbalPitchRateDegrees =theReader->GetFloat(col++);
 		
-	newRow->planeRollRateDegrees = theReader->GetFloat(col++);
-	newRow->planePitchRateDegrees =theReader->GetFloat(col++);
-	newRow->planeHeadingRateDegrees = theReader->GetFloat(col++);
+		newRow->planeRollRateDegrees = theReader->GetFloat(col++);
+		newRow->planePitchRateDegrees =theReader->GetFloat(col++);
+		newRow->planeHeadingRateDegrees = theReader->GetFloat(col++);
 
-	newRow->imageName = theReader->GetString(col++);
+		newRow->imageName = theReader->GetString(col++);
 
-	newRow->dataWidth = theReader->GetInt32(col++);
-	newRow->dataHeight = theReader->GetInt32(col++);
-	newRow->dataNumChannels = theReader->GetInt32(col++);
+		newRow->dataWidth = theReader->GetInt32(col++);
+		newRow->dataHeight = theReader->GetInt32(col++);
+		newRow->dataNumChannels = theReader->GetInt32(col++);
 
-	newRow->originX = theReader->GetInt32(col++);
-	newRow->originY = theReader->GetInt32(col++);
+		newRow->originX = theReader->GetInt32(col++);
+		newRow->originY = theReader->GetInt32(col++);
 
-	newRow->targetX = theReader->GetInt32(col++);
-	newRow->targetY = theReader->GetInt32(col++);
+		newRow->targetX = theReader->GetInt32(col++);
+		newRow->targetY = theReader->GetInt32(col++);
 
-	newRow->topOfTargetX = theReader->GetInt32(col++);
-	newRow->topOfTargetY = theReader->GetInt32(col++);
+		newRow->topOfTargetX = theReader->GetInt32(col++);
+		newRow->topOfTargetY = theReader->GetInt32(col++);
 		
+	}
+	catch (InvalidCastException ^)
+	{
+		//System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::targetFromReader() ");
+	}
+
+	return newRow;
+}
+
+VoteRowData ^ DatabaseConnection::voteFromReader(OdbcDataReader ^ theReader)
+{
+	VoteRowData ^ newRow = gcnew VoteRowData();
+
+	// fill row
+	int col = 0;
+	col++;
+
+	try {
+		newRow->shape = theReader->GetString(col++);
+		newRow->shapeColor = theReader->GetString(col++);
+		newRow->letter = theReader->GetString(col++);
+		newRow->letterColor = theReader->GetString(col++);
+				
+
+		newRow->targetX = theReader->GetInt32(col++);
+		newRow->targetY = theReader->GetInt32(col++);
+
+		newRow->topOfTargetX = theReader->GetInt32(col++);
+		newRow->topOfTargetY = theReader->GetInt32(col++);
+
+		newRow->userid = theReader->GetString(col++);
+		newRow->candidateid = theReader->GetInt32(col++);
+		
+	}
+	catch (InvalidCastException ^)
+	{
+		//System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::voteFromReader(): " + e);
+	}
 
 	return newRow;
 }
@@ -575,7 +1258,7 @@ TargetRowData ^ DatabaseConnection::targetFromReader(OdbcDataReader ^ theReader)
 CandidateRowData ^ DatabaseConnection::candidateWithID(String ^ id)
 {
 	CandidateRowData ^ retData = nullptr;
-	System::Diagnostics::Trace::WriteLine("DatabaseConnection::candidateWithID() running");
+	//System::Diagnostics::Trace::WriteLine("DatabaseConnection::candidateWithID() running");
 
 	if (_database->State == System::Data::ConnectionState::Closed) {
 		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::candidateWithID(): database not open.");
@@ -611,7 +1294,7 @@ CandidateRowData ^ DatabaseConnection::candidateWithID(String ^ id)
 		return nullptr;
 	}
 
-	System::Diagnostics::Trace::WriteLine("DatabaseConnection::candidateWithID() finished");
+	//System::Diagnostics::Trace::WriteLine("DatabaseConnection::candidateWithID() finished");
 	return retData;
 }
 
@@ -757,7 +1440,7 @@ void DatabaseConnection::clearCandidatesTable()
 
 void DatabaseConnection::clearTargetsTable()
 {
-	System::Diagnostics::Trace::WriteLine("DatabaseConnection::clearTargetsTable() running");
+	System::Diagnostics::Trace::WriteLine("DatabaseConnection::clearTargetsTable() DEPRECATED: DO NOT USE");
 
 	if (_database->State == System::Data::ConnectionState::Closed) {
 		System::Diagnostics::Trace::WriteLine("ERROR in DatabaseConnection::clearTargetsTable(): database not open.");

@@ -4,29 +4,45 @@
 #include "Database.h"
 #include "SkynetControllerInterface.h"
 
-#define HTTP_SERVER_TARGET_PATH "C:\\xampp\\htdocs\\targets\\"
 
 using namespace System;
 using namespace Communications;
 
-namespace Communications {
+namespace OpenGLForm 
+{
+	ref class COpenGL;
+}
+
+namespace Communications 
+{
 	ref class PlaneWatcher;
 	ref class TargetLock;
+	ref class GEarthHandler;
+}
+
+namespace Database
+{
+	ref class VoteCounter;
 }
 
 namespace Skynet
 {
+	ref class Form1;
 
 	public ref class SkynetController : public SkynetControllerInterface
 	{
 	public:
-		SkynetController(Object ^ mainView);
+		SkynetController(Form1 ^ mainView);
 		~SkynetController(void);
 
-		void setCameraView(Object ^ cameraView) { openGLView = cameraView; }
-		void setDatabase(Database::DatabaseConnection ^ newDatabase) { theDatabase = newDatabase; }
-		void setPlaneWatcher(PlaneWatcher ^ newWatcher) { theWatcher = newWatcher; }
+		void comeAlive(); // called when the GUI is all set up, and Skynet is ready to begin flight ops
+
+		void setCameraView(OpenGLForm::COpenGL ^ cameraView);
+		void setDatabase(Database::DatabaseConnection ^ newDatabase);
+		void setPlaneWatcher(PlaneWatcher ^ newWatcher);
 		void setTargetLock(TargetLock ^ newLock) { targetLock = newLock; }
+
+		void exportData();
 
 		virtual void intendedGimbalPositionUpdated( float rollDegrees, float pitchDegrees );
 		virtual void intendedCameraZoomUpdated( float zoom );
@@ -35,39 +51,59 @@ namespace Skynet
 
 		void loadAllTablesFromDisk();
 		void loadCandidateTableFromDisk();
-		void loadTargetTableFromDisk();
+		void loadVerifiedTargetsTableFromDisk();
 		void clearAllTables();
+
+		String ^ saveCurrentFrameAsImage();
 
 		virtual void saveCurrentFrameAsCandidate();	 // call this anywhere, any thread, any time
 		void saveCandidate(float * data, int width, int height, int numChannels, int originX, int originY, PlaneState ^ stateOfPlane);
 		void saveCurrentFrameAsCandidateOnMainThread(); // call this only from main thread
 		void addCandidateToGUITable(Object ^ theObject);
-		void addTargetToGUITable(Object ^ theObject);
 
 		void addCandidate(Database::CandidateRowData ^ data);
-		void addTarget(Database::TargetRowData ^ data);
-		void addVerifiedTarget(Database::TargetRowData ^ data);
-		
+		bool addVote(Database::VoteRowData ^ data);
+		void addVerifiedTarget(Database::VerifiedTargetRowData ^ data);
+		void addVerifiedTargetWithDialogData(Database::DialogEditingData ^ data);
+		void addVerifiedTargetToGUITable(Database::VerifiedTargetRowData ^ data);
 		
 		void modifyCandidate(Database::CandidateRowData ^ data);
-		void modifyTarget(Database::TargetRowData ^ data);
 
 		void removeCandidate(Database::CandidateRowData ^ data);
 		void removeCandidate(String ^ id);
-		void removeTarget(Database::TargetRowData ^ data);
-		void removeTarget(String ^ id);
+		void removeVotesForID(String ^ id);
+		void removeVerifiedTargetForID(String ^ id);
 
 		Database::CandidateRowData ^ candidateWithID(String ^ id);
 		Database::TargetRowData ^ targetWithID(String ^ id);
 		Database::VerifiedTargetRowData ^ verifiedTargetWithID(String ^ id);
+		Database::VotesOnCandidate ^ votesForID(String ^ id);
 
+		void gotGPS();
+		void gotVideo();
+		bool guiHasData;
+		int frameCount;
+
+		///////////// no longer used ////////////////
+		void loadTargetTableFromDisk();
+		void addTargetToGUITable(Object ^ theObject);
+		bool addTarget(Database::TargetRowData ^ data);
+		void modifyTarget(Database::TargetRowData ^ data);
+		void removeTarget(Database::TargetRowData ^ data);
+		void removeTarget(String ^ id);
 
 	protected:
-		Object ^ form1View;
-		Object ^ openGLView;
+		Form1 ^ form1View;
+		OpenGLForm::COpenGL ^ openGLView;
 		Database::DatabaseConnection ^ theDatabase;
 		PlaneWatcher ^ theWatcher;
 		TargetLock ^ targetLock;
+		Communications::GEarthHandler ^ theGEarthHandler;
+
+		Database::VoteCounter ^ voteCounter;
+
+		bool hasTelemetry;
+		bool hasVideo;
 
 	private:
 	};

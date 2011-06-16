@@ -3,13 +3,13 @@
 #include "AutopilotComport.h"
 #include "RabbitComport.h"
 #include "Comms.h"
+#include "MasterHeader.h"
 
 using namespace Communications;
 using namespace System;
 using namespace System::Drawing;
 using namespace System::IO;
 
-#define PI 3.1415926f
 
 void AutopilotComport::disconnect() 
 {
@@ -148,7 +148,7 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				PlaneGPSPacket ^planeState = gcnew PlaneGPSPacket();
 				planeState->gpsVelocity = (float)(getUInt16FromBytes(newPacket, 5)) / 20.0f - 10.0f;
 				planeState->gpsAltitude = (float)(getUInt16FromBytes(newPacket, 7)) / 6.0f - 1000.0f;
-				planeState->gpsHeading = ((float)(getUInt16FromBytes(newPacket, 9)) / 1000.0f)*180.0f/PI;
+				planeState->gpsHeading = ((float)(getUInt16FromBytes(newPacket, 9)) / 1000.0f)*(float)(180.0/PI);
 				planeState->gpsLatitude = getFloatFromBytes(newPacket, 13);
 				planeState->gpsLongitude = getFloatFromBytes(newPacket, 19);
 				planeState->gpsHomePositionLatitude = getFloatFromBytes(newPacket, 23);
@@ -199,7 +199,7 @@ void AutopilotComport::analyzeData( array<System::Byte> ^ inBuffer )
 				planeState->velocity = (float)(getUInt16FromBytes(newPacket, 7)) / 20.0f - 10.0f;
 				planeState->roll = (float)(getInt16FromBytes(newPacket, 9)) / 1000.0f;
 				planeState->pitch = (float)(getInt16FromBytes(newPacket, 11)) / 1000.0f;
-				planeState->heading = ((float)(getUInt16FromBytes(newPacket, 13)) / 1000.0f)*180.0f/PI;
+				planeState->heading = ((float)(getUInt16FromBytes(newPacket, 13)) / 1000.0f);
 				planeState->turnRate = (float)(getInt16FromBytes(newPacket, 15)) / 1000.0f;
 				planeState->batteryVoltage = (float)(getUCharFromBytes(newPacket, 20)) / 5.0f;
 				planeState->gpsNumSats = getUCharFromBytes(newPacket, 23);

@@ -26,7 +26,7 @@ using namespace System::Runtime::InteropServices;
 #define ENDVIDEO 4
 
 
-#define SPLIT_LENGTH 600
+#define SPLIT_LENGTH 20
 
 namespace Simulator
 {

@@ -236,6 +236,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|X64'">true</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">true</CompileAsManaged>
     </ClCompile>
+    <ClCompile Include="GEarthHandler.cpp" />
     <ClCompile Include="GeoReference.cpp" />
     <ClCompile Include="Joystick.cpp" />
     <ClCompile Include="MapControl.cpp" />
@@ -266,6 +267,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|X64'">false</CompileAsManaged>
     </ClCompile>
     <ClCompile Include="VideoSimulator.cpp" />
+    <ClCompile Include="VoteCounter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AutopilotComport.h" />
@@ -322,6 +324,7 @@
     <ClInclude Include="Form1.h">
       <FileType>CppForm</FileType>
     </ClInclude>
+    <ClInclude Include="GEarthHandler.h" />
     <ClInclude Include="GeoReference.h" />
     <ClInclude Include="HUDControl.h" />
     <ClInclude Include="Joystick.h" />
@@ -350,6 +353,7 @@
     <ClInclude Include="Tester.h" />
     <ClInclude Include="VideoReader.h" />
     <ClInclude Include="VideoSimulator.h" />
+    <ClInclude Include="VoteCounter.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="app.rc" />

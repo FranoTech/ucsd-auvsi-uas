@@ -24,13 +24,15 @@ struct JOY_STATUS
 
 };
 
+namespace Skynet { ref class SkynetController; }
+
 public ref class Joystick
 {
 public:
 	Joystick( Object ^ theParent );
 	virtual ~Joystick(void);
 
-	void setDelegate(Object ^ newDelegate) { theDelegate = newDelegate; }
+	void setDelegate(Skynet::SkynetController ^ newDelegate) { theDelegate = newDelegate; }
 
 	HRESULT UpdateInputState( HWND hDlg );
 	HRESULT init(HWND hDlg);
@@ -59,6 +61,6 @@ protected:
 
 	Timers::Timer ^ zoomTimer;
 	int zoomDirection;
-
-	Object ^ theDelegate;
+	int imageCounter;
+	Skynet::SkynetController ^ theDelegate;
 };

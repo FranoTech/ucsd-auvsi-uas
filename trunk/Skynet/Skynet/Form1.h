@@ -1,5 +1,7 @@
 #pragma once
 
+#include "MasterHeader.h"
+
 #include "OpenGLForm.h"
 #include "DecklinkCallback.h"
 #include "Comport.h"
@@ -230,28 +232,28 @@ private: System::Diagnostics::Process^  process1;
 private: System::Windows::Forms::Panel^  gimbalHUDPanel;
 private: HUDControl^ gimbalHUDView;
 
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_IDColumn;
-private: System::Windows::Forms::DataGridViewImageColumn^  confirmed_ThumbnailColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LatitudeColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LongitudeColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_HeadingColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LetterColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LetterColor;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_Shape;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_ShapeColor;
-private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_ProcessedColumn;
-private: System::Windows::Forms::DataGridViewCheckBoxColumn^  confirmed_VerifiedColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_IDColumn;
-private: System::Windows::Forms::DataGridViewImageColumn^  candidate_ThumbnailColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_LatitudeColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  canidate_LongitudeColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_HeadingColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_LetterColumn;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_LetterColor;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_Shape;
-private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_ShapeColor;
-private: System::Windows::Forms::DataGridViewCheckBoxColumn^  candidate_ProcessedColumn;
-private: System::Windows::Forms::DataGridViewCheckBoxColumn^  candidate_VerifiedColumn;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 private: System::Windows::Forms::DataGridViewTextBoxColumn^  unverified_IDColumn;
 private: System::Windows::Forms::DataGridViewImageColumn^  unverified_ThumbnailColumn;
 private: System::Windows::Forms::DataGridViewTextBoxColumn^  unverified_LatitudeColumn;
@@ -264,6 +266,27 @@ private: System::Windows::Forms::DataGridViewTextBoxColumn^  unverified_Shape;
 private: System::Windows::Forms::DataGridViewTextBoxColumn^  unverified_ShapeColor;
 private: System::Windows::Forms::DataGridViewCheckBoxColumn^  unverified_ProcessedColumn;
 private: System::Windows::Forms::DataGridViewCheckBoxColumn^  unverified_TargetLock;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_IDColumn;
+private: System::Windows::Forms::DataGridViewImageColumn^  confirmed_ThumbnailColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LatitudeColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LongitudeColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_HeadingColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_Shape;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_ShapeColor;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LetterColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  confirmed_LetterColor;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidateid_column;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_IDColumn;
+private: System::Windows::Forms::DataGridViewImageColumn^  candidate_ThumbnailColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_LatitudeColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  canidate_LongitudeColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_HeadingColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_LetterColumn;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_LetterColor;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_Shape;
+private: System::Windows::Forms::DataGridViewTextBoxColumn^  candidate_ShapeColor;
+private: System::Windows::Forms::DataGridViewCheckBoxColumn^  candidate_ProcessedColumn;
+private: System::Windows::Forms::DataGridViewCheckBoxColumn^  candidate_VerifiedColumn;
 
 
 private: System::Windows::Forms::Label^  label7;
@@ -435,6 +458,11 @@ private: System::Windows::Forms::Label^  label7;
 			targetLock = gcnew Communications::TargetLock( theComms, thePlaneWatcher );
 			appController->setTargetLock(targetLock);
 
+
+
+
+
+			appController->comeAlive();
 		}
 
 	public:
@@ -563,19 +591,20 @@ private: System::Windows::Forms::Label^  label7;
 			this->metadataTabControl = (gcnew System::Windows::Forms::TabControl());
 			this->tabPage3 = (gcnew System::Windows::Forms::TabPage());
 			this->dataGridView1 = (gcnew System::Windows::Forms::DataGridView());
-			this->candidate_IDColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->candidate_ThumbnailColumn = (gcnew System::Windows::Forms::DataGridViewImageColumn());
-			this->candidate_LatitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->canidate_LongitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->candidate_HeadingColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->candidate_LetterColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->candidate_LetterColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->candidate_Shape = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->candidate_ShapeColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->candidate_ProcessedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
-			this->candidate_VerifiedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
 			this->tabPage4 = (gcnew System::Windows::Forms::TabPage());
 			this->dataGridView2 = (gcnew System::Windows::Forms::DataGridView());
+			this->unverified_IDColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_ThumbnailColumn = (gcnew System::Windows::Forms::DataGridViewImageColumn());
+			this->unverified_LatitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_LongitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_HeadingColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_CenterPixel = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverfied_LetterColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_LetterColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_Shape = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_ShapeColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->unverified_ProcessedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
+			this->unverified_TargetLock = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
 			this->tabPage5 = (gcnew System::Windows::Forms::TabPage());
 			this->dataGridView3 = (gcnew System::Windows::Forms::DataGridView());
 			this->confirmed_IDColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
@@ -583,12 +612,11 @@ private: System::Windows::Forms::Label^  label7;
 			this->confirmed_LatitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->confirmed_LongitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->confirmed_HeadingColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->confirmed_LetterColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->confirmed_LetterColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->confirmed_Shape = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->confirmed_ShapeColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->confirmed_ProcessedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
-			this->confirmed_VerifiedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
+			this->confirmed_LetterColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->confirmed_LetterColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidateid_column = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
 			this->videoSaveTimer = (gcnew System::Windows::Forms::Timer(this->components));
 			this->mapPanel = (gcnew System::Windows::Forms::Panel());
 			this->mapCenterGPSLabel = (gcnew System::Windows::Forms::Label());
@@ -616,18 +644,17 @@ private: System::Windows::Forms::Label^  label7;
 			this->label16 = (gcnew System::Windows::Forms::Label());
 			this->panel1 = (gcnew System::Windows::Forms::Panel());
 			this->process1 = (gcnew System::Diagnostics::Process());
-			this->unverified_IDColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_ThumbnailColumn = (gcnew System::Windows::Forms::DataGridViewImageColumn());
-			this->unverified_LatitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_LongitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_HeadingColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_CenterPixel = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverfied_LetterColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_LetterColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_Shape = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_ShapeColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
-			this->unverified_ProcessedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
-			this->unverified_TargetLock = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
+			this->candidate_IDColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidate_ThumbnailColumn = (gcnew System::Windows::Forms::DataGridViewImageColumn());
+			this->candidate_LatitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->canidate_LongitudeColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidate_HeadingColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidate_LetterColumn = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidate_LetterColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidate_Shape = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidate_ShapeColor = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->candidate_ProcessedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
+			this->candidate_VerifiedColumn = (gcnew System::Windows::Forms::DataGridViewCheckBoxColumn());
 			this->menuStrip1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^  >(this->metadataTable))->BeginInit();
 			this->tabControl1->SuspendLayout();
@@ -1153,74 +1180,6 @@ private: System::Windows::Forms::Label^  label7;
 			this->dataGridView1->CellDoubleClick += gcnew System::Windows::Forms::DataGridViewCellEventHandler(this, &Form1::dataGridView1_CellDoubleClick);
 			this->dataGridView1->DataError += gcnew System::Windows::Forms::DataGridViewDataErrorEventHandler(this, &Form1::dataGridView1_DataError);
 			// 
-			// candidate_IDColumn
-			// 
-			this->candidate_IDColumn->HeaderText = L"ID";
-			this->candidate_IDColumn->Name = L"candidate_IDColumn";
-			this->candidate_IDColumn->ReadOnly = true;
-			this->candidate_IDColumn->Width = 70;
-			// 
-			// candidate_ThumbnailColumn
-			// 
-			this->candidate_ThumbnailColumn->HeaderText = L"Thumbnail";
-			this->candidate_ThumbnailColumn->Name = L"candidate_ThumbnailColumn";
-			this->candidate_ThumbnailColumn->ReadOnly = true;
-			this->candidate_ThumbnailColumn->Width = 64;
-			// 
-			// candidate_LatitudeColumn
-			// 
-			this->candidate_LatitudeColumn->HeaderText = L"Latitude";
-			this->candidate_LatitudeColumn->Name = L"candidate_LatitudeColumn";
-			this->candidate_LatitudeColumn->ReadOnly = true;
-			// 
-			// canidate_LongitudeColumn
-			// 
-			this->canidate_LongitudeColumn->HeaderText = L"Longitude";
-			this->canidate_LongitudeColumn->Name = L"canidate_LongitudeColumn";
-			this->canidate_LongitudeColumn->ReadOnly = true;
-			// 
-			// candidate_HeadingColumn
-			// 
-			this->candidate_HeadingColumn->HeaderText = L"Heading";
-			this->candidate_HeadingColumn->Name = L"candidate_HeadingColumn";
-			this->candidate_HeadingColumn->ReadOnly = true;
-			// 
-			// candidate_LetterColumn
-			// 
-			this->candidate_LetterColumn->HeaderText = L"Letter";
-			this->candidate_LetterColumn->Name = L"candidate_LetterColumn";
-			this->candidate_LetterColumn->ReadOnly = true;
-			// 
-			// candidate_LetterColor
-			// 
-			this->candidate_LetterColor->HeaderText = L"Letter Color";
-			this->candidate_LetterColor->Name = L"candidate_LetterColor";
-			this->candidate_LetterColor->ReadOnly = true;
-			// 
-			// candidate_Shape
-			// 
-			this->candidate_Shape->HeaderText = L"Shape";
-			this->candidate_Shape->Name = L"candidate_Shape";
-			this->candidate_Shape->ReadOnly = true;
-			// 
-			// candidate_ShapeColor
-			// 
-			this->candidate_ShapeColor->HeaderText = L"Shape Color";
-			this->candidate_ShapeColor->Name = L"candidate_ShapeColor";
-			this->candidate_ShapeColor->ReadOnly = true;
-			// 
-			// candidate_ProcessedColumn
-			// 
-			this->candidate_ProcessedColumn->HeaderText = L"Processed";
-			this->candidate_ProcessedColumn->Name = L"candidate_ProcessedColumn";
-			this->candidate_ProcessedColumn->ReadOnly = true;
-			// 
-			// candidate_VerifiedColumn
-			// 
-			this->candidate_VerifiedColumn->HeaderText = L"Verified";
-			this->candidate_VerifiedColumn->Name = L"candidate_VerifiedColumn";
-			this->candidate_VerifiedColumn->ReadOnly = true;
-			// 
 			// tabPage4
 			// 
 			this->tabPage4->Controls->Add(this->dataGridView2);
@@ -1250,6 +1209,80 @@ private: System::Windows::Forms::Label^  label7;
 			this->dataGridView2->CurrentCellDirtyStateChanged += gcnew System::EventHandler(this, &Form1::dataGridView2_CurrentCellDirtyStateChanged);
 			this->dataGridView2->DataError += gcnew System::Windows::Forms::DataGridViewDataErrorEventHandler(this, &Form1::dataGridView2_DataError);
 			// 
+			// unverified_IDColumn
+			// 
+			this->unverified_IDColumn->HeaderText = L"ID";
+			this->unverified_IDColumn->Name = L"unverified_IDColumn";
+			this->unverified_IDColumn->ReadOnly = true;
+			this->unverified_IDColumn->Width = 70;
+			// 
+			// unverified_ThumbnailColumn
+			// 
+			this->unverified_ThumbnailColumn->HeaderText = L"Thumbnail";
+			this->unverified_ThumbnailColumn->Name = L"unverified_ThumbnailColumn";
+			this->unverified_ThumbnailColumn->ReadOnly = true;
+			this->unverified_ThumbnailColumn->Width = 64;
+			// 
+			// unverified_LatitudeColumn
+			// 
+			this->unverified_LatitudeColumn->HeaderText = L"Latitude";
+			this->unverified_LatitudeColumn->Name = L"unverified_LatitudeColumn";
+			this->unverified_LatitudeColumn->ReadOnly = true;
+			// 
+			// unverified_LongitudeColumn
+			// 
+			this->unverified_LongitudeColumn->HeaderText = L"Longitude";
+			this->unverified_LongitudeColumn->Name = L"unverified_LongitudeColumn";
+			this->unverified_LongitudeColumn->ReadOnly = true;
+			// 
+			// unverified_HeadingColumn
+			// 
+			this->unverified_HeadingColumn->HeaderText = L"Heading";
+			this->unverified_HeadingColumn->Name = L"unverified_HeadingColumn";
+			this->unverified_HeadingColumn->ReadOnly = true;
+			// 
+			// unverified_CenterPixel
+			// 
+			this->unverified_CenterPixel->HeaderText = L"Center Pixel";
+			this->unverified_CenterPixel->Name = L"unverified_CenterPixel";
+			this->unverified_CenterPixel->ReadOnly = true;
+			// 
+			// unverfied_LetterColumn
+			// 
+			this->unverfied_LetterColumn->HeaderText = L"Letter";
+			this->unverfied_LetterColumn->Name = L"unverfied_LetterColumn";
+			this->unverfied_LetterColumn->ReadOnly = true;
+			// 
+			// unverified_LetterColor
+			// 
+			this->unverified_LetterColor->HeaderText = L"Letter Color";
+			this->unverified_LetterColor->Name = L"unverified_LetterColor";
+			this->unverified_LetterColor->ReadOnly = true;
+			// 
+			// unverified_Shape
+			// 
+			this->unverified_Shape->HeaderText = L"Shape";
+			this->unverified_Shape->Name = L"unverified_Shape";
+			this->unverified_Shape->ReadOnly = true;
+			// 
+			// unverified_ShapeColor
+			// 
+			this->unverified_ShapeColor->HeaderText = L"Shape Color";
+			this->unverified_ShapeColor->Name = L"unverified_ShapeColor";
+			this->unverified_ShapeColor->ReadOnly = true;
+			// 
+			// unverified_ProcessedColumn
+			// 
+			this->unverified_ProcessedColumn->HeaderText = L"Processed";
+			this->unverified_ProcessedColumn->Name = L"unverified_ProcessedColumn";
+			this->unverified_ProcessedColumn->ReadOnly = true;
+			// 
+			// unverified_TargetLock
+			// 
+			this->unverified_TargetLock->HeaderText = L"Lock-On";
+			this->unverified_TargetLock->Name = L"unverified_TargetLock";
+			this->unverified_TargetLock->ReadOnly = true;
+			// 
 			// tabPage5
 			// 
 			this->tabPage5->Controls->Add(this->dataGridView3);
@@ -1266,10 +1299,9 @@ private: System::Windows::Forms::Label^  label7;
 			this->dataGridView3->AllowUserToAddRows = false;
 			this->dataGridView3->AllowUserToDeleteRows = false;
 			this->dataGridView3->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
-			this->dataGridView3->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(11) {this->confirmed_IDColumn, 
+			this->dataGridView3->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(10) {this->confirmed_IDColumn, 
 				this->confirmed_ThumbnailColumn, this->confirmed_LatitudeColumn, this->confirmed_LongitudeColumn, this->confirmed_HeadingColumn, 
-				this->confirmed_LetterColumn, this->confirmed_LetterColor, this->confirmed_Shape, this->confirmed_ShapeColor, this->confirmed_ProcessedColumn, 
-				this->confirmed_VerifiedColumn});
+				this->confirmed_Shape, this->confirmed_ShapeColor, this->confirmed_LetterColumn, this->confirmed_LetterColor, this->candidateid_column});
 			this->dataGridView3->Location = System::Drawing::Point(6, 6);
 			this->dataGridView3->MultiSelect = false;
 			this->dataGridView3->Name = L"dataGridView3";
@@ -1308,21 +1340,9 @@ private: System::Windows::Forms::Label^  label7;
 			// 
 			// confirmed_HeadingColumn
 			// 
-			this->confirmed_HeadingColumn->HeaderText = L"Heading";
+			this->confirmed_HeadingColumn->HeaderText = L"Orientation";
 			this->confirmed_HeadingColumn->Name = L"confirmed_HeadingColumn";
 			this->confirmed_HeadingColumn->ReadOnly = true;
-			// 
-			// confirmed_LetterColumn
-			// 
-			this->confirmed_LetterColumn->HeaderText = L"Letter";
-			this->confirmed_LetterColumn->Name = L"confirmed_LetterColumn";
-			this->confirmed_LetterColumn->ReadOnly = true;
-			// 
-			// confirmed_LetterColor
-			// 
-			this->confirmed_LetterColor->HeaderText = L"Letter Color";
-			this->confirmed_LetterColor->Name = L"confirmed_LetterColor";
-			this->confirmed_LetterColor->ReadOnly = true;
 			// 
 			// confirmed_Shape
 			// 
@@ -1336,20 +1356,23 @@ private: System::Windows::Forms::Label^  label7;
 			this->confirmed_ShapeColor->Name = L"confirmed_ShapeColor";
 			this->confirmed_ShapeColor->ReadOnly = true;
 			// 
-			// confirmed_ProcessedColumn
+			// confirmed_LetterColumn
 			// 
-			this->confirmed_ProcessedColumn->HeaderText = L"Processed";
-			this->confirmed_ProcessedColumn->Name = L"confirmed_ProcessedColumn";
-			this->confirmed_ProcessedColumn->ReadOnly = true;
-			this->confirmed_ProcessedColumn->ThreeState = true;
-			this->confirmed_ProcessedColumn->TrueValue = L"true";
+			this->confirmed_LetterColumn->HeaderText = L"Letter";
+			this->confirmed_LetterColumn->Name = L"confirmed_LetterColumn";
+			this->confirmed_LetterColumn->ReadOnly = true;
 			// 
-			// confirmed_VerifiedColumn
+			// confirmed_LetterColor
 			// 
-			this->confirmed_VerifiedColumn->HeaderText = L"Verified";
-			this->confirmed_VerifiedColumn->Name = L"confirmed_VerifiedColumn";
-			this->confirmed_VerifiedColumn->ThreeState = true;
-			this->confirmed_VerifiedColumn->TrueValue = L"true";
+			this->confirmed_LetterColor->HeaderText = L"Letter Color";
+			this->confirmed_LetterColor->Name = L"confirmed_LetterColor";
+			this->confirmed_LetterColor->ReadOnly = true;
+			// 
+			// candidateid_column
+			// 
+			this->candidateid_column->HeaderText = L"Candidate ID";
+			this->candidateid_column->Name = L"candidateid_column";
+			this->candidateid_column->ReadOnly = true;
 			// 
 			// videoSaveTimer
 			// 
@@ -1625,79 +1648,74 @@ private: System::Windows::Forms::Label^  label7;
 			this->process1->StartInfo->UserName = L"";
 			this->process1->SynchronizingObject = this;
 			// 
-			// unverified_IDColumn
+			// candidate_IDColumn
 			// 
-			this->unverified_IDColumn->HeaderText = L"ID";
-			this->unverified_IDColumn->Name = L"unverified_IDColumn";
-			this->unverified_IDColumn->ReadOnly = true;
-			this->unverified_IDColumn->Width = 70;
+			this->candidate_IDColumn->HeaderText = L"ID";
+			this->candidate_IDColumn->Name = L"candidate_IDColumn";
+			this->candidate_IDColumn->ReadOnly = true;
+			this->candidate_IDColumn->Width = 70;
 			// 
-			// unverified_ThumbnailColumn
+			// candidate_ThumbnailColumn
 			// 
-			this->unverified_ThumbnailColumn->HeaderText = L"Thumbnail";
-			this->unverified_ThumbnailColumn->Name = L"unverified_ThumbnailColumn";
-			this->unverified_ThumbnailColumn->ReadOnly = true;
-			this->unverified_ThumbnailColumn->Width = 64;
+			this->candidate_ThumbnailColumn->HeaderText = L"Thumbnail";
+			this->candidate_ThumbnailColumn->Name = L"candidate_ThumbnailColumn";
+			this->candidate_ThumbnailColumn->ReadOnly = true;
+			this->candidate_ThumbnailColumn->Width = 64;
 			// 
-			// unverified_LatitudeColumn
+			// candidate_LatitudeColumn
 			// 
-			this->unverified_LatitudeColumn->HeaderText = L"Latitude";
-			this->unverified_LatitudeColumn->Name = L"unverified_LatitudeColumn";
-			this->unverified_LatitudeColumn->ReadOnly = true;
+			this->candidate_LatitudeColumn->HeaderText = L"Latitude";
+			this->candidate_LatitudeColumn->Name = L"candidate_LatitudeColumn";
+			this->candidate_LatitudeColumn->ReadOnly = true;
 			// 
-			// unverified_LongitudeColumn
+			// canidate_LongitudeColumn
 			// 
-			this->unverified_LongitudeColumn->HeaderText = L"Longitude";
-			this->unverified_LongitudeColumn->Name = L"unverified_LongitudeColumn";
-			this->unverified_LongitudeColumn->ReadOnly = true;
+			this->canidate_LongitudeColumn->HeaderText = L"Longitude";
+			this->canidate_LongitudeColumn->Name = L"canidate_LongitudeColumn";
+			this->canidate_LongitudeColumn->ReadOnly = true;
 			// 
-			// unverified_HeadingColumn
+			// candidate_HeadingColumn
 			// 
-			this->unverified_HeadingColumn->HeaderText = L"Heading";
-			this->unverified_HeadingColumn->Name = L"unverified_HeadingColumn";
-			this->unverified_HeadingColumn->ReadOnly = true;
+			this->candidate_HeadingColumn->HeaderText = L"Heading";
+			this->candidate_HeadingColumn->Name = L"candidate_HeadingColumn";
+			this->candidate_HeadingColumn->ReadOnly = true;
 			// 
-			// unverified_CenterPixel
+			// candidate_LetterColumn
 			// 
-			this->unverified_CenterPixel->HeaderText = L"Center Pixel";
-			this->unverified_CenterPixel->Name = L"unverified_CenterPixel";
-			this->unverified_CenterPixel->ReadOnly = true;
+			this->candidate_LetterColumn->HeaderText = L"Letter";
+			this->candidate_LetterColumn->Name = L"candidate_LetterColumn";
+			this->candidate_LetterColumn->ReadOnly = true;
 			// 
-			// unverfied_LetterColumn
+			// candidate_LetterColor
 			// 
-			this->unverfied_LetterColumn->HeaderText = L"Letter";
-			this->unverfied_LetterColumn->Name = L"unverfied_LetterColumn";
-			this->unverfied_LetterColumn->ReadOnly = true;
+			this->candidate_LetterColor->HeaderText = L"Letter Color";
+			this->candidate_LetterColor->Name = L"candidate_LetterColor";
+			this->candidate_LetterColor->ReadOnly = true;
 			// 
-			// unverified_LetterColor
+			// candidate_Shape
 			// 
-			this->unverified_LetterColor->HeaderText = L"Letter Color";
-			this->unverified_LetterColor->Name = L"unverified_LetterColor";
-			this->unverified_LetterColor->ReadOnly = true;
+			this->candidate_Shape->HeaderText = L"Shape";
+			this->candidate_Shape->Name = L"candidate_Shape";
+			this->candidate_Shape->ReadOnly = true;
 			// 
-			// unverified_Shape
+			// candidate_ShapeColor
 			// 
-			this->unverified_Shape->HeaderText = L"Shape";
-			this->unverified_Shape->Name = L"unverified_Shape";
-			this->unverified_Shape->ReadOnly = true;
+			this->candidate_ShapeColor->HeaderText = L"Shape Color";
+			this->candidate_ShapeColor->Name = L"candidate_ShapeColor";
+			this->candidate_ShapeColor->ReadOnly = true;
 			// 
-			// unverified_ShapeColor
+			// candidate_ProcessedColumn
 			// 
-			this->unverified_ShapeColor->HeaderText = L"Shape Color";
-			this->unverified_ShapeColor->Name = L"unverified_ShapeColor";
-			this->unverified_ShapeColor->ReadOnly = true;
+			this->candidate_ProcessedColumn->HeaderText = L"Processed";
+			this->candidate_ProcessedColumn->Name = L"candidate_ProcessedColumn";
+			this->candidate_ProcessedColumn->ReadOnly = true;
 			// 
-			// unverified_ProcessedColumn
+			// candidate_VerifiedColumn
 			// 
-			this->unverified_ProcessedColumn->HeaderText = L"Processed";
-			this->unverified_ProcessedColumn->Name = L"unverified_ProcessedColumn";
-			this->unverified_ProcessedColumn->ReadOnly = true;
-			// 
-			// unverified_TargetLock
-			// 
-			this->unverified_TargetLock->HeaderText = L"Lock-On";
-			this->unverified_TargetLock->Name = L"unverified_TargetLock";
-			this->unverified_TargetLock->ReadOnly = true;
+			this->candidate_VerifiedColumn->HeaderText = L"Verified";
+			this->candidate_VerifiedColumn->Name = L"candidate_VerifiedColumn";
+			this->candidate_VerifiedColumn->ReadOnly = true;
+			this->candidate_VerifiedColumn->Visible = false;
 			// 
 			// Form1
 			// 
@@ -1875,6 +1893,18 @@ public:	 System::Void updateCommsStatus( array<Object ^> ^ retArr )
 
 
 		 }
+public:  System::Void errorMessageUniversal( String ^ message )
+		 {
+			Delegates::stringToVoid ^ blahdelegate = gcnew Delegates::stringToVoid(this, &Form1::errorMessage );
+
+			try {
+				this->Invoke( blahdelegate, gcnew array<Object ^>{message} );
+			}
+			catch(Exception ^ e) {
+				System::Diagnostics::Trace::WriteLine("ERROR in Form1::errorMessageUniversal(): Failed to print error message: " + e);
+			}
+
+		 }
 private: System::Void errorMessage( String ^ message )
 		 {
 			 consoleMessage( "ERROR: " + message, Color::Red );
@@ -1971,6 +2001,70 @@ private: System::Void disconnectToolStripMenuItem_Click(System::Object^  sender,
 
 private: bool isReadingData;
 
+public: System::Void setUnverifiedTableContents( array<Database::TargetRowData ^> ^ contents )
+		{
+			if (contents == nullptr) {
+				
+				System::Diagnostics::Trace::WriteLine("ERROR in Form1::VerifiedTargetRowData(): data is null");
+				return;
+			}
+
+			
+			this->dataGridView2->Rows->Clear();
+
+			for each(Database::TargetRowData ^ data in contents)
+			{
+				insertTargetData(data);
+			}
+
+
+		}
+
+public: System::Void setVerifiedTableContents( array<Database::VerifiedTargetRowData ^> ^ contents )
+		{
+			if (contents == nullptr) {
+				
+				System::Diagnostics::Trace::WriteLine("ERROR in Form1::VerifiedTargetRowData(): data is null");
+				return;
+			}
+
+			this->dataGridView3->Rows->Clear();
+
+			for each(Database::VerifiedTargetRowData ^ data in contents)
+			{
+				if (data == nullptr)
+					continue;
+
+				data->imageName = db->imageNameForID("" + data->candidateid);
+				insertVerifiedTargetData(data);
+			}
+		}
+
+private: bool findIntInArray( int num, array<int> ^ arr)
+		 {
+			 for each(int i in arr)
+				 if (num == i)
+					 return true;
+			 return false;
+		 }
+
+public: System::Void setProcessedForCandidates( array<int> ^ idsToSet )
+		{
+			DataGridView ^ grid = this->dataGridView1;
+			
+			int size = grid->Rows->Count;
+
+			for (int i = 0; i < size; i++)
+			{
+				int id = Int32::Parse(   (String ^)(grid->Rows[i]->Cells[0]->Value)    );
+				if (findIntInArray(id, idsToSet))
+					grid->Rows[i]->Cells[9]->Value = true;
+				else
+					grid->Rows[i]->Cells[9]->Value = false;
+			}
+
+		}
+
 public: System::Void insertCandidateData( Database::CandidateRowData ^ data) 
 		{
 			if (data == nullptr) {
@@ -2012,14 +2106,20 @@ public: System::Void insertCandidateData( Database::CandidateRowData ^ data)
 			grid->Rows[rowNum]->Cells[3]->Value = "" + Single(lon).ToString("######.#######") + "*";
 			grid->Rows[rowNum]->Cells[4]->Value = "0*";
 			grid->Rows[rowNum]->Cells[5]->Value = data->letter;
-			grid->Rows[rowNum]->Cells[6]->Value = data->shape;
-			grid->Rows[rowNum]->Cells[7]->Value = data->letterColor;
+			grid->Rows[rowNum]->Cells[6]->Value = data->letterColor;
+			grid->Rows[rowNum]->Cells[7]->Value = data->shape;
 			grid->Rows[rowNum]->Cells[8]->Value = data->shapeColor;
-			grid->Rows[rowNum]->Cells[9]->Value = true;
+			grid->Rows[rowNum]->Cells[9]->Value = false;
 
 		}
 public: System::Void insertTargetData( Database::TargetRowData ^ data) 
 		{
+			if (data == nullptr) {
+				
+				System::Diagnostics::Trace::WriteLine("ERROR in Form1::insertTargetData(): data is null");
+				return;
+			}
+
 			int rowNum;
 
 			DataGridView ^ grid = this->dataGridView2;
@@ -2048,15 +2148,52 @@ public: System::Void insertTargetData( Database::TargetRowData ^ data)
 			grid->Rows[rowNum]->Cells[4]->Value = "0*";
 			grid->Rows[rowNum]->Cells[5]->Value = "("+ data->targetX + "," + data->targetY+")";
 			grid->Rows[rowNum]->Cells[6]->Value = data->letter;
-			grid->Rows[rowNum]->Cells[7]->Value = data->shape;
-			grid->Rows[rowNum]->Cells[8]->Value = data->letterColor;
+			grid->Rows[rowNum]->Cells[7]->Value = data->letterColor;
+			grid->Rows[rowNum]->Cells[8]->Value = data->shape;
 			grid->Rows[rowNum]->Cells[9]->Value = data->shapeColor;
 			grid->Rows[rowNum]->Cells[10]->Value = true;
 
 		}
 public: System::Void insertVerifiedTargetData( Database::VerifiedTargetRowData ^ data) 
 		{
-			System::Diagnostics::Trace::WriteLine("ERROR in Form1::insertVerifiedTargetData(): function not implemented");
+			if (data == nullptr) {
+				
+				System::Diagnostics::Trace::WriteLine("ERROR in Form1::VerifiedTargetRowData(): data is null");
+				return;
+			}
+
+			int rowNum;
+
+			DataGridView ^ grid = this->dataGridView3;
+			
+			rowNum = grid->Rows->Add();
+			grid->Rows[rowNum]->Cells[0]->Value = "" + rowNum;
+
+			Image ^ thumbnail;
+			try
+			{
+				if (data->imageName != nullptr) 
+				{
+					String ^ path = HTTP_SERVER_TARGET_PATH + data->imageName->Remove(0, 8);
+					thumbnail = Image::FromFile( path );
+					thumbnail = thumbnail->GetThumbnailImage( 64, 64, nullptr, IntPtr::Zero );
+				}
+			}
+			catch( Exception ^ e)
+			{
+				System::Diagnostics::Trace::WriteLine("Failure to add image to table: " + e);
+			}
+
+
+			grid->Rows[rowNum]->Cells[1]->Value = thumbnail;
+			grid->Rows[rowNum]->Cells[2]->Value = data->Latitude;
+			grid->Rows[rowNum]->Cells[3]->Value = data->Longitude;
+			grid->Rows[rowNum]->Cells[4]->Value = data->Orientation;
+			grid->Rows[rowNum]->Cells[5]->Value = data->shape;
+			grid->Rows[rowNum]->Cells[6]->Value = data->shapeColor;
+			grid->Rows[rowNum]->Cells[7]->Value = data->letter;
+			grid->Rows[rowNum]->Cells[8]->Value = data->letterColor;
+			grid->Rows[rowNum]->Cells[9]->Value = "" + data->candidateid;
 		}
 
 public: System::Void modifyCandidateInTable( Database::CandidateRowData ^ data )
@@ -2105,8 +2242,8 @@ public: System::Void modifyCandidateInTable( Database::CandidateRowData ^ data )
 					grid->Rows[rowNum]->Cells[3]->Value = "" + Single(lon).ToString("######.#######") + "*";
 					grid->Rows[rowNum]->Cells[4]->Value = "0*";
 					grid->Rows[rowNum]->Cells[5]->Value = data->letter;
-					grid->Rows[rowNum]->Cells[6]->Value = data->shape;
-					grid->Rows[rowNum]->Cells[7]->Value = data->letterColor;
+					grid->Rows[rowNum]->Cells[6]->Value = data->letterColor;
+					grid->Rows[rowNum]->Cells[7]->Value = data->shape;
 					grid->Rows[rowNum]->Cells[8]->Value = data->shapeColor;
 					grid->Rows[rowNum]->Cells[9]->Value = true;
 
@@ -2168,8 +2305,8 @@ public: System::Void modifyTargetInTable( Database::TargetRowData ^ data )
 					grid->Rows[rowNum]->Cells[4]->Value = "0*";
 					grid->Rows[rowNum]->Cells[5]->Value = "("+ data->targetX + "," + data->targetY+")";
 					grid->Rows[rowNum]->Cells[6]->Value = data->letter;
-					grid->Rows[rowNum]->Cells[7]->Value = data->shape;
-					grid->Rows[rowNum]->Cells[8]->Value = data->letterColor;
+					grid->Rows[rowNum]->Cells[7]->Value = data->letterColor;
+					grid->Rows[rowNum]->Cells[8]->Value = data->shape;
 					grid->Rows[rowNum]->Cells[9]->Value = data->shapeColor;
 					grid->Rows[rowNum]->Cells[10]->Value = true;
 
@@ -2215,11 +2352,20 @@ public: System::Void removeTargetFromTable(Database::TargetRowData ^ data)
 		{
 			removeTargetFromTable("" + data->id);
 		}
-
-public: System::Void removeVerifiedTargetFromTable(Database::VerifiedTargetRowData ^ data)
+#define CANDIDATEID_VERIFIED_COL 9
+public: System::Void removeVerifiedTargetFromTable(String ^ id)
 		{
-			System::Diagnostics::Trace::WriteLine("ERROR in Form1::removeVerifiedTargetFromTable(): function not implemented");
-			
+			if (BADSTRING(id))
+				return;
+
+			DataGridView ^ grid = this->dataGridView3;
+
+			for (int i = 0; i < grid->Rows->Count; i++) {
+				if (grid->Rows[i]->Cells[CANDIDATEID_VERIFIED_COL]->Value->Equals(id)) {
+					// remove row
+					grid->Rows->RemoveAt(i);
+				}
+			}
 
 		}
 
@@ -2387,14 +2533,15 @@ public: System::Void reloadTable()
 			
 			Communications::PlaneState ^ state = thePlaneWatcher->predictLocationAtTime(0.0);
 
+			//PRINT("state->gimbalInfo->roll:"+state->gimbalInfo->roll);
 			this->metadataTable[1, G_ROLL]->Value = "" + thePlaneWatcher->rawToDegrees(state->gimbalInfo->roll) + "*"; //azimuth;
 			this->metadataTable[1, G_PITCH]->Value = "" + thePlaneWatcher->rawToDegrees(state->gimbalInfo->pitch) + "*"; //elevation;
-			this->metadataTable[1, A_ALT]->Value = "" + Single(state->gpsData->gpsAltitude).ToString("F") + " (m)"; // altitude;
+			this->metadataTable[1, A_ALT]->Value = "" + Single(state->telemData->altitudeHAL).ToString("F") + " (m)"; // altitude;
 			this->metadataTable[1, A_LAT]->Value = "" + Single(state->gpsData->gpsLatitude).ToString("######.#######") + "*"; // latitude;
 			this->metadataTable[1, A_LON]->Value = "" + Single(state->gpsData->gpsLongitude).ToString("######.#######") + "*"; // longitude; // ######.####
-			this->metadataTable[1, A_HEAD]->Value = "" + Single(state->telemData->heading).ToString("F") + "*"; //heading;
-			this->metadataTable[1, A_ROLL]->Value = "" + Single(state->telemData->roll).ToString("F") + "*"; // roll;
-			this->metadataTable[1, A_PITCH]->Value = "" + Single(state->telemData->pitch).ToString("F") + "*"; //pitch;
+			this->metadataTable[1, A_HEAD]->Value = "" + Single(state->telemData->heading * RAD_TO_DEG).ToString("F") + "*"; //heading;
+			this->metadataTable[1, A_ROLL]->Value = "" + Single(state->telemData->roll * RAD_TO_DEG).ToString("F") + "*"; // roll;
+			this->metadataTable[1, A_PITCH]->Value = "" + Single(state->telemData->pitch * RAD_TO_DEG).ToString("F") + "*"; //pitch;
 			this->metadataTable[1, V_ZOOM]->Value = "" + state->gimbalInfo->zoom + "x"; // zoom;
 			
 			//System::Diagnostics::Trace::WriteLine("Form1::reloadTable() lat:" + state->gpsData->gpsLatitude + " lon:" + state->gpsData->gpsLongitude + " roll:" + state->telemData->roll  + 
@@ -2407,41 +2554,6 @@ public: System::Void reloadTable()
 				 thePlaneWatcher->rawToDegrees(state->gimbalInfo->pitch), false );
 
 			 gimbalHUDView->setCameraZoom( state->gimbalInfo->zoom, true );
-
-
-			 // FOR GOOGLE EARTH: write plane location to file. this should be moved to another class
-
-			//http://localhost/Test.kml
-
-			String ^ file = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"+
-				"<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n"+
-				"<Document>\n"+
-				"<Style id=\"plane\">\n"+
-				"<IconStyle>\n"+
-				"<heading>"+Single(state->telemData->heading).ToString("F")+"</heading>\n"+
-				"<Icon>\n"+
-				"<href>http://localhost/falco.png</href>\n"+
-				"<scale>1.0</scale>\n"+
-				"</Icon>\n"+   
-				"</IconStyle>\n"+
-				"</Style>\n"+
-				"<Placemark>\n"+
-				"<styleUrl>#plane</styleUrl>\n"+
-				"<name>Falco @ "+System::DateTime::Now.Second+"</name>\n"+
-				"<description>Attached to the ground. Intelligently places itself at the height of the underlying terrain.</description>\n"+
-				"<Point>\n"+
-				"<altitudeMode>absolute</altitudeMode>\n"+
-				"<coordinates>"+Single(state->gpsData->gpsLongitude).ToString("######.#######")+
-				","+Single(state->gpsData->gpsLatitude).ToString("######.#######")+
-				","+Single(state->gpsData->gpsAltitude).ToString("F")+"</coordinates>\n"+
-				"</Point>\n"+
-				"</Placemark>\n"+
-				"</Document>"+
-				"</kml>\n";
-			StreamWriter^ outfile = gcnew StreamWriter("C:\\xampp\\htdocs\\1.kml");
-			outfile->Write(file);
-			outfile->Close();
-
 		}
 
 public: System::Void updateGimbalInfo( Communications::GimbalInfo ^ data ) {
@@ -2796,7 +2908,9 @@ private: System::Void resetToolStripMenuItem_Click(System::Object^  sender, Syst
 
 private: System::Void exportDataToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 
-			 Stream^ myStream;
+
+			 appController->exportData();
+			/* Stream^ myStream;
 			 SaveFileDialog^ saveFileDialog1 = gcnew SaveFileDialog;
 			 saveFileDialog1->Filter = "txt files (*.txt)|*.txt";
 		     saveFileDialog1->FilterIndex = 2;
@@ -2868,7 +2982,7 @@ private: System::Void exportDataToolStripMenuItem_Click(System::Object^  sender,
 					myStream->Close();
 					consoleMessage( "Data exported to " + saveFileDialog1->FileName, Color::Gray );	
 				}
-			}
+			}*/
 
 			 
 
@@ -2996,22 +3110,21 @@ private: System::Void dataGridView2_CellDoubleClick(System::Object^  sender, Sys
 				 // show dialog
 				 String ^ id = Convert::ToString(dataGridView2->Rows[e->RowIndex]->Cells[0]->Value);
 			 
-				 editUnverifiedTargetUsingDialog(appController->targetWithID(id));
+				 editUnverifiedTargetUsingDialog(appController->votesForID(id));
 
 			 }
 
 		 }
 
 private: System::Void dataGridView3_CellDoubleClick(System::Object^  sender, System::Windows::Forms::DataGridViewCellEventArgs^  e) {
-			 if( e->ColumnIndex < 1 || e->ColumnIndex > 4 )
-				 return;
-
 			 if( e->RowIndex < 0 )
 				 return;
 
-			 String ^ id = Convert::ToString(dataGridView3->Rows[e->RowIndex]->Cells[0]->Value);
+			 String ^ id = Convert::ToString(dataGridView3->Rows[e->RowIndex]->Cells[9]->Value);
 			 
-			 System::Diagnostics::Trace::WriteLine("ERROR: dataGridView3_CellDoubleClick(): no methods in place to edit verified targets. tell developers to get back to work.");
+			 editVerifiedTargetUsingDialog(appController->verifiedTargetWithID(id));
+
+			 //System::Diagnostics::Trace::WriteLine("ERROR: dataGridView3_CellDoubleClick(): no methods in place to edit verified targets. tell developers to get back to work.");
 		 }
 
 public: System::Void editCandidateUsingDialog(Database::CandidateRowData ^ data) 
@@ -3034,7 +3147,7 @@ public: System::Void editCandidateUsingDialog(Database::CandidateRowData ^ data)
 			 
 		}
 
-public: System::Void editUnverifiedTargetUsingDialog(Database::TargetRowData ^ data)
+public: System::Void editUnverifiedTargetUsingDialog(Database::VotesOnCandidate ^ data)
 		{
 			if (data == nullptr) {
 				System::Diagnostics::Trace::WriteLine("ERROR: editUnverifiedTargetUsingDialog(): data == nullptr.");
@@ -3049,8 +3162,13 @@ public: System::Void editUnverifiedTargetUsingDialog(Database::TargetRowData ^ d
 
 public: System::Void editVerifiedTargetUsingDialog(Database::VerifiedTargetRowData ^ theData) 
 		{
-			// to get this working, change this function declaration and do other shit
-			 System::Diagnostics::Trace::WriteLine("ERROR: editVerifiedTargetUsingDialog(): not yet implemented.");
+			if (theData == nullptr) {
+				System::Diagnostics::Trace::WriteLine("ERROR: editVerifiedTargetUsingDialog(): data == nullptr.");
+				return;
+			}
+			imageDialog = gcnew TargetDialog( this, appController );
+			 
+			imageDialog->showDialogForData(theData);
 		}
 
 		 //public: Vision::ocrItem ^ getCandidateData( void )

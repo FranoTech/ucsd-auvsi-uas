@@ -98,6 +98,7 @@ Joystick::Joystick( Object ^ theParent )
 	manualMode = false;
 	manualModeCounter = 0;
 	lastPacket = NULL;
+	imageCounter = 0;
 }
 
 Joystick::~Joystick(void)
@@ -480,6 +481,7 @@ Joystick::FreeDirectInput()
 HRESULT 
 Joystick::UpdateInputState( HWND hDlg )
 {
+	//PRINT("Start: " + System::DateTime::Now.Second + "." + System::DateTime::Now.Millisecond );
 	//System::Diagnostics::Trace::WriteLine("UpdateInputState");
     HRESULT hr;
     TCHAR strText[512] = {0}; // Device state text
@@ -599,19 +601,20 @@ Joystick::UpdateInputState( HWND hDlg )
 	
 
 
-	// Button 1 = X = save picture
+	// Button 2 = X = save picture
 	if( js.rgbButtons[BTN_X] & 0x80 ) { tracker[BTN_X]++; }
 	else { tracker[BTN_X] = 0; }
 
 	if( tracker[BTN_X] == 1 )
 	{
-
-		((Skynet::SkynetController ^)theDelegate)->saveCurrentFrameAsCandidate();
-		
+		Thread ^thread = gcnew Thread( gcnew ThreadStart(theDelegate, &Skynet::SkynetController::saveCurrentFrameAsCandidate));
+		thread->Start();
+		//theDelegate->saveCurrentFrameAsCandidate();
+		PRINT("save image pressed: " + ++imageCounter);	
 	}
 
 	// localX and Y contain the stick coordinates between -1 and 1
-	newGimbalRoll += (unsigned __int16)(40.0f*GIMBAL_FACTOR*localX);
+	newGimbalRoll -= (unsigned __int16)(40.0f*GIMBAL_FACTOR*localX);
 	newGimbalPitch += (unsigned __int16)(40.0f*GIMBAL_FACTOR*localY);
 		
 	
@@ -765,7 +768,8 @@ Joystick::UpdateInputState( HWND hDlg )
 		if (INTENDED_POSITION_UPDATES_ENABLED)
 			((Skynet::SkynetController ^)theDelegate)->intendedCameraZoomUpdated(theWatcher->rawZoomToFloat(zoom));
 	}
-
+	
+	//PRINT("End: " + System::DateTime::Now.Second + "." + System::DateTime::Now.Millisecond );
     return S_OK;
 }
 

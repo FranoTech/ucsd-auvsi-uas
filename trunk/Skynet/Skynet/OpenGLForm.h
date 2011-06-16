@@ -4,6 +4,8 @@
 #include "SaveImage.h"
 #include "Saliency.h"
 #include <msclr/lock.h>
+#include "MasterHeader.h"
+#include "SkynetController.h"
 
 using namespace System;
 using namespace System::Windows::Forms;
@@ -79,6 +81,7 @@ namespace OpenGLForm
 
 		System::Void UpdateBuffer( float * input )
 		{
+			theController->gotVideo();
 			Vision::FrameData ^ theData = gcnew Vision::FrameData();
 
 			/*// TODO: add in the data fields for real
@@ -114,6 +117,7 @@ namespace OpenGLForm
 
 			imSaver = new ImageUtil::SaveImage( frameH, frameW, 4 );	
 			theSaliency->setValues(frameW, frameH, _parent);
+			PRINT("CallbackSetup ... shit will be borked if video was running during this");
 		}
 
 		System::Void saveVideoFrame()
@@ -121,7 +125,7 @@ namespace OpenGLForm
 			benchmark++;
 			imSaver->writeFrame( buffer );
 
-			System::Diagnostics::Trace::WriteLine("writeFrame in Render in OpenGLForm.h: " + benchmark);
+			//System::Diagnostics::Trace::WriteLine("writeFrame in Render in OpenGLForm.h: " + benchmark);
 		}
 
 		System::Void Render(System::Void)
@@ -232,6 +236,7 @@ namespace OpenGLForm
 		float * buffer;
 		GLsizei frameW, frameH;
 
+		Skynet::SkynetController ^theController;
 	private:
 		HDC m_hDC;
 		HGLRC m_hglrc;
